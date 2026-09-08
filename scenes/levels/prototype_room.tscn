@@ -1,0 +1,82 @@
+[gd_scene load_steps=9 format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.105, 0.12, 0.15, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.18, 0.2, 0.25, 1)
+roughness = 0.78
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+material = SubResource("StandardMaterial3D_floor")
+size = Vector3(14, 0.2, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(14, 0.2, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_long_wall"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(14.3, 2, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_long_wall"]
+size = Vector3(14.3, 2, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_side_wall"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(0.3, 2, 10.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_side_wall"]
+size = Vector3(0.3, 2, 10.3)
+
+[node name="PrototypeRoom" type="Node3D"]
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+position = Vector3(0, -0.1, 0)
+mesh = SubResource("BoxMesh_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+position = Vector3(0, -0.1, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="NorthWall" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NorthWall"]
+position = Vector3(0, 1, -5)
+mesh = SubResource("BoxMesh_long_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NorthWall"]
+position = Vector3(0, 1, -5)
+shape = SubResource("BoxShape3D_long_wall")
+
+[node name="SouthWall" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SouthWall"]
+position = Vector3(0, 1, 5)
+mesh = SubResource("BoxMesh_long_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SouthWall"]
+position = Vector3(0, 1, 5)
+shape = SubResource("BoxShape3D_long_wall")
+
+[node name="WestWall" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WestWall"]
+position = Vector3(-7, 1, 0)
+mesh = SubResource("BoxMesh_side_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WestWall"]
+position = Vector3(-7, 1, 0)
+shape = SubResource("BoxShape3D_side_wall")
+
+[node name="EastWall" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EastWall"]
+position = Vector3(7, 1, 0)
+mesh = SubResource("BoxMesh_side_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EastWall"]
+position = Vector3(7, 1, 0)
+shape = SubResource("BoxShape3D_side_wall")
