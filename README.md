@@ -14,7 +14,7 @@ Small atmospheric indie-game prototype built with Godot 4.
 
 1. Clone or download this repository.
 2. Import project.godot in Godot 4.
-3. Press F6 or the play button.
+3. Press F5 or the play-project button.
 
 ## Controls
 
