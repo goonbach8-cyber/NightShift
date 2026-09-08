@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1_player_script"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_placeholder.svg" id="2_player_texture"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_worker_sheet.png" id="2_player_texture"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.32
@@ -19,8 +19,11 @@ shape = SubResource("CapsuleShape3D_player")
 position = Vector3(0, 0.72, 0)
 billboard = 1
 texture_filter = 0
-pixel_size = 0.04
+pixel_size = 0.02
 texture = ExtResource("2_player_texture")
+hframes = 4
+vframes = 4
+frame = 0
 
 [node name="CameraRig" type="Node3D" parent="."]
 
