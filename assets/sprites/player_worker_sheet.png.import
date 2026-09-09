@@ -3,16 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c026ml06vq3we"
-path.s3tc="res://.godot/imported/player_worker_sheet.png-fe391eb552ab65183f3fde11107177eb.s3tc.ctex"
-metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
-}
+valid=false
 
 [deps]
 
 source_file="res://assets/sprites/player_worker_sheet.png"
-dest_files=["res://.godot/imported/player_worker_sheet.png-fe391eb552ab65183f3fde11107177eb.s3tc.ctex"]
 
 [params]
 
