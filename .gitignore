@@ -15,3 +15,6 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# Regenerated locally by Godot; do not commit invalid import state
+assets/sprites/player_worker_sheet.png.import
