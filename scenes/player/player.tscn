@@ -22,7 +22,7 @@ texture_filter = 0
 pixel_size = 0.0105
 texture = ExtResource("2_player_texture")
 hframes = 4
-vframes = 5
+vframes = 4
 frame = 0
 
 [node name="CameraRig" type="Node3D" parent="."]
