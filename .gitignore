@@ -18,3 +18,4 @@ mono_crash.*.json
 
 # Regenerated locally by Godot; do not commit invalid import state
 assets/sprites/player_worker_sheet.png.import
+assets/sprites/player_worker_walk_cycle.png.import
