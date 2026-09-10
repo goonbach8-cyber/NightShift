@@ -50,7 +50,7 @@ func _run() -> void:
 	await frames(10)
 	check(player.is_on_floor(), "Player lands on original room floor")
 	check(player.sprite.sprite_frames.get_frame_texture(&"walk_right", 0) != null, "Player texture imports")
-	var texture: AtlasTexture = player.sprite.sprite_frames.get_frame_texture(&"walk_right", 0)
+	var texture: AtlasTexture = player.sprite.sprite_frames.get_frame_texture(&"walk_down", 0)
 	check(texture.atlas.get_size() == Vector2(512, 320), "Original 512x320 artwork retained")
 	var directions := {"move_left": &"left", "move_right": &"right", "move_forward": &"up", "move_backward": &"down"}
 	for action in directions:

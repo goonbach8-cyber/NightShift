@@ -1,7 +1,26 @@
-[gd_scene load_steps=37 format=3]
+[gd_scene load_steps=39 format=3]
 
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1_player_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_worker_sheet.png" id="2_player_texture"]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/idle_side.png" id="idle_side"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/idle_left.png" id="idle_left"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_01.png" id="walk_side_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_02.png" id="walk_side_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_03.png" id="walk_side_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_04.png" id="walk_side_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_05.png" id="walk_side_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_06.png" id="walk_side_06"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_07.png" id="walk_side_07"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_side_08.png" id="walk_side_08"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_01.png" id="walk_left_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_02.png" id="walk_left_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_03.png" id="walk_left_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_04.png" id="walk_left_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_05.png" id="walk_left_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_06.png" id="walk_left_06"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_07.png" id="walk_left_07"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_side/walk_left_08.png" id="walk_left_08"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.32
@@ -38,70 +57,6 @@ region = Rect2(384, 0, 64, 80)
 [sub_resource type="AtlasTexture" id="AtlasTexture_down_7"]
 atlas = ExtResource("2_player_texture")
 region = Rect2(448, 0, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_0"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(0, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_1"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(64, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_2"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(128, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_3"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(192, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_4"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(256, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_5"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(320, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_6"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(384, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_right_7"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(448, 80, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_0"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(0, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_1"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(64, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_2"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(128, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_3"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(192, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_4"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(256, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_5"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(320, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_6"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(384, 160, 64, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_left_7"]
-atlas = ExtResource("2_player_texture")
-region = Rect2(448, 160, 64, 80)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_up_0"]
 atlas = ExtResource("2_player_texture")
@@ -147,7 +102,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_0")
+"texture": ExtResource("idle_side")
 }],
 "loop": false,
 "name": &"idle_right",
@@ -155,7 +110,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_0")
+"texture": ExtResource("idle_left")
 }],
 "loop": false,
 "name": &"idle_left",
@@ -200,28 +155,28 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_0")
+"texture": ExtResource("walk_side_01")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_1")
+"texture": ExtResource("walk_side_02")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_2")
+"texture": ExtResource("walk_side_03")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_3")
+"texture": ExtResource("walk_side_04")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_4")
+"texture": ExtResource("walk_side_05")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_5")
+"texture": ExtResource("walk_side_06")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_6")
+"texture": ExtResource("walk_side_07")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_right_7")
+"texture": ExtResource("walk_side_08")
 }],
 "loop": true,
 "name": &"walk_right",
@@ -229,28 +184,28 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_0")
+"texture": ExtResource("walk_left_01")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_1")
+"texture": ExtResource("walk_left_02")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_2")
+"texture": ExtResource("walk_left_03")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_3")
+"texture": ExtResource("walk_left_04")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_4")
+"texture": ExtResource("walk_left_05")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_5")
+"texture": ExtResource("walk_left_06")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_6")
+"texture": ExtResource("walk_left_07")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_left_7")
+"texture": ExtResource("walk_left_08")
 }],
 "loop": true,
 "name": &"walk_left",
