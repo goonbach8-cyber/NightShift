@@ -16,6 +16,6 @@ export_credentials.cfg
 data_*/
 mono_crash.*.json
 
-# Regenerated locally by Godot; do not commit invalid import state
-assets/sprites/player_worker_sheet.png.import
+# Keep the active pixel-art import settings under version control.
+
 assets/sprites/player_worker_walk_cycle.png.import
