@@ -16,7 +16,7 @@ position = Vector3(0, 0.8, 0)
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
-position = Vector3(0, 0.72, 0)
+position = Vector3(0, 0.76, 0)
 billboard = 1
 texture_filter = 0
 pixel_size = 0.018
