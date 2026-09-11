@@ -49,6 +49,7 @@ func _run() -> void:
 	player = world.get_node("Player")
 	await frames(10)
 	check(player.is_on_floor(), "Player lands on original room floor")
+	check(world.get_node("Station").restock_items.all(func(item): return not item.visible), "Shelf has visible gaps before restocking")
 	check(player.sprite.sprite_frames.get_frame_texture(&"walk_right", 0) != null, "Player texture imports")
 	var texture: AtlasTexture = player.sprite.sprite_frames.get_frame_texture(&"walk_down", 0)
 	check(texture.atlas.get_size() == Vector2(512, 320), "Original 512x320 artwork retained")
@@ -96,6 +97,9 @@ func _run() -> void:
 	await place(Vector3(-4.8, 0.05, -2.3))
 	await use()
 	check(world.phase == 0 and world.completed.is_empty(), "Tasks cannot complete before shift begins")
+	await place(Vector3(4.8, 0.05, -2.3))
+	await use()
+	check(world.get_node("Station").restock_items.all(func(item): return not item.visible), "Shelf cannot be filled before shift begins")
 	await place(Vector3(-4.8, 0.05, 3.7))
 	check(player.interaction_target == world.get_node("Station/ShiftBoard"), "Nearby shift board selected")
 	await use()
@@ -110,6 +114,10 @@ func _run() -> void:
 	await place(Vector3(4.8, 0.05, -2.3))
 	await use()
 	check(world.completed.size() == 2, "Shelf completes second task")
+	check(world.get_node("Station").restock_items.all(func(item): return item.visible), "Restocking fills shelf in the game world")
+	check(world.get_node("Station/Shelf").prompt == "Regal ansehen", "Restocked shelf has the correct prompt")
+	await use()
+	check(world.get_node("Station").restock_items.size() == 8 and world.completed.size() == 2, "Repeated restocking does not duplicate bottles or tasks")
 	await place(Vector3(4.6, 0.05, 3.6))
 	await use()
 	check(world.phase == 2, "Full shift sequence completes through actual input")
@@ -146,6 +154,12 @@ func _run() -> void:
 	Input.action_release("move_backward")
 	check(player.position.z < 10.6 and player.is_on_floor(), "Forecourt boundary prevents falling out")
 	check(world.get_node("Ambience").playing, "Ambient audio starts")
+	var held_key := InputEventKey.new()
+	held_key.physical_keycode = KEY_M
+	held_key.pressed = true
+	held_key.echo = true
+	world._unhandled_input(held_key)
+	check(not world.muted, "Keyboard auto-repeat does not toggle audio")
 	var mute_event := InputEventAction.new()
 	mute_event.action = &"mute_audio"
 	mute_event.pressed = true
@@ -170,6 +184,7 @@ func _run() -> void:
 	world = current_scene
 	player = world.get_node("Player")
 	check(world.phase == 0 and world.completed.is_empty(), "Restart resets completed shift")
+	check(world.get_node("Station").restock_items.all(func(item): return not item.visible), "Restart resets visible shelf stock")
 	check(player.position.distance_to(Vector3(0, 0, 1.5)) < 0.1, "Restart returns player to spawn")
 	print("NIGHTSHIFT TESTS: " + str(failures) + " failure(s)")
 	world.queue_free()

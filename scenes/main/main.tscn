@@ -43,6 +43,14 @@ volume_db = -22.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
+[node name="ObjectiveBackdrop" type="ColorRect" parent="HUD"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 640.0
+offset_bottom = 112.0
+mouse_filter = 2
+color = Color(0.015, 0.022, 0.03, 0.94)
+
 [node name="Objective" type="Label" parent="HUD"]
 offset_left = 24.0
 offset_top = 20.0

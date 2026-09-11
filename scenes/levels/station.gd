@@ -3,6 +3,8 @@ extends Node3D
 const INTERACTABLE = preload("res://scenes/interactions/interactable.gd")
 const DOOR = preload("res://scenes/interactions/door.tscn")
 
+var restock_items: Array[Node3D] = []
+
 
 func _ready() -> void:
 	# Extend the existing room; its floor and three walls stay in use.
@@ -41,7 +43,10 @@ func _ready() -> void:
 	for y in [0.15, 0.65, 1.15]:
 		_box(shelf, "Shelf", Vector3(0, y, 0), Vector3(1.8, 0.09, 0.65), Color("69736b"))
 		for x in [-0.6, -0.2, 0.2, 0.6]:
-			_box(shelf, "Stock", Vector3(x, y + 0.18, 0), Vector3(0.16, 0.27, 0.2), Color("947353"), false)
+			var stock := _box(shelf, "Stock", Vector3(x, y + 0.18, 0), Vector3(0.16, 0.27, 0.2), Color("947353"), false)
+			if y > 0.2:
+				stock.hide()
+				restock_items.append(stock)
 	_label(shelf, "GETRÄNKE", Vector3(0, 1.7, 0), 22, Color("e6dab7"))
 	var till := _object("Register", &"finish", "Kontrollrunde abschliessen", Vector3(4.6, 0, 2.3))
 	_box(till, "Counter", Vector3(0, 0.5, 0), Vector3(1.8, 1, 0.9), Color("675d4d"))
@@ -60,7 +65,7 @@ func _object(node_name: String, id: StringName, text: String, at: Vector3) -> No
 	return object
 
 
-func _box(parent: Node3D, node_name: String, at: Vector3, size: Vector3, color: Color, solid: bool = true) -> void:
+func _box(parent: Node3D, node_name: String, at: Vector3, size: Vector3, color: Color, solid: bool = true) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.name = node_name
 	body.position = at
@@ -80,6 +85,13 @@ func _box(parent: Node3D, node_name: String, at: Vector3, size: Vector3, color: 
 		shape.size = size
 		collision.shape = shape
 		body.add_child(collision)
+	return body
+
+
+func complete_restock() -> void:
+	for item in restock_items:
+		item.show()
+	$Shelf.prompt = "Regal ansehen"
 
 
 func _label(parent: Node3D, text: String, at: Vector3, font_size: int, color: Color) -> void:

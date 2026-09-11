@@ -40,6 +40,8 @@ func _exit_tree() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
 	if event.is_action_pressed("mute_audio"):
 		muted = not muted
 		ambience.volume_db = -80.0 if muted else -30.0
@@ -66,6 +68,8 @@ func _on_used(action_id: StringName) -> void:
 			_say("Bereits erledigt.")
 		else:
 			completed[action_id] = true
+			if action_id == &"shelf":
+				$Station.complete_restock()
 			_say("Kühlung: 4 °C. Alles in Ordnung." if action_id == &"cooler" else "Getränke aufgefüllt. Das Regal ist bereit.")
 	elif action_id == &"finish":
 		if completed.size() == 2:

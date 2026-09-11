@@ -4,7 +4,7 @@ Kleiner Godot-4.7-Prototyp: ein Pixel-Character in einer dreidimensionalen Tanks
 
 ## Starten
 
-`project.godot` mit Godot 4.7.2 öffnen und F5 drücken. Der Player und die angeschrägte orthografische Folgekamera verwenden weiterhin die ursprüngliche Szene und Grafik.
+`project.godot` mit Godot 4.7.2 öffnen und F5 drücken. Der Player und die angeschrägte orthografische Folgekamera verwenden weiterhin die bestehende Szene. Side-Walk und Side-Idle verwenden einzelne PNGs; vorne und hinten bleibt das ursprüngliche Sheet erhalten.
 
 | Aktion | Taste |
 | --- | --- |
@@ -25,7 +25,7 @@ Die Schiebetür in der vorderen Wand lässt sich mit E öffnen. Der kleine Vorpl
 
 - `scenes/main/main.tscn`: Hauptszene, Licht, HUD und Audio-Nodes.
 - `scenes/main/shift.gd`: Kontrollrunde, Texte, Neustart und einfache synthetisierte Audio-Platzhalter.
-- `scenes/player/player.tscn` / `player.gd`: CharacterBody3D, Original-SpriteFrames, Kamera, Bewegung und Auswahl naher Interaktionen.
+- `scenes/player/player.tscn` / `player.gd`: CharacterBody3D, SpriteFrames, Kamera, Bewegung und Auswahl naher Interaktionen.
 - `scenes/levels/prototype_room.tscn`: ursprünglicher Raum.
 - `scenes/levels/station.gd`: erzeugt Einrichtung und Vorplatz beim Spielstart und ersetzt die geschlossene Vorderwand durch den Eingang. Diese Ergänzungen sieht man deshalb erst beim Ausführen des Spiels.
 - `scenes/interactions/interactable.gd`: gemeinsame Basis für benutzbare Objekte.
@@ -41,19 +41,22 @@ Im Projektordner mit dem Godot-Kommando bzw. dem vollständigen Pfad zur Godot-C
 ```text
 godot --headless --editor --import --quit
 godot --headless --script res://tests/smoke_test.gd
+godot --headless --script res://tests/sidewalk_test.gd
 ```
 
 Erwartet: `NIGHTSHIFT TESTS: 0 failure(s)` und Exit-Code 0. Die Tests decken Bewegungsrichtungen, Diagonaltempo, Animationsfortschritt, schnelle Richtungswechsel, Wandkollisionen, Sichtlinien, Aufgabenreihenfolge, Türsicherheit, Vorplatz, Audio-Umschaltung und Neustart ab.
 
-## Player-Animation: Befund und Grenze
+## Player-Animation
 
-Das Original-Sheet bleibt unverändert: 512×320 Pixel, vier Richtungsreihen, jeweils acht Bilder à 64×80 Pixel. Die Ausschnitte und die Reihenfolge 0–7 sind passend, die Walk-Schleifen laufen mit 8 FPS. Der alte Code startete sie bereits nicht bei jedem Frame neu.
+Seitlich werden acht Einzel-PNGs je Richtung in `assets/sprites/player_side/` mit 8 FPS abgespielt. Die zweite Zyklushälfte enthält einen eigenen Gegen-Schritt mit sichtbar anderer angehobener Fussposition. Kopf und oberer Brustbereich bleiben pixelgleich, alle Frames haben 64×80 Pixel und einen gemeinsamen Bodenkontakt. Links verwendet exakt gespiegelte PNGs ohne zusätzliches Flip-H. Side-Idle besitzt eine eigene Standpose.
 
-Ein vorhandener lokaler Importzustand war ungültig (`valid=false`); Godot konnte die Player-Textur nicht laden. Die korrigierte `.png.import` wird nun versioniert, verwendet verlustfreie Kompression ohne Mipmaps und behält Nearest-Filtering in der Player-Szene bei.
+Die Ursache lag in den alten Bildposen, nicht in einem ständig neu gestarteten Animationscode. Movement, Kamera und Kollisionskörper wurden für diese Änderung beibehalten. Die Front-/Rückansichten verwenden weiterhin das unveränderte Original-Sheet.
 
-Die Bewegung verwendet jetzt eine richtungsunabhängige Beschleunigung. Die Animation folgt der tatsächlichen horizontalen Bewegung nach der Kollision, läuft beim Abbremsen langsamer und steht vor einer blockierenden Wand still. Richtungswechsel innerhalb von Walk erhalten Frame und Fortschritt des Schrittzyklus.
+`tools/extract.gd` erzeugt die Frames reproduzierbar aus den im Repository gespeicherten Quellen. Ausführung: `godot --headless --script res://tools/extract.gd`, danach normaler Godot-Import. Details zu Quellen, Erzeugung, Prüfungen und verbleibender Stilisierung stehen in [docs/ANIMATION.md](docs/ANIMATION.md).
 
-**Die seitliche Laufbewegung ist grafisch noch nicht vollständig gelöst.** In den acht seitlichen Ausgangsbildern bleibt eine breite Beinstellung bestehen; klare Passing-Posen fehlen. Dadurch kann der Lauf trotz korrekter Wiedergabe weiter wackelnd wirken. Umordnen oder andere FPS erzeugen diese fehlenden Posen nicht. Der nächste gezielte Grafikschritt ist, Bein-Zwischenposen unter Beibehaltung der vorhandenen Figur zu ergänzen. Es wurde kein Ersatz-Character eingeführt.
+## Sichtbare Aufgaben
+
+Beim Getränke-Auffüllen erscheinen acht zusätzliche Packungen in den oberen Regalreihen. Der Hinweis wechselt zu „Regal ansehen“. Ein Neustart stellt den Anfangszustand wieder her. Die Aufgabenanzeige hat einen dunklen Hintergrund, damit Weltbeschriftungen sie nicht überlagern.
 
 ## Grenzen des Prototyps
 
@@ -62,4 +65,4 @@ Die Bewegung verwendet jetzt eine richtungsunabhängige Beschleunigung. Die Anim
 - Audio besteht aus einem leisen Gerätebrummen und einem kurzen Bestätigungston. Ein Hörtest und ausgearbeitetes Sounddesign stehen aus.
 - Kein Speichern/Laden, keine NPCs, kein fertiges Spiel oder Exportpaket.
 
-Stand: 10. September 2026. Technisch in Godot 4.7.2 getestet; gerenderte Spiel- und Sprite-Ansichten visuell geprüft. Ein menschlicher Spieltest für das subjektive Bewegungsgefühl bleibt sinnvoll.
+Stand: 11. September 2026. Technisch in Godot 4.7.2 getestet; gerenderte Spiel- und Sprite-Ansichten visuell geprüft. Ein menschlicher Spieltest für das subjektive Bewegungsgefühl bleibt sinnvoll.
