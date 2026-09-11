@@ -62,7 +62,7 @@ func _on_used(action_id: StringName) -> void:
 		else:
 			_say("Kühlung und Getränke kontrollieren, danach zur Kasse.")
 	elif phase == Phase.NOT_STARTED:
-		_say("Lies zuerst den Schichtzettel neben dem Eingang.")
+		_say("Lies zuerst den Schichtzettel am Arbeitsplatz hinter der Kasse.")
 	elif action_id in [&"cooler", &"shelf"]:
 		if completed.has(action_id):
 			_say("Bereits erledigt.")
@@ -72,6 +72,9 @@ func _on_used(action_id: StringName) -> void:
 				$Station.complete_restock()
 			_say("Kühlung: 4 °C. Alles in Ordnung." if action_id == &"cooler" else "Getränke aufgefüllt. Das Regal ist bereit.")
 	elif action_id == &"finish":
+		if $Player.global_position.z > $Station/Register.global_position.z - 0.5:
+			_say("Schliesse die Kontrollrunde am Bedienplatz hinter der Kasse ab.")
+			return
 		if completed.size() == 2:
 			phase = Phase.COMPLETE
 			_say("00:05. Kontrollrunde abgeschlossen. Einen ruhigen Dienst!", 8.0)
@@ -82,7 +85,7 @@ func _on_used(action_id: StringName) -> void:
 
 func _update_objective() -> void:
 	if phase == Phase.NOT_STARTED:
-		objective.text = "NIGHTSHIFT  /  23:40\nLies den Schichtzettel links neben dem Eingang."
+		objective.text = "NIGHTSHIFT  /  23:40\nLies den Schichtzettel am Arbeitsplatz hinter der Kasse."
 	elif phase == Phase.ACTIVE:
 		objective.text = "NIGHTSHIFT  /  KONTROLLRUNDE\n%s Kühlung prüfen    %s Getränke auffüllen\nDanach: an der Kasse bestätigen." % ["[x]" if completed.has(&"cooler") else "[ ]", "[x]" if completed.has(&"shelf") else "[ ]"]
 	else:

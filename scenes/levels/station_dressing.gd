@@ -29,6 +29,7 @@ func _ready() -> void:
 	forecourt()
 	object_details()
 	finishing_details()
+	shop_logic()
 
 func mat(hex: String, glow: bool = false) -> StandardMaterial3D:
 	var key := hex + str(glow)
@@ -194,6 +195,7 @@ func shop_fittings() -> void:
 	var monitor := Node3D.new()
 	monitor.position = Vector3(-0.22,1.43,-0.10)
 	monitor.rotation.x = deg_to_rad(-15)
+	monitor.rotation.y = PI
 	till.add_child(monitor)
 	bevel(Vector3.ZERO,Vector3(0.63,0.39,0.08),"263739",monitor)
 	box(Vector3(0,0,0.045),Vector3(0.53,0.29,0.012),"244d50",monitor,true)
@@ -206,8 +208,8 @@ func shop_fittings() -> void:
 			box(Vector3(0.50+col*0.06,1.237,0.18+row*0.045),Vector3(0.037,0.014,0.024),"9caaa5",till)
 	bevel(Vector3(-0.65,1.12,0.12),Vector3(0.24,0.11,0.3),"263739",till)
 	box(Vector3(-0.65,1.18,0.18),Vector3(0.15,0.008,0.14),"ddd4b3",till)
-	box(Vector3(0,0.88,0.48),Vector3(0.55,0.14,0.025),"263739",till)
-	box(Vector3(0,0.89,0.50),Vector3(0.20,0.025,0.025),"8e9b94",till)
+	box(Vector3(0,0.88,-0.48),Vector3(0.55,0.14,0.025),"263739",till)
+	box(Vector3(0,0.89,-0.50),Vector3(0.20,0.025,0.025),"8e9b94",till)
 	sign_text("KASSE",Vector3(0,0.73,0.487),0.65,till)
 	# Coffee unit against the back wall, outside all existing task approaches.
 	solid(Vector3(0,0.46,-4.18), Vector3(2.0,0.92,0.9))
@@ -428,3 +430,65 @@ func finishing_details() -> void:
 	# Visible light diffusers on the existing forecourt poles.
 	for x in [-5.5,5.5]:
 		box(Vector3(x,3.28,8.71),Vector3(0.55,0.065,0.022),"c4efeb",self,true)
+
+func shop_logic() -> void:
+	# Staff now work on the north side of the existing checkout, facing the entrance.
+	station.get_node("ShiftBoard").position = Vector3(5.9,0,-0.8)
+	box(Vector3(4.65,0.016,1.25),Vector3(2.0,0.025,0.85),"263739")
+	# Rear sales cabinet, with a clear 1.12 m service aisle before the counter.
+	solid(Vector3(4.6,0.8,0.6),Vector3(1.8,1.6,0.25))
+	bevel(Vector3(4.6,0.8,0.6),Vector3(1.8,1.6,0.25),"52625c")
+	box(Vector3(4.6,1.08,0.735),Vector3(1.65,0.79,0.025),"263739")
+	for row in 3:
+		var y := 0.80+row*0.25
+		box(Vector3(4.6,y-0.06,0.78),Vector3(1.62,0.025,0.1),"8e9b94")
+		for col in 8:
+			box(Vector3(3.9+col*0.20,y+0.025,0.785),Vector3(0.14,0.16,0.06),["c8bda1","708b85","967956"][col%3])
+	box(Vector3(4.6,1.59,0.76),Vector3(1.8,0.16,0.03),"173d40")
+	sign_text("TABAK / SERVICE",Vector3(4.6,1.59,0.785),1.48)
+	for x in [4.14,5.06]:
+		box(Vector3(x,0.35,0.736),Vector3(0.82,0.48,0.025),"65746a")
+		box(Vector3(x,0.51,0.758),Vector3(0.24,0.03,0.025),"8e9b94")
+	var till := station.get_node("Register")
+	# Customer-facing payment and impulse goods; the operator screen faces the aisle.
+	box(Vector3(0.11,1.09,0.36),Vector3(0.34,0.08,0.20),"344b4b",till)
+	for i in 4:
+		box(Vector3(-0.015+i*0.085,1.16,0.36),Vector3(0.065,0.07,0.16),["a97344","beaa70","557b69","965647"][i],till)
+	box(Vector3(-0.69,1.085,-0.28),Vector3(0.28,0.018,0.20),"173d40",till)
+	sign_text("CHF / KARTE",Vector3(0.6,0.8,0.49),0.48,till)
+	# One compact protected bakery display next to the existing coffee machine.
+	solid(Vector3(-1.75,0.5,-4.18),Vector3(1.12,1.0,0.85))
+	bevel(Vector3(-1.75,0.47,-4.18),Vector3(1.12,0.94,0.85),"65746a")
+	box(Vector3(-1.75,1.0,-4.18),Vector3(1.16,0.06,0.89),"8e9b94")
+	for y in [1.05,1.33]:
+		box(Vector3(-1.75,y,-4.18),Vector3(1.0,0.025,0.65),"344b4b")
+		for i in 3:
+			var bread := cylinder(Vector3(-2.05+i*0.29,y+0.055,-4.12),0.085,0.09,"b88c50")
+			bread.scale.z = 1.55
+	for x in [-2.29,-1.21]:
+		box(Vector3(x,1.27,-4.18),Vector3(0.035,0.54,0.79),"8e9b94")
+	var glass := box(Vector3(-1.75,1.28,-3.77),Vector3(1.03,0.51,0.01),"173d40")
+	glass.material_override = window_material()
+	glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var lid := box(Vector3(-1.75,1.55,-4.18),Vector3(1.10,0.015,0.83),"173d40")
+	lid.material_override = window_material()
+	lid.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for z in [-4.60,-3.76]:
+		box(Vector3(-1.75,1.55,z),Vector3(1.16,0.035,0.035),"8e9b94")
+	sign_text("GEBÄCK",Vector3(-1.75,0.8,-3.74),0.82)
+	# Accessories live on the coffee worktop, rather than unrelated decoration.
+	for i in 4:
+		cylinder(Vector3(0.74,1.15+i*0.025,-4.15),0.08,0.025,"ddd4b3")
+	box(Vector3(0.38,1.03,-4.35),Vector3(0.36,0.12,0.25),"344b4b")
+	for i in 4:
+		box(Vector3(0.25+i*0.08,1.11,-4.35),Vector3(0.055,0.05,0.15),"ddd4b3")
+	# Reuse the vacated entrance-side area for vehicle essentials, a petrol-shop cue.
+	solid(Vector3(-5.1,0.55,2.5),Vector3(1.3,1.1,0.65))
+	bevel(Vector3(-5.1,0.55,2.5),Vector3(1.3,1.1,0.65),"52625c")
+	for y in [0.24,0.68]:
+		box(Vector3(-5.1,y,2.845),Vector3(1.17,0.32,0.02),"263739")
+		for i in 3:
+			bevel(Vector3(-5.49+i*0.39,y,2.89),Vector3(0.21,0.25,0.15),"577d90")
+			box(Vector3(-5.49+i*0.39,y+0.15,2.89),Vector3(0.065,0.055,0.075),"ddd4b3")
+	box(Vector3(-5.1,1.15,2.5),Vector3(1.3,0.17,0.65),"173d40")
+	sign_text("AUTO / PFLEGE",Vector3(-5.1,1.15,2.835),1.05)
