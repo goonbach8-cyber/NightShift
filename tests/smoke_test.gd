@@ -77,6 +77,9 @@ func _run() -> void:
 		await frames(1)
 		visited[player.sprite.frame] = true
 	check(visited.size() == 8, "Side walk advances through all eight frames without restarting")
+	# Isolate the phase assertion from the preceding wall-clock movement loop.
+	print("Stride fixture before reset: ", player.sprite.animation, " at ", player.position)
+	player.sprite.play(&"walk_right")
 	player.sprite.set_frame_and_progress(5, 0.3)
 	player.facing = &"left"
 	player._update_animation(Vector3.LEFT * 4)
