@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ShopProduct" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/shop_product.gd" id="1"]
+[resource]
+script = ExtResource("1")
+product_id = &"water"
+display_name = "Mineralwasser 50 cl"
+category = &"drinks"
+price_rappen = 220

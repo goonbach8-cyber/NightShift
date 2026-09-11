@@ -55,6 +55,11 @@ func _ready() -> void:
 	var dressing := Node3D.new()
 	dressing.set_script(preload("res://scenes/levels/station_dressing.gd"))
 	add_child(dressing)
+	var annex := Node3D.new()
+	annex.name = "ServiceAnnex"
+	annex.set_script(preload("res://scenes/levels/service_annex.gd"))
+	add_child(annex)
+	preload("res://scripts/static_prop_batch.gd").build(self)
 
 
 func _object(node_name: String, id: StringName, text: String, at: Vector3) -> Node3D:

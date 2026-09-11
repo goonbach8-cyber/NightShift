@@ -63,10 +63,21 @@ func _on_used(action_id: StringName) -> void:
 			_say("Kühlung und Getränke kontrollieren, danach zur Kasse.")
 	elif phase == Phase.NOT_STARTED:
 		_say("Lies zuerst den Schichtzettel am Arbeitsplatz hinter der Kasse.")
+	elif action_id == &"supply":
+		if completed.has(&"shelf"):
+			_say("Das Getränkeregal ist bereits aufgefüllt.")
+			return
+		if $Station/ServiceAnnex.take_crate():
+			_say("Getränkekiste aufgenommen. Bringe die 8 Flaschen zum Getränkeregal.")
+		else:
+			_say("Du trägst bereits eine Kiste oder der Vorrat ist aufgebraucht.")
 	elif action_id in [&"cooler", &"shelf"]:
 		if completed.has(action_id):
 			_say("Bereits erledigt.")
 		else:
+			if action_id == &"shelf" and not $Station/ServiceAnnex.restock():
+				_say("Hole zuerst eine Getränkekiste aus dem Lager rechts neben dem Shop.")
+				return
 			completed[action_id] = true
 			if action_id == &"shelf":
 				$Station.complete_restock()
@@ -87,7 +98,7 @@ func _update_objective() -> void:
 	if phase == Phase.NOT_STARTED:
 		objective.text = "NIGHTSHIFT  /  23:40\nLies den Schichtzettel am Arbeitsplatz hinter der Kasse."
 	elif phase == Phase.ACTIVE:
-		objective.text = "NIGHTSHIFT  /  KONTROLLRUNDE\n%s Kühlung prüfen    %s Getränke auffüllen\nDanach: an der Kasse bestätigen." % ["[x]" if completed.has(&"cooler") else "[ ]", "[x]" if completed.has(&"shelf") else "[ ]"]
+		objective.text = "NIGHTSHIFT  /  KONTROLLRUNDE\n%s Kühlung prüfen    %s Getränke auffüllen\n%s" % ["[x]" if completed.has(&"cooler") else "[ ]", "[x]" if completed.has(&"shelf") else "[ ]", "Danach: an der Kasse bestätigen." if completed.has(&"shelf") else ("Kiste dabei: zum Getränkeregal." if $Station/ServiceAnnex.carried_units > 0 else "Nachfüllkiste: Lager rechts neben dem Shop.")]
 	else:
 		objective.text = "NIGHTSHIFT  /  00:05\nKontrollrunde abgeschlossen.  [R] Erneut spielen"
 
