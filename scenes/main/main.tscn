@@ -11,7 +11,7 @@ background_mode = 1
 background_color = Color(0.008, 0.012, 0.025, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.2, 0.28, 0.42, 1)
-ambient_light_energy = 0.55
+ambient_light_energy = 0.4
 reflected_light_source = 1
 tonemap_mode = 2
 
@@ -24,7 +24,7 @@ environment = SubResource("Environment_night")
 [node name="MoonLight" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-55, -25, 0)
 light_color = Color(0.62, 0.72, 1, 1)
-light_energy = 1.1
+light_energy = 0.32
 shadow_enabled = true
 
 [node name="PrototypeRoom" parent="." instance=ExtResource("1_room")]

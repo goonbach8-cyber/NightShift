@@ -52,6 +52,9 @@ func _ready() -> void:
 	_box(till, "Counter", Vector3(0, 0.5, 0), Vector3(1.8, 1, 0.9), Color("675d4d"))
 	_box(till, "Terminal", Vector3(0, 1.14, 0), Vector3(0.5, 0.28, 0.4), Color("263d3c"))
 	_label(till, "KASSE", Vector3(0, 1.65, 0), 22, Color("e6dab7"))
+	var dressing := Node3D.new()
+	dressing.set_script(preload("res://scenes/levels/station_dressing.gd"))
+	add_child(dressing)
 
 
 func _object(node_name: String, id: StringName, text: String, at: Vector3) -> Node3D:
