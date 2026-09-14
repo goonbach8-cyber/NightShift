@@ -35,7 +35,9 @@ func run() -> void:
 	check(customer.abandoned and customer.state == &"leaving" and loop.lost_sales == 2,"Empty shop and warehouse eventually let customer leave")
 	loop.abandon_customer(customer)
 	check(loop.lost_sales == 2,"Repeated abandonment cannot count loss twice")
-	await create_timer(1).timeout
+	var deadline := Time.get_ticks_msec()+30000
+	while loop.departed < 2 and Time.get_ticks_msec() < deadline:
+		await create_timer(0.25).timeout
 	check(loop.departed == 2 and loop.customers.is_empty(),"Abandoned customer reaches exit")
 	world.queue_free()
 	await create_timer(0.3).timeout

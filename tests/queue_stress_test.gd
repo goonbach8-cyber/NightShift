@@ -5,6 +5,7 @@ func run() -> void:
 	current_scene = world
 	player = world.get_node("Player")
 	loop = world.gameplay
+	loop.quick_checkout = true # Routing/legacy fixture; staged checkout has a dedicated test.
 	layout = world.layout
 	loop.customer_count = 8
 	loop.spawn_interval = 2
@@ -20,6 +21,11 @@ func run() -> void:
 	while (loop.queue.size() < 4 or loop.queue.any(func(c): return c.walking)) and Time.get_ticks_msec() < deadline:
 		await create_timer(0.25).timeout
 	check(loop.queue.size() == 4 and loop.queue.all(func(c): return not c.walking),"Four customers reach separate queue markers")
+	for customer in loop.customers:
+		print("QUEUE DEBUG ",customer.name," ",customer.state," at ",customer.global_position," walking ",customer.walking," route ",customer.route)
+		for j in customer.get_slide_collision_count():
+			var hit = customer.get_slide_collision(j)
+			print("CONTACT ",hit.get_collider().get_path()," ",hit.get_position()," ",hit.get_normal())
 	for i in loop.queue.size():
 		for j in range(i+1,loop.queue.size()):
 			check(loop.queue[i].global_position.distance_to(loop.queue[j].global_position) > 0.5,"Queue bodies do not overlap")

@@ -84,6 +84,20 @@ func _ready() -> void:
 	bind_product(&"chips",snacks,Vector3(0,0,1.5))
 	inventory.changed.connect(sync_products)
 	sync_products()
+	var service := Node3D.new()
+	service.name = "ServicePoint"
+	service.set_script(preload("res://scenes/interactions/interactable.gd"))
+	service.action_id = &"service"
+	service.prompt = "Waste bin / Service check"
+	shelf.get_parent().add_child(service)
+	service.position = Vector3(-6.05,0,3.95)
+	marker(service,"Approach",Vector3(0.7,0,0))
+	register_event_lights(shelf.get_parent())
+
+func register_event_lights(node: Node) -> void:
+	if node is Light3D and node.global_position.distance_to(product_nodes[&"energy"].global_position) < 4:
+		node.add_to_group("night_event_light")
+	for child in node.get_children(): register_event_lights(child)
 
 func bind_product(id: StringName, object: Node3D, approach: Vector3) -> void:
 	product_nodes[id] = object

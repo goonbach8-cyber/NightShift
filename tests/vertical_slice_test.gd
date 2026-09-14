@@ -79,6 +79,7 @@ func run() -> void:
 	current_scene = world
 	player = world.get_node("Player")
 	loop = world.gameplay
+	loop.quick_checkout = true # Routing/legacy fixture; staged checkout has a dedicated test.
 	# Focused original one-product regression; multi_product_test covers the default shift.
 	loop.customer_count = 4
 	loop.order_patterns.assign([{&"water":1}])

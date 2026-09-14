@@ -1,5 +1,15 @@
 extends "res://tests/vertical_slice_test.gd"
 
+func sell() -> void:
+	var previous: int = loop.served
+	var units := 0
+	for quantity in loop.queue[0].order.values(): units += int(quantity)
+	for i in units:
+		await use()
+		check(loop.served == previous,"Scanning does not charge before payment")
+	await use()
+	check(loop.served == previous+1,"Payment completes exactly one basket")
+
 func choose(id: StringName) -> void:
 	for i in loop.inventory.products.size():
 		if loop.selected_product() == id:
@@ -33,7 +43,7 @@ func run() -> void:
 		if not await await_customer():
 			await finish()
 			return
-		await use()
+		await sell()
 	check(loop.served == 2 and loop.revenue_rappen == 570,"First customers buy different products")
 	await capture("multi-first-sales")
 	for id in loop.inventory.products:
@@ -59,7 +69,7 @@ func run() -> void:
 		if not await await_customer():
 			await finish()
 			return
-		await use()
+		await sell()
 	check(loop.served == 6 and loop.lost_sales == 0,"Six varied customers served")
 	check(loop.revenue_rappen == 3020 and loop.sold_units == 11,"All baskets total CHF 30.20 and eleven articles")
 	check(loop.inventory.stocks.water.sold_units == 5 and loop.inventory.stocks.energy.sold_units == 3 and loop.inventory.stocks.chips.sold_units == 3,"Per-product sales match receipts")

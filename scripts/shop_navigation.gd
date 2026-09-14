@@ -38,7 +38,8 @@ func rebuild(world: Node3D, doors: Array[Node3D]) -> void:
 			var floor_hit := space.intersect_ray(ray)
 			var query := PhysicsShapeQueryParameters3D.new()
 			query.shape = probe
-			query.transform.origin = point + Vector3.UP*0.65
+			# Probe down to shoe height; low plinths can block a CharacterBody too.
+			query.transform.origin = point + Vector3.UP*0.61
 			query.collision_mask = 1
 			query.exclude = door_exclusions
 			grid.set_point_solid(Vector2i(x,y),floor_hit.is_empty() or not space.intersect_shape(query,1).is_empty())
@@ -80,8 +81,7 @@ func path(from: Vector3, to: Vector3, avoid: Array[Vector3] = []) -> PackedVecto
 				var id := center+Vector2i(x,y)
 				var cell_position := Vector2(id.x*cell,id.y*cell)
 				var near_obstacle := cell_position.distance_to(Vector2(obstacle.x,obstacle.z)) < 0.5
-				var escape_space := cell_position.distance_to(Vector2(from.x,from.z)) < 0.55
-				if near_obstacle and not escape_space and id != start and id != end and grid.region.has_point(id) and not grid.is_point_solid(id):
+				if near_obstacle and id != start and id != end and grid.region.has_point(id) and not grid.is_point_solid(id):
 					grid.set_point_solid(id,true)
 					temporary.append(id)
 	if grid.region.has_point(start) and grid.region.has_point(end) and not grid.is_point_solid(start) and not grid.is_point_solid(end):
@@ -89,6 +89,10 @@ func path(from: Vector3, to: Vector3, avoid: Array[Vector3] = []) -> PackedVecto
 			result.append(Vector3(point.x,0,point.y))
 	for id in temporary:
 		grid.set_point_solid(id,false)
+	# The actor is already in the start cell. Returning to its centre can make a
+	# queue leader back into the following customer instead of advancing.
+	if result.size() > 1 and result[0].distance_to(Vector3(from.x,0,from.z)) <= cell*0.8:
+		result.remove_at(0)
 	# Preserve authored approach positions instead of stopping at the grid's rounded cell.
 	if not result.is_empty() and result[-1].distance_to(Vector3(to.x,0,to.z)) <= cell*0.8:
 		result.append(Vector3(to.x,0,to.z))

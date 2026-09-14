@@ -1,53 +1,78 @@
-# NightShift: funktionaler Vertical Slice
+# NightShift — aktueller spielbarer Stand
 
-Stand: 14.09.2026. Der bestehende Shop, Pixel-Player, Lager, WC, Lieferhof und Sound bleiben erhalten. Kunden sind bewusst einfache Platzhalter. Kein Design-/Layout-Umbau.
+Stand 14.09.2026. Funktionalität vor Design. Bestehende Map, Pixel-Player, Kamera, Lager, WC und Lieferhof bleiben erhalten. Dies sind kurze System-Prototypen, nicht die fertigen 5–7 Story-Nächte oder fünf Stunden Spielinhalt.
 
 ## Spielen
 
-WASD bewegt, E interagiert, M schaltet Ton um. Am Schichtzettel hinter der Kasse beginnen. Vier Kunden kommen automatisch, gehen zum Wasserregal und anschließend zur Kasse. Vom Mitarbeiterplatz hinter der Kasse mit E verkaufen. Der Startbestand von zwei Flaschen reicht absichtlich nicht für alle Kunden.
+1. Am Schichtzettel hinter der Kasse mit **E** starten.
+2. Kunden besuchen Wasserregal, Energy-Kühler und Snack-Insel entsprechend ihrem Warenkorb. Vom Mitarbeiterplatz an der Kasse **E** pro Artikel zum Scannen, danach **E** zur Zahlung. Erst die Zahlung verändert Bestand und Umsatz.
+3. **TAB** wählt Nachfüllware. Im Lager am Nachfüllpunkt **E** zum Aufnehmen, dann am passenden Regal **E** zum Auffüllen. Nur eine Ladung gleichzeitig. Die Bestandsanzeigen markieren knappe oder vollständig reservierte Produkte mit `!`.
+4. Kühlung mit **E** kontrollieren. Gemischte Lieferung erscheint nach 18 Sekunden im Lieferhof; aufnehmen und am Lager-Nachfüllpunkt abgeben. Ab Night 2 zusätzlich den Abfalleimer links neben dem Eingang kontrollieren/leeren.
+5. **F** eröffnet ein kurzes Gespräch mit dem vordersten wartenden Kunden. **Space** blättert weiter; **1/2** wählen angebotene Antworten. Während des Gesprächs wird nicht versehentlich kassiert und die Geduld dieses Kunden pausiert.
+6. Nach Kunden und Aufgaben Schichtende an der Kasse bestätigen. **N** speichert und wechselt zur nächsten Nacht. **F5** speichert nur den Abschluss. **R** startet eine frische Demo; anschließend lädt **F9** den letzten Abschluss, bevor die nächste Schicht gestartet wird.
 
-Im Lager am Nachfüllpunkt eine Kiste aufnehmen, zum Wasserregal bringen und mit E auffüllen. Den Getränkekühler einmal kontrollieren. Nach 18 Sekunden erscheint eine Lieferung im Hof hinter dem Lager: abholen und am Lager-Nachfüllpunkt einlagern. Es kann nur eine Ladung gleichzeitig getragen werden. Nach vier Verkäufen, vier abgereisten Kunden und den drei erledigten Aufgaben die Schicht an der Kasse abschließen. R startet anschließend eine neue Schicht. Zusammenfassung: Kunden, Umsatz, Aufgaben.
+**WASD:** Bewegung. **T:** Radio an/aus. **Y:** nächster Track. **+/-:** Radiolautstärke. **M:** global stumm. Die Radiotracks sind zwei eigene synthetisierte Platzhalter. Custom Music Folder und ein eigener Streamer-Schalter sind noch nicht enthalten.
 
-## Dateien und Verantwortlichkeiten
+## Funktionsumfang
 
-- `scripts/shop_stock.gd`: separate Resource je Schicht; Regalbestand, Reservierungen, Lagerbestand, Trageladung, Kapazität. Reservieren verhindert Überverkauf; erst Kassieren reduziert den Bestand.
-- `scripts/night_shift_loop.gd`: Kundenfortschritt, FIFO-Kassenschlange, Verkäufe in ganzen Rappen, drei Aufgaben, zeitgesteuerte Lieferung und Abschlussbedingungen.
-- `scripts/customer.gd`: Wegfolge, Warenwahl, Warten, Kasse, Ausgang; physische Kollisionen und erneute Wegsuche bei Blockierung.
-- `scripts/shop_navigation.gd`: flaches AStar-Raster aus den tatsächlichen Boden-/Hinderniskollisionen; Türdurchgänge werden eingeplant und Türen beim Annähern geöffnet.
-- `scripts/gameplay_layout.gd`: Adapter zur bestehenden Map, lokale Marker, Bestandsanzeige und Lieferpaket.
-- `scenes/main/shift.gd`: Start/Ende, vorhandene Interaktionen, HUD, Feedback, Neustart.
-- `scenes/levels/service_annex.gd`: nutzt dieselbe Bestands-Resource; bisherige Bestandsfelder bleiben als Aliase erhalten.
-- `scenes/interactions/door.gd`: erkennt zusätzlich Kunden im Türbereich.
+- Drei Produkte mit separaten Lager-, Regal-, Reservierungs- und Verkaufsbeständen. Reservierungen gehören einem konkreten Kunden. Warenkörbe werden vollständig abgerechnet oder bei Abbruch freigegeben.
+- Unterschiedliche Warenkörbe, Mengen, Geschwindigkeit und Geduld. Maximal vier aktive Kunden/Queue-Plätze; weitere Kunden erscheinen, wenn wieder Platz frei ist. Unbediente Kunden können gehen, ohne Reservierungen zu hinterlassen.
+- Night 1: sechs Kunden, drei Aufgaben. Folgenacht-Vorlage: acht Kunden, kürzerer Spawnabstand und zusätzlicher Serviceauftrag. Night 3 und weitere Indizes nutzen derzeit dieselbe Folgenacht-Vorlage, keine ausgearbeiteten Story-Nächte.
+- Main Events passieren unter ihren konfigurierten Bedingungen garantiert einmal; variable Events würfeln einmal bei erfüllten Bedingungen. Erlebte Events und Entscheidungsflags werden zwischen Nächten erhalten.
+- Mystery-Prototypen: widersprüchlicher Wartungshinweis/Kundendialog, kurzer langsamer Lichtabfall mit Wiederherstellung, kurze Radio-Unterbrechung. Die Texte sind austauschbare Testinhalte, keine endgültige Erklärung der Geschichte.
 
-Produktdefinitionen in `data/products/` bleiben unveränderliche Resources mit ID, Namen, Kategorie und Rappenpreis. Die Demo verkauft zunächst nur Wasser; Kaffee und Snack sind bereits Daten, aber noch keine eigenen Kundenbestellungen.
+## Daten und Komponenten
 
-## Späteres Layout ändern
+| Datei | Verantwortung |
+|---|---|
+| `scripts/shop_product.gd`, `data/products/*.tres` | Name, Kategorie, Rappenpreis, Kapazität und Startmengen |
+| `scripts/shop_stock.gd`, `scripts/shop_inventory.gd` | Bestände, kundenbezogene Reservierungen, atomare Warenkörbe, eindeutige Lieferungen |
+| `scripts/customer.gd`, `scripts/shop_navigation.gd` | NPC-Bewegung, physische Kollisionen, Ausweichwege auf flacher Ebene |
+| `scripts/gameplay_layout.gd` | Map-Referenzen, lokale Marker, Produkt-/Servicepunkte und Light-Gruppe |
+| `scripts/night_shift_loop.gd` | Koordination von Einkauf, Queue, Scannen/Zahlung, Aufgaben und Abschluss |
+| `scripts/night_definition.gd`, `scripts/night_catalog.gd` | Konfigurierbare Nächte: Kunden, Spawnrate, Bestellungen, Lieferung, Aufgaben und Events |
+| `scripts/night_event.gd`, `scripts/event_director.gd` | Eventdaten, Bedingungen, Wahrscheinlichkeit, Historie und Trigger-Signal |
+| `scripts/event_effects.gd` | Temporäre Beleuchtungswirkung über Gruppe `night_event_light` |
+| `scripts/dialogue_catalog.gd`, `scripts/dialogue_session.gd` | Getrennte Testtexte/Antworten und Dialogzustand mit Entscheidungsflags |
+| `scripts/shop_radio.gd` | Unabhängiger Radiozustand, Tracks, Lautstärke, Unterbrechung und Mute |
+| `scripts/shift_save.gd` | Validierter zwischen-Schichten-Checkpoint mit Sicherungskopie |
+| `scenes/main/shift.gd` | Eingaben, HUD, Komponentenverbindung und Nachtübergang |
 
-Kernlogik verwendet Referenzen und globale Positionen der Marker statt fester Weltkoordinaten. `GameplayLayout` bindet Regal, Kasse, Lager und Eingang über NodePaths. Die bestehenden Objekte können lokale Marker `CustomerApproach`, `Operator`, `Queue0` bis `Queue2` sowie `CustomerSpawn` erhalten. Vorhandene Marker werden übernommen, ansonsten erzeugt der Adapter Standardpositionen relativ zum jeweiligen Objekt. Neue Map-Namen oder Lagerstrukturen benötigen Anpassungen in diesem Adapter, nicht im Verkaufsablauf.
+Das Layout darf später verändert werden. Kernsysteme verwenden Objekt-Referenzen und Marker. Die konkrete aktuelle Zuordnung liegt im Layout-Adapter. Nach Änderungen an statischen Hindernissen Navigation neu aufbauen (beim Schichtstart automatisch). Die Navigation berücksichtigt auch niedrige Sockel; NPCs laufen beim Nachrücken nicht zum Mittelpunkt ihrer bisherigen Rasterzelle zurück. Keine Treppen-/Mehrstockwerk-Navigation.
 
-Nach Änderungen an statischen Kollisionen die Navigation neu aufbauen; dies geschieht beim Schichtstart. Im laufenden Spiel bewegte Zielmarker lösen neue Wege aus, bewegte Hindernisse benötigen zusätzlich `navigation.rebuild(...)`. Marker müssen auf erreichbaren freien Bodenflächen liegen. Die Navigation ist für eine flache Ebene ausgelegt, nicht für Treppen oder mehrere Stockwerke. Bestehende statische Grafik-Batches müssen bei Editor-/Map-Umbauten ebenfalls neu erzeugt werden. Ganze Räume während einer laufenden Schicht dynamisch umzubauen ist kein unterstützter Spielmodus.
+## Save/Load
 
-## Tests
+Datei: `user://nightshift_checkpoint.json`, unter Windows im Godot-Benutzerdatenordner des Projekts. `.bak` enthält die vorherige gültige Version. Die neue Datei wird zunächst als `.tmp` vollständig geschrieben und anschließend ersetzt. Ungültige Primärdaten fallen auf die Sicherung zurück; sind beide ungültig, bleiben aktuelle Daten unverändert.
 
-Mit Godot 4.7.2 im Projekt ausführen:
+Gespeichert werden abgeschlossene Nächte, Gesamtumsatz, Lager- und Regalbestände, Entscheidungen und Eventhistorie. Ein noch getragener Restbestand wird am Nachtübergang ins Lager zurückgeführt. Aktive Kunden, Reservierungen und laufende Dialoge werden nicht gespeichert. Wiederholtes Speichern derselben Schicht verdoppelt die Statistik nicht. Laden ist vor dem Schichtstart möglich. Produktdefinitionen bleiben Projekt-Resources; künftige Änderungen des Produktschemas benötigen gegebenenfalls eine Save-Migration.
+
+## Verifikation
+
+Godot 4.7.2, Compatibility/OpenGL. **431 bestandene Prüfungen** in 17 ausgewerteten erfolgreichen Läufen; deren Logs enthalten keine Godot-Errors oder -Warnings. Frühere Fehlerlogs bleiben im Arbeitsverzeichnis als Diagnosehistorie erhalten.
+
+- Grafischer vollständiger Zwei-Nächte-Test: 14 Kunden, 24 Artikel, CHF 66.10. Tatsächliche Laufwege, E-Scans/Zahlungen, TAB-Auswahl, Nachfüllen, Lieferung, Serviceauftrag, F/Space/Antworten, Radio, Main Events und N-Übergänge. Danach Night 3 vorbereitet, beide Historien und Entscheidung erhalten.
+- Verschobene Map: vollständiger Mehrprodukt-Loop inklusive Reservierungen, Nachfüllen und Zahlung.
+- Vier gleichzeitige Queue-Plätze, acht aufeinanderfolgende Kunden, keine verbleibenden NPCs oder Reservierungen.
+- Save → echter Prozessabschluss → frischer Prozess → Load; fehlende/beschädigte Datei, Backup, Wiederholung und Lade-/Speichersperre während aktiver Schicht.
+- Event-/Dialog-/Radio-Systemtests sowie alle bestehenden Player-, Animations-, Tür-, Service-, Laufweg- und Bestandsregressionen.
+
+Die langen Durchläufe liefen grafisch mit automatisierten Godot-Eingaben und Sichtprüfung der Spielkamera. Der zusätzliche Windows-Nativeingabeversuch konnte keinen erfolgreichen Tastendruck im Spiel nachweisen; er zählt **nicht** als bestandener manueller Playtest. Ein unabhängiger manueller Test bleibt erforderlich.
+
+Wichtige Aufrufe (Godot-Executable entsprechend ersetzen):
 
 ```
-godot --path . --script res://tests/vertical_slice_test.gd
-godot --headless --path . --script res://tests/vertical_slice_test.gd -- --shift-layout
-godot --headless --path . --script res://tests/stock_test.gd
-godot --headless --path . --script res://tests/smoke_test.gd
-godot --headless --path . --script res://tests/service_test.gd
-godot --headless --path . --script res://tests/environment_test.gd
-godot --headless --path . --script res://tests/sidewalk_test.gd
-godot --headless --path . --script res://tests/customer_door_test.gd
+godot --path . --script res://tests/campaign_test.gd
+godot --headless --path . --script res://tests/multi_product_test.gd -- --shift-layout
+godot --headless --path . --script res://tests/queue_stress_test.gd
+godot --headless --path . --script res://tests/save_test.gd
+godot --headless --path . --script res://tests/save_process_test.gd -- --write
+godot --headless --path . --script res://tests/save_process_test.gd
+godot --headless --path . --script res://tests/narrative_test.gd
+godot --headless --path . --script res://tests/checkout_test.gd
 ```
 
-Der vollständige Test steuert den Player über Bewegungseingaben und E, lässt echte NPC-Physik und Navigation laufen, prüft leeren Bestand, Nachfüllen, zwei getrennte Queue-Plätze, Lieferung, vier Verkäufe, Abreise, Abschluss und Neustart. Er positioniert den Player nur anfangs am Schichtzettel. Türen werden während der automatisierten Wege über ihre Interaktion geöffnet; der separate Service-Test prüft die Türen mit E. Die alten Smoke-/Service-Tests verwenden gezielte Null-Kunden-Fixtures; Kunden und Verkauf werden im vollständigen Test geprüft.
+Die alten Einprodukt-/Queue-Fixtures verwenden ausdrücklich `quick_checkout = true`, um ihre ursprünglichen Prüfungen zu behalten. Standardspiel und Campaign-Test verwenden das mehrstufige Kassieren.
 
-## Bewusste Grenzen
+## Noch offen
 
-Verifikation dieser Session: vollständiger grafischer Durchlauf sowie derselbe Durchlauf mit um `(20, 0, -15)` verschobener Szene jeweils 25 bestandene Prüfungen. Bestands-, Smoke-, Service-, Laufweg-, Animations- und Kunden-Türtests ebenfalls bestanden (insgesamt 232 Prüfungen in diesen acht abschließenden Testläufen). Keine Godot-Errors oder -Warnings in deren Logs. Die grafischen Screenshots wurden aus der normalen Player-Kamera geprüft. Die Eingaben wurden automatisiert; kein manueller Nutzertest und keine abschließende Hörbewertung.
-
-Dabei korrigiert: Konflikt mit dem nativen Resource-Signal `changed`, gerundete Navigations-Endpunkte, zu geringe Hindernisreserve, blockierende Ausweichzellen unmittelbar um den Akteur und die fehlende Kunden-Kollisionsmaske des Türsensors. Bestands-/Kassenprüfungen decken Überverkauf, doppelte Eingaben, leere/vollständige Bestände und Neustart ab.
-
-Vier Kunden, ein verkäuflicher Produkttyp, einfache Platzhalterfiguren, kurze fortschrittsbasierte Schicht. Kein Speicherstand, Kunden-Warenkorb, Bezahlen-Minispiel oder Wirtschaftsmodell. Die Kühlkontrolle ist eine einfache Interaktion. Sound ist die bestehende synthetisierte Grundlage. Der nächste funktionale Ausbau ist eine zweite Produktkategorie mit eigenem Regalbestand und variierenden Bestellungen; danach unabhängige Playtests auf längere Blockaden und Verständlichkeit.
+Unabhängiger manueller Bedienungs-/Verständlichkeitstest; endgültige englische Texte (momentan gemischte Prototyp-UI); echte Night-2/3-Inhalte und Balancing; finales Audio statt Synthese-Platzhaltern; optionaler Musikordner/Streamer Mode. Die fertigen 5–7 Nächte, Storydauer, finale Grafik und finales Layout sind nicht umgesetzt. Sie sollen auf diesen Systemen aufbauen.
