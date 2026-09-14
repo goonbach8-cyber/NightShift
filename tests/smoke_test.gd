@@ -46,6 +46,8 @@ func _run() -> void:
 	world = load("res://scenes/main/main.tscn").instantiate()
 	root.add_child(world)
 	current_scene = world
+	# Focused movement/service regression; customers are covered end-to-end separately.
+	world.gameplay.customer_count = 0
 	player = world.get_node("Player")
 	await frames(10)
 	check(player.is_on_floor(), "Player lands on original room floor")
@@ -107,6 +109,8 @@ func _run() -> void:
 	check(player.interaction_target == world.get_node("Station/ShiftBoard"), "Nearby shift board selected")
 	await use()
 	check(world.phase == 1, "E key begins shift")
+	world.gameplay.stock.shelf_units = 0
+	world.gameplay.stock.changed.emit()
 	await place(Vector3(4.3, 0.05, 1.3))
 	await use()
 	check(world.phase == 1, "Register rejects incomplete checklist")
@@ -124,7 +128,7 @@ func _run() -> void:
 	await use()
 	check(world.completed.size() == 2, "Shelf completes second task")
 	check(world.get_node("Station").restock_items.all(func(item): return item.visible), "Restocking fills shelf in the game world")
-	check(world.get_node("Station/Shelf").prompt == "Regal ansehen", "Restocked shelf has the correct prompt")
+	check(world.get_node("Station/Shelf").prompt.contains("8/8"), "Restocked shelf has the correct prompt")
 	await use()
 	check(world.get_node("Station").restock_items.size() == 8 and world.completed.size() == 2, "Repeated restocking does not duplicate bottles or tasks")
 	await place(Vector3(4.6, 0.05, 3.6))
@@ -132,7 +136,16 @@ func _run() -> void:
 	check(world.phase == 1, "Shift completion requires the staff side of the checkout")
 	await place(Vector3(4.3, 0.05, 1.3))
 	await use()
-	check(world.phase == 2, "Full shift sequence completes through actual input")
+	check(world.phase == 1, "Shift stays active until delivery task is complete")
+	world.gameplay.elapsed = 18.0
+	await frames(2)
+	await place(world.layout.delivery.global_position + Vector3(-1,0.05,0))
+	await use()
+	await place(world.layout.warehouse.get_node("Supply").global_position + Vector3(0,0.05,1))
+	await use()
+	await place(world.layout.operator_point.global_position + Vector3.UP*0.05)
+	await use()
+	check(world.phase == 2, "Service tasks finish the configured zero-customer test shift")
 	var door := world.get_node("Station/Door")
 	await place(Vector3(0, 0.05, 3.9))
 	Input.action_press("move_backward")

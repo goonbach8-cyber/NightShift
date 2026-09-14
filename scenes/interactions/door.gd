@@ -10,6 +10,7 @@ var moving: bool = false
 
 func _ready() -> void:
 	super._ready()
+	clearance.set_collision_mask_value(3, true)
 	_update_prompt()
 
 
@@ -46,7 +47,7 @@ func interact(_player: Node3D) -> void:
 
 func _occupied() -> bool:
 	for body in clearance.get_overlapping_bodies():
-		if body.is_in_group("player"):
+		if body.is_in_group("player") or body.is_in_group("customer"):
 			return true
 	return false
 

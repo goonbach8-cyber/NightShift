@@ -7,9 +7,16 @@ const PRODUCTS = {
 	&"coffee": preload("res://data/products/coffee.tres"),
 	&"snack": preload("res://data/products/snack.tres")
 }
-var reserve_units: int = 24
-var carried_units: int = 0
-var shop_units: int = 0
+var stock = preload("res://scripts/shop_stock.gd").new()
+var reserve_units: int:
+	get: return stock.warehouse_units
+	set(value): stock.warehouse_units = value
+var carried_units: int:
+	get: return stock.carried_units
+	set(value): stock.carried_units = value
+var shop_units: int:
+	get: return stock.shelf_units
+	set(value): stock.shelf_units = value
 var d: Node3D
 var doors: Array[Node3D] = []
 var sounds: Array[AudioStreamPlayer3D] = []
@@ -171,18 +178,10 @@ func light(at: Vector3, color: Color, energy: float, distance: float) -> void:
 	add_child(lamp)
 
 func take_crate() -> bool:
-	if carried_units != 0 or reserve_units < 8:
-		return false
-	reserve_units -= 8
-	carried_units = 8
-	return true
+	return stock.take_crate()
 
 func restock() -> bool:
-	if carried_units != 8:
-		return false
-	shop_units += carried_units
-	carried_units = 0
-	return true
+	return stock.restock()
 
 func setup_sound() -> void:
 	var listener := AudioListener3D.new()

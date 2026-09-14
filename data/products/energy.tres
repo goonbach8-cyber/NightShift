@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShopProduct" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/shop_product.gd" id="1"]
+[resource]
+script = ExtResource("1")
+product_id = &"energy"
+display_name = "Energy Drink"
+category = &"drinks"
+price_rappen = 350
+shelf_capacity = 6
+initial_warehouse = 12
+initial_shelf = 1

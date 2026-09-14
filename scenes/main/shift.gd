@@ -1,11 +1,11 @@
 extends Node3D
-
 enum Phase { NOT_STARTED, ACTIVE, COMPLETE }
 var phase: Phase = Phase.NOT_STARTED
 var completed: Dictionary = {}
-var message_time: float = 0.0
+var message_time: float = 0
 var muted: bool = false
-
+var gameplay: Node
+var layout: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -13,101 +13,90 @@ var muted: bool = false
 @onready var ambience: AudioStreamPlayer = $Ambience
 @onready var feedback: AudioStreamPlayer = $Feedback
 
-
 func _ready() -> void:
+	layout = Node.new()
+	layout.name = "GameplayLayout"
+	layout.set_script(preload("res://scripts/gameplay_layout.gd"))
+	add_child(layout)
+	gameplay = Node.new()
+	gameplay.name = "ShiftLoop"
+	gameplay.set_script(preload("res://scripts/night_shift_loop.gd"))
+	add_child(gameplay)
+	gameplay.setup(layout)
+	gameplay.notice.connect(_say)
+	gameplay.changed.connect(_update_objective)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
 	$Station/Door.blocked.connect(func(): _say("Der Durchgang muss frei bleiben."))
 	ambience.stream = _tone(true)
 	feedback.stream = _tone(false)
 	ambience.play()
+	$HUD/ObjectiveBackdrop.offset_right = 980
+	$HUD/ObjectiveBackdrop.offset_bottom = 212
+	objective.offset_right = 960
+	objective.offset_bottom = 215
+	objective.add_theme_font_size_override("font_size",18)
+	layout.checkout.prompt = "Kassieren / Schicht abschließen"
 	_update_objective()
-
 
 func _process(delta: float) -> void:
 	var target: Node3D = player.interaction_target
 	prompt.text = "[E]  " + target.prompt if is_instance_valid(target) else ""
-	message_time = maxf(0.0, message_time - delta)
-	message.visible = message_time > 0.0
-
+	message_time = maxf(0,message_time-delta)
+	message.visible = message_time > 0
 
 func _exit_tree() -> void:
-	# Release synthesized streams explicitly on scene reload and shutdown.
 	ambience.stop()
 	feedback.stop()
 	ambience.stream = null
 	feedback.stream = null
 
-
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo():
 		return
+	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_TAB and phase == Phase.ACTIVE:
+		gameplay.cycle_supply()
 	if event.is_action_pressed("mute_audio"):
 		muted = not muted
-		ambience.volume_db = -80.0 if muted else -30.0
-		feedback.volume_db = -80.0 if muted else -22.0
+		ambience.volume_db = -80 if muted else -30
+		feedback.volume_db = -80 if muted else -22
 		_say("Ton aus" if muted else "Ton an")
 	if event.is_action_pressed("restart_shift") and phase == Phase.COMPLETE:
 		get_tree().reload_current_scene()
 
-
-func _on_used(action_id: StringName) -> void:
+func _on_used(action: StringName) -> void:
 	if phase == Phase.COMPLETE:
-		_say("Kontrollrunde erledigt. Mit R erneut spielen.")
+		_say("Schicht beendet. Mit R erneut spielen.")
 		return
-	if action_id == &"start":
+	if action == &"start":
 		if phase == Phase.NOT_STARTED:
 			phase = Phase.ACTIVE
-			_say("23:40. Kühlung prüfen und Getränke auffüllen. Danach an der Kasse bestätigen.")
+			gameplay.start()
 		else:
-			_say("Kühlung und Getränke kontrollieren, danach zur Kasse.")
+			_say("Kunden bedienen, Wasser nachfüllen, Kühlung und Lieferung erledigen.")
 	elif phase == Phase.NOT_STARTED:
-		_say("Lies zuerst den Schichtzettel am Arbeitsplatz hinter der Kasse.")
-	elif action_id == &"supply":
-		if completed.has(&"shelf"):
-			_say("Das Getränkeregal ist bereits aufgefüllt.")
-			return
-		if $Station/ServiceAnnex.take_crate():
-			_say("Getränkekiste aufgenommen. Bringe die 8 Flaschen zum Getränkeregal.")
-		else:
-			_say("Du trägst bereits eine Kiste oder der Vorrat ist aufgebraucht.")
-	elif action_id in [&"cooler", &"shelf"]:
-		if completed.has(action_id):
-			_say("Bereits erledigt.")
-		else:
-			if action_id == &"shelf" and not $Station/ServiceAnnex.restock():
-				_say("Hole zuerst eine Getränkekiste aus dem Lager rechts neben dem Shop.")
-				return
-			completed[action_id] = true
-			if action_id == &"shelf":
-				$Station.complete_restock()
-			_say("Kühlung: 4 °C. Alles in Ordnung." if action_id == &"cooler" else "Getränke aufgefüllt. Das Regal ist bereit.")
-	elif action_id == &"finish":
-		if $Player.global_position.z > $Station/Register.global_position.z - 0.5:
-			_say("Schliesse die Kontrollrunde am Bedienplatz hinter der Kasse ab.")
-			return
-		if completed.size() == 2:
+		_say("Lies zuerst den Schichtzettel am Mitarbeiterplatz.")
+	elif not gameplay.preparing:
+		gameplay.interact(action,player)
+		if action == &"finish" and layout.at_operator(player) and gameplay.can_finish():
 			phase = Phase.COMPLETE
-			_say("00:05. Kontrollrunde abgeschlossen. Einen ruhigen Dienst!", 8.0)
-		else:
-			_say("Es fehlen noch Aufgaben auf deinem Schichtzettel.")
+			gameplay.active = false
+			_say("Die Nachtschicht ist abgeschlossen. Gute Heimfahrt!",8)
+	completed = gameplay.tasks
 	_update_objective()
-
 
 func _update_objective() -> void:
 	if phase == Phase.NOT_STARTED:
-		objective.text = "NIGHTSHIFT  /  23:40\nLies den Schichtzettel am Arbeitsplatz hinter der Kasse."
+		objective.text = "NIGHTSHIFT / SCHICHTBEGINN\nLies den Schichtzettel am Mitarbeiterplatz hinter der Kasse."
 	elif phase == Phase.ACTIVE:
-		objective.text = "NIGHTSHIFT  /  KONTROLLRUNDE\n%s Kühlung prüfen    %s Getränke auffüllen\n%s" % ["[x]" if completed.has(&"cooler") else "[ ]", "[x]" if completed.has(&"shelf") else "[ ]", "Danach: an der Kasse bestätigen." if completed.has(&"shelf") else ("Kiste dabei: zum Getränkeregal." if $Station/ServiceAnnex.carried_units > 0 else "Nachfüllkiste: Lager rechts neben dem Shop.")]
+		objective.text = "Kundenwege werden vorbereitet …" if gameplay.preparing else gameplay.status_text()
 	else:
-		objective.text = "NIGHTSHIFT  /  00:05\nKontrollrunde abgeschlossen.  [R] Erneut spielen"
-
+		objective.text = "SCHICHT BEENDET\n%d Kunden | %d verloren | %d Artikel | CHF %.2f | %d Aufgaben\n[R] Neue Schicht" % [gameplay.served,gameplay.lost_sales,gameplay.sold_units,float(gameplay.revenue_rappen)/100,gameplay.tasks.size()]
 
 func _say(text: String, seconds: float = 4.5) -> void:
 	message.text = text
 	message_time = seconds
 	feedback.play()
-
 
 func _tone(looping: bool) -> AudioStreamWAV:
 	# Small original synthesized placeholders, generated once; no external assets.

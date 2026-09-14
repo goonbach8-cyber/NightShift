@@ -116,6 +116,7 @@ func architecture() -> void:
 	# Narrow display islands leave the centre and perimeter routes open.
 	for x in [-2.6,2.6]:
 		var body := StaticBody3D.new()
+		body.name = "SnackIsland" if x < 0 else "TravelIsland"
 		body.position = Vector3(x,0,-1.8)
 		add_child(body)
 		var shape := BoxShape3D.new()

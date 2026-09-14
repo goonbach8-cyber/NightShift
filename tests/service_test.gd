@@ -47,7 +47,12 @@ func run() -> void:
 	root.add_child(world)
 	player = world.get_node("Player")
 	annex = world.get_node("Station/ServiceAnnex")
+	world.gameplay.customer_count = 0
 	world._on_used(&"start")
+	while world.gameplay.preparing:
+		await process_frame
+	world.gameplay.stock.shelf_units = 0
+	world.gameplay.stock.changed.emit()
 	player.position = Vector3(6,0.05,-2.2)
 	await create_timer(0.5).timeout
 	await use()
