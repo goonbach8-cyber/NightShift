@@ -6,7 +6,9 @@ func whole(value: Variant, maximum: int = 1000000000) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floorf(float(value)) and value >= 0 and value <= maximum
 
 func valid(data: Variant, inventory: Resource) -> bool:
-	if not data is Dictionary or data.get("version") != 1:
+	if not data is Dictionary:
+		return false
+	if not whole(data.get("version"),1) or int(data.version) != 1:
 		return false
 	if not whole(data.get("revenue")) or not whole(data.get("shifts")) or not data.get("stocks") is Dictionary:
 		return false
@@ -31,8 +33,10 @@ func snapshot(loop: Node) -> Dictionary:
 func write_checkpoint(loop: Node) -> bool:
 	if loop.active or loop.preparing or not loop.can_finish() or not loop.customers.is_empty() or not loop.inventory.reservations.is_empty():
 		return false
-	var data := snapshot(loop)
-	if not valid(data,loop.inventory):
+	return store_data(snapshot(loop),loop.inventory)
+
+func store_data(data: Dictionary, inventory: Resource) -> bool:
+	if not valid(data,inventory):
 		return false
 	var temporary := path+".tmp"
 	var file := FileAccess.open(temporary,FileAccess.WRITE)
@@ -47,7 +51,7 @@ func write_checkpoint(loop: Node) -> bool:
 	# Preserve the previous valid checkpoint before replacement.
 	if FileAccess.file_exists(path):
 		var previous: Variant = read_data(path)
-		if valid(previous,loop.inventory) and DirAccess.copy_absolute(path,path+".bak") != OK:
+		if valid(previous,inventory) and DirAccess.copy_absolute(path,path+".bak") != OK:
 			return false
 	return DirAccess.rename_absolute(temporary,path) == OK
 

@@ -132,12 +132,12 @@ func architecture() -> void:
 			for side in [-0.5,0.5]:
 				for i in 4:
 					var px := -0.46 + i * 0.30
-					package(Vector3(px,y+0.17,side),i,body)
+					if x > 0: package(Vector3(px,y+0.17,side),i,body)
 				box(Vector3(0,y+0.025,side*1.5),Vector3(1.28,0.085,0.025),"344b4b",body)
 				for px in [-0.45,0.0,0.45]:
 					box(Vector3(px,y+0.025,side*1.53),Vector3(0.18,0.045,0.012),"ddd4b3",body)
 		box(Vector3(0,1.0,0),Vector3(1.3,0.11,0.18),"246463",body)
-		sign_text("SNACKS" if x < 0 else "UNTERWEGS",Vector3(0,1.02,0.10),1.0,body)
+		sign_text("CHIPS" if x < 0 else "UNTERWEGS",Vector3(0,1.02,0.10),1.0,body)
 
 func shop_fittings() -> void:
 	var cooler := station.get_node("Cooler")
@@ -153,8 +153,6 @@ func shop_fittings() -> void:
 		box(Vector3(x,0.92,0.47),Vector3(0.045,1.22,0.08),"9caaa5",cooler)
 	for y in [0.4,0.8,1.2]:
 		box(Vector3(0,y,0.07),Vector3(1.3,0.035,0.68),"bcc7be",cooler)
-		for i in 7:
-			bottle(Vector3(-0.54+i*0.18,y+0.13,0.27),["557b69","b58c45","577d90"][i%3],cooler,0.8)
 	for x in [-0.08,0.08]:
 		bevel(Vector3(x,0.94,0.57),Vector3(0.035,0.39,0.05),"bcc7be",cooler)
 	# Subtle glass panes stay behind the player's walkable area.
@@ -169,7 +167,7 @@ func shop_fittings() -> void:
 	for x in [-0.60,0.60]:
 		box(Vector3(x,0.95,0.54),Vector3(0.022,1.03,0.025),"b6efea",cooler,true)
 	box(Vector3(0,1.67,0.1),Vector3(1.5,0.18,0.78),"1a4b50",cooler)
-	sign_text("KALT / 4 °C",Vector3(0,1.67,0.51),1.15,cooler)
+	sign_text("ENERGY / 4 °C",Vector3(0,1.67,0.51),1.15,cooler)
 	var shelf := station.get_node("Shelf")
 	for x in [-0.86,0.86]:
 		box(Vector3(x,0.72,0),Vector3(0.055,1.42,0.65),"a3aaa0",shelf)
@@ -184,7 +182,7 @@ func shop_fittings() -> void:
 		for x in [-0.6,0.0,0.6]:
 			box(Vector3(x,y,0.36),Vector3(0.22,0.045,0.015),"ddd4b3",shelf)
 	box(Vector3(0,1.5,0),Vector3(1.8,0.19,0.66),"286663",shelf)
-	sign_text("GETRÄNKE",Vector3(0,1.5,0.34),1.4,shelf)
+	sign_text("WATER",Vector3(0,1.5,0.34),1.4,shelf)
 	var till := station.get_node("Register")
 	till.get_node("Terminal").get_child(0).hide()
 	bevel(Vector3(0,1.02,0),Vector3(1.94,0.09,1.04),"7e8981",till)

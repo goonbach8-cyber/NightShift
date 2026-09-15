@@ -23,6 +23,7 @@ func run() -> void:
 	root.add_child(world)
 	current_scene = world
 	bind_world()
+	set_meta("nightshift_menu_session",true)
 	var checkpoint_path := "user://nightshift_campaign_test_%d.json" % Time.get_ticks_usec()
 	world.checkpoint.path = checkpoint_path
 	for night in 2:
@@ -32,6 +33,7 @@ func run() -> void:
 		await use()
 		while loop.preparing: await process_frame
 		check(loop.active and loop.career_shifts == night,"Configured night begins: %d" % (night+1))
+		await walk(layout.radio_point.get_node("Approach").global_position)
 		await key(KEY_T)
 		check(world.radio.enabled,"Radio toggles through real key input")
 		await walk(layout.operator_point.global_position)
@@ -62,6 +64,8 @@ func run() -> void:
 		if not await await_customer():
 			await finish()
 			return
+		check(loop.story_flags.get(&"noticed_call",false),"Main story presented at staffed checkout")
+		await capture("night%d-story-hint" % (night+1))
 		await key(KEY_F)
 		check(loop.dialogue.active,"Customer dialogue opens during trading")
 		for i in 5:
@@ -82,6 +86,9 @@ func run() -> void:
 		check(loop.served == loop.customer_count and loop.lost_sales == 0,"All customers served in night %d" % (night+1))
 		check(loop.revenue_rappen == [3020,3590][night] and loop.sold_units == [11,13][night],"Night basket statistics match exact expected totals")
 		check(loop.event_history.has(StringName("night_%d_main" % (night+1))),"Guaranteed main event happened during shift")
+		await use()
+		check(world.phase == world.Phase.ACTIVE,"Checkout does not end the night")
+		await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
 		await use()
 		check(world.phase == world.Phase.COMPLETE,"Night can finish")
 		await capture("night%d-complete" % (night+1))

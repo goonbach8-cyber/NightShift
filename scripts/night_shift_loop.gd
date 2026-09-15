@@ -285,7 +285,13 @@ func fill_shelf(id: StringName) -> void:
 		tasks[&"restock"] = true
 		notice.emit(inventory.products[id].display_name+" aufgefüllt.")
 	else:
-		notice.emit("Passende Nachfüllware im Lager holen (TAB wählt Produkt).")
+		var carried: StringName = inventory.carried_product()
+		if carried != &"" and carried != id:
+			notice.emit("You are carrying %s. This area needs %s." % [inventory.products[carried].display_name,inventory.products[id].display_name])
+		elif inventory.stocks[id].shelf_units >= inventory.stocks[id].capacity:
+			notice.emit("This display is already full.")
+		else:
+			notice.emit("Collect matching stock in the warehouse. [TAB] selects a product there.")
 
 func interact(action: StringName, player: Node3D) -> void:
 	if String(action).begins_with("stock_"):
@@ -297,7 +303,7 @@ func interact(action: StringName, player: Node3D) -> void:
 				notice.emit("Waste bin emptied. Service check complete.")
 			&"cooler":
 				tasks[&"cooler"] = true
-				if inventory.carried_product() == &"energy":
+				if inventory.carried_product() != &"":
 					fill_shelf(&"energy")
 				else:
 					notice.emit("Kühlung kontrolliert: 4 °C.")
@@ -349,4 +355,4 @@ func status_text() -> String:
 	if scanned_owner != 0: till += " | scanned %d — [E] scan/pay" % scanned_units
 	if required_tasks.has(&"service"): till += " | %s Waste bin" % ("[x]" if tasks.has(&"service") else "[ ]")
 	carry = definition.title+" | "+carry
-	return "SCHICHT %d/%d bedient | %d verloren | CHF %.2f | %d Artikel\n%s\n%s\n%s Kühlung  %s Nachfüllen  %s Lieferung\n%s\n%s" % [served,customer_count,lost_sales,float(revenue_rappen)/100,sold_units," · ".join(rows),carry,"[x]" if tasks.has(&"cooler") else "[ ]","[x]" if tasks.has(&"restock") else "[ ]","[x]" if tasks.has(&"delivery") else "[ ]",till,"Schichtende an der Kasse bestätigen." if can_finish() else ("Lieferung im Hof abholen." if delivery_ready else "! = knapp / reserviert. Passende Ware nachfüllen.")]
+	return "SCHICHT %d/%d bedient | %d verloren | CHF %.2f | %d Artikel\n%s\n%s\n%s Kühlung  %s Nachfüllen  %s Lieferung\n%s\n%s" % [served,customer_count,lost_sales,float(revenue_rappen)/100,sold_units," · ".join(rows),carry,"[x]" if tasks.has(&"cooler") else "[ ]","[x]" if tasks.has(&"restock") else "[ ]","[x]" if tasks.has(&"delivery") else "[ ]",till,"Finish the night at the staff shift notes." if can_finish() else ("Lieferung im Hof abholen." if delivery_ready else "! = knapp / reserviert. Passende Ware nachfüllen.")]

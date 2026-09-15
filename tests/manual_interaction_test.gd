@@ -6,6 +6,8 @@ func run() -> void:
 	world = load("res://scenes/main/main.tscn").instantiate()
 	root.add_child(world)
 	current_scene = world
+	var audit = preload("res://tests/native_input_audit.gd").new()
+	world.add_child(audit)
 	world.gameplay.customer_count = 1
 	world.gameplay.order_patterns.assign([{&"water":1}])
 	world.gameplay.required_tasks.clear()

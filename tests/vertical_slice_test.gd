@@ -144,6 +144,9 @@ func run() -> void:
 		await create_timer(0.25).timeout
 	check(loop.departed == 4 and loop.customers.is_empty(),"All paid customers leave without lingering")
 	await use()
+	check(world.phase == world.Phase.ACTIVE,"Checkout does not end the night")
+	await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
+	await use()
 	check(world.phase == world.Phase.COMPLETE,"Complete loop ends the shift")
 	await capture("shift-complete")
 	var restart := InputEventAction.new()

@@ -43,7 +43,8 @@ func _ready() -> void:
 	for y in [0.15, 0.65, 1.15]:
 		_box(shelf, "Shelf", Vector3(0, y, 0), Vector3(1.8, 0.09, 0.65), Color("69736b"))
 		for x in [-0.6, -0.2, 0.2, 0.6]:
-			var stock := _box(shelf, "Stock", Vector3(x, y + 0.18, 0), Vector3(0.16, 0.27, 0.2), Color("947353"), false)
+			if y < 0.2: continue
+			var stock := _box(shelf, "Stock", Vector3(x, y + 0.18, 0.39), Vector3(0.16, 0.27, 0.2), Color("947353"), false)
 			if y > 0.2:
 				stock.hide()
 				restock_items.append(stock)

@@ -79,6 +79,9 @@ func run() -> void:
 		await create_timer(0.25).timeout
 	check(loop.departed == 6 and loop.inventory.reservations.is_empty(),"All customers exit and no reservations leak")
 	await use()
+	check(world.phase == world.Phase.ACTIVE,"Checkout does not end the night")
+	await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
+	await use()
 	check(world.phase == world.Phase.COMPLETE,"Multi-product shift completes")
 	await capture("multi-complete")
 	var event := InputEventAction.new()

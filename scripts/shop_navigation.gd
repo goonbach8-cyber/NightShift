@@ -76,11 +76,11 @@ func path(from: Vector3, to: Vector3, avoid: Array[Vector3] = []) -> PackedVecto
 	var temporary: Array[Vector2i] = []
 	for obstacle in avoid:
 		var center := Vector2i(roundi(obstacle.x/cell),roundi(obstacle.z/cell))
-		for x in range(-1,2):
-			for y in range(-1,2):
+		for x in range(-2,3):
+			for y in range(-2,3):
 				var id := center+Vector2i(x,y)
 				var cell_position := Vector2(id.x*cell,id.y*cell)
-				var near_obstacle := cell_position.distance_to(Vector2(obstacle.x,obstacle.z)) < 0.5
+				var near_obstacle := cell_position.distance_to(Vector2(obstacle.x,obstacle.z)) < 0.72
 				if near_obstacle and id != start and id != end and grid.region.has_point(id) and not grid.is_point_solid(id):
 					grid.set_point_solid(id,true)
 					temporary.append(id)

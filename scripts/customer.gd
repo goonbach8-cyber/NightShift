@@ -9,6 +9,7 @@ var has_product: bool = false
 var paid: bool = false
 var stuck_time: float = 0
 var retry_time: float = 0
+var replan_elapsed: float = 0
 var walking: bool = false
 var destination_version := Vector3.INF
 var order: Dictionary = {}
@@ -75,6 +76,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = 0
 	velocity.z = 0
 	if walking and is_instance_valid(target):
+		replan_elapsed += delta
+		if replan_elapsed >= 1.2:
+			plan(true)
+			replan_elapsed = 0
 		if not destination_version.is_equal_approx(target.global_position):
 			plan()
 		for door in doors:
