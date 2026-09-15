@@ -1,6 +1,6 @@
 extends RefCounted
 var path := "user://nightshift_settings.cfg"
-var values := {"Master": 0.8, "Music": 0.7, "SFX": 0.8, "fullscreen": false}
+var values := {"Master": 0.8, "Music": 0.7, "SFX": 0.8, "Ambience": 0.7, "fullscreen": false}
 
 func load_settings() -> void:
 	var config := ConfigFile.new()
@@ -14,11 +14,13 @@ func load_settings() -> void:
 	apply()
 
 func apply() -> void:
-	for bus in ["Master", "Music", "SFX"]:
+	for bus in ["Master", "Music", "SFX", "Ambience", "Radio"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
 			AudioServer.set_bus_name(AudioServer.bus_count - 1, bus)
-		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bus), linear_to_db(values[bus]))
+		# Music is the legacy saved key; the dedicated radio bus inherits its gain.
+		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bus), 0 if bus == "Radio" else linear_to_db(values[bus]))
+	AudioServer.set_bus_send(AudioServer.get_bus_index("Radio"),"Music")
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if values.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 

@@ -30,6 +30,29 @@ func run() -> void:
 	director.setup(definitions,{}, {})
 	director.advance(0,0)
 	check(fired.size() == 4,"New night resets cooldown clock")
+	var gated = preload("res://scripts/night_event.gd").new()
+	gated.event_id = &"task_area_gate"
+	gated.main_event = true
+	gated.after_seconds = 0
+	gated.required_task = &"cooler"
+	gated.required_event = &"first"
+	gated.required_flag = &"permission"
+	gated.required_area = &"stockroom"
+	definitions.assign([gated])
+	var history := {}
+	var flags := {}
+	director.setup(definitions,history,flags)
+	director.advance(0,1,{&"cooler":true})
+	check(not history.has(gated.event_id),"Task alone cannot bypass story prerequisites")
+	history[&"first"] = true
+	flags[&"permission"] = true
+	director.set_area(&"stockroom",true)
+	director.advance(0,1)
+	check(not history.has(gated.event_id),"Area and story prerequisites still require the task")
+	director.advance(0,1,{&"cooler":true})
+	check(history.has(gated.event_id),"Combined task, prior event, flag and area trigger once")
+	director.set_area(&"stockroom",false)
+	check(not director.occupied_areas.has(&"stockroom"),"Leaving area clears occupancy")
 	director.queue_free()
 	await process_frame
 	print("EVENT SPACING TESTS: %d failure(s)" % failures)

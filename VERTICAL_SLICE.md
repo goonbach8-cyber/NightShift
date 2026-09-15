@@ -1,78 +1,44 @@
-# NightShift — aktueller spielbarer Stand
+# NightShift / 03:17 — playable prototype
 
-Stand 14.09.2026. Funktionalität vor Design. Bestehende Map, Pixel-Player, Kamera, Lager, WC und Lieferhof bleiben erhalten. Dies sind kurze System-Prototypen, nicht die fertigen 5–7 Story-Nächte oder fünf Stunden Spielinhalt.
+Updated 15 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. Six authored nights remain the target; current short test shifts are not five hours of finished story.
 
-## Spielen
+## Playing
 
-1. Am Schichtzettel hinter der Kasse mit **E** starten.
-2. Kunden besuchen Wasserregal, Energy-Kühler und Snack-Insel entsprechend ihrem Warenkorb. Vom Mitarbeiterplatz an der Kasse **E** pro Artikel zum Scannen, danach **E** zur Zahlung. Erst die Zahlung verändert Bestand und Umsatz.
-3. **TAB** wählt Nachfüllware. Im Lager am Nachfüllpunkt **E** zum Aufnehmen, dann am passenden Regal **E** zum Auffüllen. Nur eine Ladung gleichzeitig. Die Bestandsanzeigen markieren knappe oder vollständig reservierte Produkte mit `!`.
-4. Kühlung mit **E** kontrollieren. Gemischte Lieferung erscheint nach 18 Sekunden im Lieferhof; aufnehmen und am Lager-Nachfüllpunkt abgeben. Ab Night 2 zusätzlich den Abfalleimer links neben dem Eingang kontrollieren/leeren.
-5. **F** eröffnet ein kurzes Gespräch mit dem vordersten wartenden Kunden. **Space** blättert weiter; **1/2** wählen angebotene Antworten. Während des Gesprächs wird nicht versehentlich kassiert und die Geduld dieses Kunden pausiert.
-6. Nach Kunden und Aufgaben Schichtende an der Kasse bestätigen. **N** speichert und wechselt zur nächsten Nacht. **F5** speichert nur den Abschluss. **R** startet eine frische Demo; anschließend lädt **F9** den letzten Abschluss, bevor die nächste Schicht gestartet wird.
+- Startup opens **New Game / Continue / Settings / Quit**. Existing progress requires confirmation before New Game. Continue accepts a valid checkpoint or backup.
+- **WASD** moves. **E** uses the nearest visible interaction. Start and finish at the staff shift notes behind the counter.
+- At the operator side of checkout, **E** scans one item, then accepts payment. The contextual panel names the scanned item, shows scanned/remaining quantities and the scanned subtotal. Stock and revenue change only on payment.
+- **F** talks to the waiting customer. **Space** advances; **1/2** select offered answers. Special conversations receive a contextual hint. Earlier answers alter later dialogue after loading.
+- Water: rear-right bottle shelf. Energy: rear-left cooler. Chips: snack island. Customers visit each matching product location. Stock controls separate visual slots; empty displays are actually empty.
+- At the warehouse supply point, **TAB** selects a product and **E** collects it. Carry one product type; refill only its matching display. Collect mixed delivery in the yard and deposit it at supply.
+- **E** checks refrigeration. Night 2 adds waste-bin service. Night 3 instead adds a WC check/cleaning point with a visible floor mark.
+- Radio controls work only at the physical radio: **E/T** power, **Y** next track, **+/-** local volume. **M** mutes audio globally.
+- **ESC** pauses; Resume, Settings and Main Menu are available. Pause freezes gameplay, customer patience and dialogue input. Resume clears held movement actions.
+- At completion, the transition shows customers, items, revenue, lost customers and tasks. Continue writes the safe boundary checkpoint and loads the next night. Returning mid-shift does not save active customers.
 
-**WASD:** Bewegung. **T:** Radio an/aus. **Y:** nächster Track. **+/-:** Radiolautstärke. **M:** global stumm. Die Radiotracks sind zwei eigene synthetisierte Platzhalter. Custom Music Folder und ein eigener Streamer-Schalter sind noch nicht enthalten.
+## Nights and story prototypes
 
-## Funktionsumfang
+- Night 1: 6 customers, 8-second spawn spacing, refrigeration/restock/delivery. Guaranteed checkout mystery and a two-answer conversation.
+- Night 2: 8 customers, 6-second spacing, waste task, radio event and a follow-up responding to the earlier answer.
+- Night 3: 7 customers, 9-second spacing, WC task, its own main-event text and a later stockroom-triggered carton movement. The carton remains displaced during the night.
+- Events support time, sales, prior event, story flag, task and player-area prerequisites. Configurable spacing prevents simultaneous unrelated events. Text waits for a relevant location; active dialogue postpones presentation and preserves reading time.
+- This is prototype content. Josh's full handover/denial, new road, depot, Redwood/Redwater transitions, authored Nights 4–6 and standalone demo are not implemented.
 
-- Drei Produkte mit separaten Lager-, Regal-, Reservierungs- und Verkaufsbeständen. Reservierungen gehören einem konkreten Kunden. Warenkörbe werden vollständig abgerechnet oder bei Abbruch freigegeben.
-- Unterschiedliche Warenkörbe, Mengen, Geschwindigkeit und Geduld. Maximal vier aktive Kunden/Queue-Plätze; weitere Kunden erscheinen, wenn wieder Platz frei ist. Unbediente Kunden können gehen, ohne Reservierungen zu hinterlassen.
-- Night 1: sechs Kunden, drei Aufgaben. Folgenacht-Vorlage: acht Kunden, kürzerer Spawnabstand und zusätzlicher Serviceauftrag. Night 3 und weitere Indizes nutzen derzeit dieselbe Folgenacht-Vorlage, keine ausgearbeiteten Story-Nächte.
-- Main Events passieren unter ihren konfigurierten Bedingungen garantiert einmal; variable Events würfeln einmal bei erfüllten Bedingungen. Erlebte Events und Entscheidungsflags werden zwischen Nächten erhalten.
-- Mystery-Prototypen: widersprüchlicher Wartungshinweis/Kundendialog, kurzer langsamer Lichtabfall mit Wiederherstellung, kurze Radio-Unterbrechung. Die Texte sind austauschbare Testinhalte, keine endgültige Erklärung der Geschichte.
+## Audio and diagnostics
 
-## Daten und Komponenten
+Settings independently control Master, Radio, SFX and Ambience. The saved `Music` key remains compatible and controls the Radio bus via its parent bus. Cooler, warehouse and wind emitters use Ambience; door and interaction sounds use SFX. Built-in audio is synthesized placeholder material. Custom music and streamer mode remain optional backlog.
 
-| Datei | Verantwortung |
-|---|---|
-| `scripts/shop_product.gd`, `data/products/*.tres` | Name, Kategorie, Rappenpreis, Kapazität und Startmengen |
-| `scripts/shop_stock.gd`, `scripts/shop_inventory.gd` | Bestände, kundenbezogene Reservierungen, atomare Warenkörbe, eindeutige Lieferungen |
-| `scripts/customer.gd`, `scripts/shop_navigation.gd` | NPC-Bewegung, physische Kollisionen, Ausweichwege auf flacher Ebene |
-| `scripts/gameplay_layout.gd` | Map-Referenzen, lokale Marker, Produkt-/Servicepunkte und Light-Gruppe |
-| `scripts/night_shift_loop.gd` | Koordination von Einkauf, Queue, Scannen/Zahlung, Aufgaben und Abschluss |
-| `scripts/night_definition.gd`, `scripts/night_catalog.gd` | Konfigurierbare Nächte: Kunden, Spawnrate, Bestellungen, Lieferung, Aufgaben und Events |
-| `scripts/night_event.gd`, `scripts/event_director.gd` | Eventdaten, Bedingungen, Wahrscheinlichkeit, Historie und Trigger-Signal |
-| `scripts/event_effects.gd` | Temporäre Beleuchtungswirkung über Gruppe `night_event_light` |
-| `scripts/dialogue_catalog.gd`, `scripts/dialogue_session.gd` | Getrennte Testtexte/Antworten und Dialogzustand mit Entscheidungsflags |
-| `scripts/shop_radio.gd` | Unabhängiger Radiozustand, Tracks, Lautstärke, Unterbrechung und Mute |
-| `scripts/shift_save.gd` | Validierter zwischen-Schichten-Checkpoint mit Sicherungskopie |
-| `scenes/main/shift.gd` | Eingaben, HUD, Komponentenverbindung und Nachtübergang |
+Normal HUD omits raw stock/reservation and NPC path diagnostics. Launch with `-- --dev-debug` to expose stock totals and customer state/target/path/wait labels. No native input audit is attached in normal play.
 
-Das Layout darf später verändert werden. Kernsysteme verwenden Objekt-Referenzen und Marker. Die konkrete aktuelle Zuordnung liegt im Layout-Adapter. Nach Änderungen an statischen Hindernissen Navigation neu aufbauen (beim Schichtstart automatisch). Die Navigation berücksichtigt auch niedrige Sockel; NPCs laufen beim Nachrücken nicht zum Mittelpunkt ihrer bisherigen Rasterzelle zurück. Keine Treppen-/Mehrstockwerk-Navigation.
+## Tests
 
-## Save/Load
+Run with Godot 4.7.2 CLI, e.g. `godot --headless --path . --script res://tests/checkout_test.gd`.
 
-Datei: `user://nightshift_checkpoint.json`, unter Windows im Godot-Benutzerdatenordner des Projekts. `.bak` enthält die vorherige gültige Version. Die neue Datei wird zunächst als `.tmp` vollständig geschrieben und anschließend ersetzt. Ungültige Primärdaten fallen auf die Sicherung zurück; sind beide ungültig, bleiben aktuelle Daten unverändert.
+- `campaign_test.gd -- --three-nights --shift-layout`: complete 3-night loop on translated map, checkout, stock, tasks, story, boundary saves and customer/reservation cleanup.
+- `story_continuity_test.gd`: both answer branches through Save/Load, F conversation, real Area3D, persistent prop displacement and WC interaction.
+- `campaign_process_test.gd`: stages 1, 2, 3 in separate processes, sharing a unique `--checkpoint=user://campaign_process_<id>.json` and `--stage=N`.
+- `menu_test.gd`, `pause_gameplay_test.gd`: new/continue/backup/settings and frozen gameplay/input while paused.
+- `world_binding_test.gd`, `product_route_test.gd`: independent physical product displays, correct routes and wrong-product rejection.
+- `event_spacing_test.gd`, `presentation_test.gd`, `narrative_test.gd`: trigger prerequisites, cooldowns, reading time, dialogue and radio restoration.
+- `audio_routing_test.gd`, plus existing smoke, inventory, stock, save, service, environment, sidewalk, customer lifecycle/door and queue tests.
 
-Gespeichert werden abgeschlossene Nächte, Gesamtumsatz, Lager- und Regalbestände, Entscheidungen und Eventhistorie. Ein noch getragener Restbestand wird am Nachtübergang ins Lager zurückgeführt. Aktive Kunden, Reservierungen und laufende Dialoge werden nicht gespeichert. Wiederholtes Speichern derselben Schicht verdoppelt die Statistik nicht. Laden ist vor dem Schichtstart möglich. Produktdefinitionen bleiben Projekt-Resources; künftige Änderungen des Produktschemas benötigen gegebenenfalls eine Save-Migration.
-
-## Verifikation
-
-Godot 4.7.2, Compatibility/OpenGL. **431 bestandene Prüfungen** in 17 ausgewerteten erfolgreichen Läufen; deren Logs enthalten keine Godot-Errors oder -Warnings. Frühere Fehlerlogs bleiben im Arbeitsverzeichnis als Diagnosehistorie erhalten.
-
-- Grafischer vollständiger Zwei-Nächte-Test: 14 Kunden, 24 Artikel, CHF 66.10. Tatsächliche Laufwege, E-Scans/Zahlungen, TAB-Auswahl, Nachfüllen, Lieferung, Serviceauftrag, F/Space/Antworten, Radio, Main Events und N-Übergänge. Danach Night 3 vorbereitet, beide Historien und Entscheidung erhalten.
-- Verschobene Map: vollständiger Mehrprodukt-Loop inklusive Reservierungen, Nachfüllen und Zahlung.
-- Vier gleichzeitige Queue-Plätze, acht aufeinanderfolgende Kunden, keine verbleibenden NPCs oder Reservierungen.
-- Save → echter Prozessabschluss → frischer Prozess → Load; fehlende/beschädigte Datei, Backup, Wiederholung und Lade-/Speichersperre während aktiver Schicht.
-- Event-/Dialog-/Radio-Systemtests sowie alle bestehenden Player-, Animations-, Tür-, Service-, Laufweg- und Bestandsregressionen.
-
-Die langen Durchläufe liefen grafisch mit automatisierten Godot-Eingaben und Sichtprüfung der Spielkamera. Der zusätzliche Windows-Nativeingabeversuch konnte keinen erfolgreichen Tastendruck im Spiel nachweisen; er zählt **nicht** als bestandener manueller Playtest. Ein unabhängiger manueller Test bleibt erforderlich.
-
-Wichtige Aufrufe (Godot-Executable entsprechend ersetzen):
-
-```
-godot --path . --script res://tests/campaign_test.gd
-godot --headless --path . --script res://tests/multi_product_test.gd -- --shift-layout
-godot --headless --path . --script res://tests/queue_stress_test.gd
-godot --headless --path . --script res://tests/save_test.gd
-godot --headless --path . --script res://tests/save_process_test.gd -- --write
-godot --headless --path . --script res://tests/save_process_test.gd
-godot --headless --path . --script res://tests/narrative_test.gd
-godot --headless --path . --script res://tests/checkout_test.gd
-```
-
-Die alten Einprodukt-/Queue-Fixtures verwenden ausdrücklich `quick_checkout = true`, um ihre ursprünglichen Prüfungen zu behalten. Standardspiel und Campaign-Test verwenden das mehrstufige Kassieren.
-
-## Noch offen
-
-Unabhängiger manueller Bedienungs-/Verständlichkeitstest; endgültige englische Texte (momentan gemischte Prototyp-UI); echte Night-2/3-Inhalte und Balancing; finales Audio statt Synthese-Platzhaltern; optionaler Musikordner/Streamer Mode. Die fertigen 5–7 Nächte, Storydauer, finale Grafik und finales Layout sind nicht umgesetzt. Sie sollen auf diesen Systemen aufbauen.
+Tests use isolated checkpoint files. Native Windows keyboard/focus testing and fresh human visual/audio review are pending. This session uses only headless CLI and in-engine InputEvents, with no Computer Use or desktop focus changes.

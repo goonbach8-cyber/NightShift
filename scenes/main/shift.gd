@@ -16,6 +16,7 @@ var story_cooldown := 0.0
 var pending_events: Array[Resource] = []
 var dialogue_label: Label
 var checkout_label: Label
+var story_world: Node3D
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -44,8 +45,8 @@ func _ready() -> void:
 	radio = AudioStreamPlayer.new()
 	radio.set_script(preload("res://scripts/shop_radio.gd"))
 	add_child(radio)
-	radio.bus = &"Music"
-	ambience.bus = &"SFX"
+	radio.bus = &"Radio"
+	ambience.bus = &"Ambience"
 	feedback.bus = &"SFX"
 	effects = Node.new()
 	effects.set_script(preload("res://scripts/event_effects.gd"))
@@ -82,7 +83,7 @@ func _ready() -> void:
 	$HUD.add_child(dialogue_label)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
-	$Station/Door.blocked.connect(func(): _say("Der Durchgang muss frei bleiben."))
+	$Station/Door.blocked.connect(func(): _say("Keep the doorway clear."))
 	ambience.stream = _tone(true)
 	feedback.stream = _tone(false)
 	ambience.play()
@@ -99,13 +100,20 @@ func _ready() -> void:
 	if get_tree().get_meta("nightshift_continue",false):
 		get_tree().remove_meta("nightshift_continue")
 		if not checkpoint.load_checkpoint(gameplay): _say("Checkpoint could not be loaded. Start a new shift.")
+	story_world = preload("res://scripts/story_world.gd").new()
+	add_child(story_world)
+	story_world.setup(self)
+	if gameplay.career_shifts >= 6:
+		story_world.ending_started = true
+		menu.show_page("ending")
 	_update_objective()
 
 func _on_event(event: Resource) -> void:
 	pending_events.append(event)
 
 func _process(delta: float) -> void:
-	var special: bool = not gameplay.event_history.is_empty() and not gameplay.story_flags.get(&"asked_about_call",false) and not gameplay.story_flags.get(&"denied_call",false)
+	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(gameplay.event_history,gameplay.story_flags,gameplay.career_shifts+1)
+	var special: bool = content.has("seen_flag") or not content.choices.is_empty()
 	var customer_ready: bool = not gameplay.queue.is_empty() and not gameplay.queue[0].walking
 	checkout_label.visible = customer_ready and layout.at_operator(player) and not gameplay.dialogue.active
 	checkout_label.text = gameplay.checkout_text() if checkout_label.visible else ""
@@ -138,7 +146,7 @@ func _process(delta: float) -> void:
 	var target: Node3D = player.interaction_target
 	prompt.text = "[E]  " + target.prompt if is_instance_valid(target) else ""
 	if customer_ready and layout.at_operator(player) and not gameplay.dialogue.active:
-		prompt.text += "   [F] Talk" + (" — Ask about the phone call" if special else "")
+		prompt.text += "   [F] Talk" + (" — About the phone call" if special else "")
 	message_time = maxf(0,message_time-delta)
 	message.visible = message_time > 0
 	dialogue_label.visible = gameplay.dialogue.active
@@ -184,18 +192,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_TAB and phase == Phase.ACTIVE:
 		if player.interaction_target == layout.warehouse.get_node("Supply"): gameplay.cycle_supply()
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F5:
-		_say("Schicht gespeichert." if phase == Phase.COMPLETE and checkpoint.write_checkpoint(gameplay) else "Speichern ist nur nach abgeschlossener Schicht möglich.")
+		_say("Night saved." if phase == Phase.COMPLETE and checkpoint.write_checkpoint(gameplay) else "Saving is available between completed nights.")
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F9:
 		if phase == Phase.NOT_STARTED and checkpoint.load_checkpoint(gameplay):
-			_say("Bestände geladen. Nächste Schicht am Schichtzettel starten.")
+			_say("Checkpoint loaded. Start at the staff notes.")
 			_update_objective()
 		else:
-			_say("Kein gültiger Spielstand oder Schicht bereits gestartet.")
+			_say("No valid checkpoint, or the shift has already started.")
 	if event.is_action_pressed("mute_audio"):
 		muted = not muted
 		ambience.volume_db = -80 if muted else -30
 		feedback.volume_db = -80 if muted else -22
-		_say("Ton aus" if muted else "Ton an")
+		_say("Audio muted" if muted else "Audio on")
 	if event.is_action_pressed("restart_shift") and phase == Phase.COMPLETE:
 		get_tree().reload_current_scene()
 
@@ -205,7 +213,7 @@ func _on_used(action: StringName) -> void:
 		_say("Radio on" if radio.enabled else "Radio off")
 		return
 	if phase == Phase.COMPLETE:
-		_say("Schicht beendet. Mit R erneut spielen.")
+		_say("Night complete. Continue from the summary.")
 		return
 	if action == &"start":
 		if phase == Phase.ACTIVE and gameplay.can_finish():
@@ -214,12 +222,15 @@ func _on_used(action: StringName) -> void:
 			if get_tree().get_meta("nightshift_menu_session",false): menu.show_page("complete")
 			_say("Night complete. Your summary is ready.",8)
 		elif phase == Phase.NOT_STARTED:
+			if get_tree().get_meta("nightshift_menu_session",false) and not gameplay.definition.handover.is_empty() and not gameplay.story_flags.get(story_world.handover_flag(),false):
+				story_world.interact(&"josh")
+				return
 			phase = Phase.ACTIVE
 			gameplay.start()
 		else:
-			_say("Kunden bedienen, Wasser nachfüllen, Kühlung und Lieferung erledigen.")
+			_say("Serve customers, restock products and complete the shift tasks.")
 	elif phase == Phase.NOT_STARTED:
-		_say("Lies zuerst den Schichtzettel am Mitarbeiterplatz.")
+		_say("First read the shift notes behind the counter.")
 	elif not gameplay.preparing:
 		gameplay.interact(action,player)
 	completed = gameplay.tasks
@@ -227,11 +238,11 @@ func _on_used(action: StringName) -> void:
 
 func _update_objective() -> void:
 	if phase == Phase.NOT_STARTED:
-		objective.text = "NIGHT %d / SHIFT START\nRead the shift notes behind the counter.\nCompleted nights: %d | Total CHF %.2f" % [gameplay.career_shifts+1,gameplay.career_shifts,float(gameplay.career_revenue)/100]
+		objective.text = "%s\n%s\nStart at the staff notes behind the counter.\nCompleted nights: %d | Total CHF %.2f" % [gameplay.definition.title,gameplay.definition.briefing,gameplay.career_shifts,float(gameplay.career_revenue)/100]
 	elif phase == Phase.ACTIVE:
-		objective.text = "Kundenwege werden vorbereitet …" if gameplay.preparing else gameplay.status_text()
+		objective.text = "Preparing customer routes …" if gameplay.preparing else gameplay.status_text()
 	else:
-		objective.text = "SCHICHT BEENDET\n%d Kunden | %d verloren | %d Artikel | CHF %.2f | %d Aufgaben\n[N] Save & next night  [F5] Save  [R] Restart  [F9 at start] Load" % [gameplay.served,gameplay.lost_sales,gameplay.sold_units,float(gameplay.revenue_rappen)/100,gameplay.tasks.size()]
+		objective.text = "NIGHT COMPLETE\n%d customers | %d lost | %d items | CHF %.2f | %d tasks\n[N] Save & next night  [F5] Save  [R] Restart  [F9 at start] Load" % [gameplay.served,gameplay.lost_sales,gameplay.sold_units,float(gameplay.revenue_rappen)/100,gameplay.tasks.size()]
 
 func _say(text: String, seconds: float = 4.5) -> void:
 	message.text = text
@@ -262,5 +273,5 @@ func _tone(looping: bool) -> AudioStreamWAV:
 	return audio
 
 func route_audio(node: Node) -> void:
-	if node is AudioStreamPlayer or node is AudioStreamPlayer3D: node.bus = &"SFX"
+	if node is AudioStreamPlayer or node is AudioStreamPlayer3D: node.bus = node.get_meta("audio_category",&"SFX")
 	for child in node.get_children(): route_audio(child)

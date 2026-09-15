@@ -65,7 +65,7 @@ func show_page(next: String) -> void:
 	column.custom_minimum_size.x = 460
 	column.add_theme_constant_override("separation", 16)
 	center.add_child(column)
-	label("N I G H T S H I F T", 36)
+	label("0 3 : 1 7", 36)
 	label("24 H / SERVICE STATION", 16)
 	match page:
 		"main":
@@ -90,8 +90,8 @@ func show_page(next: String) -> void:
 			button("STAY", func(): show_page("pause"))
 			button("RETURN TO MAIN MENU", return_main)
 		"settings":
-			for bus in ["Master", "Music", "SFX"]:
-				label(bus + " volume", 18)
+			for bus in ["Master", "Music", "SFX", "Ambience"]:
+				label(("Radio" if bus == "Music" else bus) + " volume", 18)
 				var slider := HSlider.new()
 				slider.min_value = 0
 				slider.max_value = 1
@@ -108,8 +108,21 @@ func show_page(next: String) -> void:
 		"complete":
 			label("NIGHT %d COMPLETE" % (world.gameplay.career_shifts + 1), 26)
 			label("%d customers / %d items / CHF %.2f" % [world.gameplay.served, world.gameplay.sold_units, world.gameplay.revenue_rappen / 100.0], 20)
+			label("Lost customers: %d  |  Tasks completed: %d / %d" % [world.gameplay.lost_sales,world.gameplay.tasks.size(),world.gameplay.required_tasks.size()],18)
 			button("CONTINUE TO NEXT NIGHT [N]", next_night)
 			button("RETURN TO MAIN MENU", save_and_return)
+		"ending":
+			label("03:17",32)
+			label("The station looks familiar again.\nThe roadside sign still says Redwater.",20)
+			button("CONTINUE",func(): show_page("josh_call" if preload("res://scripts/clue_catalog.gd").eligible(world.gameplay.story_flags) else "credits"))
+		"josh_call":
+			label("The phone rings.",22)
+			label("Josh: Mike? You noticed the sign, didn't you?\nJosh: I hoped you wouldn't have to ask me about it.\nThe line goes quiet.",20)
+			button("CONTINUE",func(): show_page("credits"))
+		"credits":
+			label("03:17 — END",28)
+			label("Thank you for playing this story prototype.",18)
+			button("MAIN MENU",return_main)
 	status = label("", 16)
 	for child in column.get_children():
 		if child is Button and not child.disabled:
@@ -155,6 +168,14 @@ func continue_game() -> void:
 	get_tree().change_scene_to_file("res://scenes/main/main.tscn")
 
 func next_night() -> void:
+	if world.gameplay.career_shifts >= 5:
+		world.gameplay.story_flags[&"ending_seen"] = true
+		if not world.checkpoint.write_checkpoint(world.gameplay):
+			status.text = "Save failed. Please try again."
+			return
+		world.story_world.ending_started = true
+		show_page("ending")
+		return
 	if not world.checkpoint.write_checkpoint(world.gameplay):
 		status.text = "Save failed. Please try again."
 		return

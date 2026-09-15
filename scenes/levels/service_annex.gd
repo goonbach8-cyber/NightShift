@@ -204,6 +204,7 @@ func setup_sound() -> void:
 
 func ambient(at: Vector3, wind: bool, volume: float, distance: float) -> void:
 	var sound := AudioStreamPlayer3D.new()
+	sound.set_meta("audio_category",&"Ambience")
 	sound.position = at
 	sound.stream = synth(wind,true)
 	sound.volume_db = volume

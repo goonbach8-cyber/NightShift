@@ -1,50 +1,29 @@
-# NightShift
+# NightShift / 03:17
 
-Kleiner Godot-4.7-Prototyp: ein Pixel-Character in einer dreidimensionalen Tankstellenumgebung bei Nacht.
+Godot 4.7.2 psychological-horror/mystery prototype: a 2D pixel character working in a 3D gas station. **03:17** is the planned public title; NightShift remains the internal project name.
 
-## Starten
+The user-designated business/story baseline is summarized in [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md). Current controls, menus, products, three prototype nights, story systems, save boundaries and test commands are documented in [VERTICAL_SLICE.md](VERTICAL_SLICE.md).
 
-`project.godot` mit Godot 4.7.2 öffnen und F5 drücken. Der Player und die angeschrägte orthografische Folgekamera verwenden weiterhin die bestehende Szene. Side-Walk und Side-Idle verwenden einzelne PNGs; vorne und hinten bleibt das ursprüngliche Sheet erhalten.
+## Start
 
-| Aktion | Taste |
-| --- | --- |
-| Bewegen | WASD |
-| Nahegelegenes Objekt benutzen | E |
-| Ton aus/an | M |
-| Nach abgeschlossener Kontrollrunde neu beginnen | R |
+Run `project.godot` with Godot 4.7.2. Startup opens the main menu. New Game begins Night 1; Continue restores a safe between-night checkpoint. Start the shift at the staff notes behind checkout.
 
-## Spielbare Kontrollrunde
+WASD moves, E interacts/scans/accepts payment, F talks, Space advances dialogue, 1/2 select replies, ESC pauses. TAB selects stock only at warehouse supply. T/Y/+/- control the nearby physical radio; M mutes.
 
-1. Zum Schichtzettel links neben dem Eingang gehen und E drücken.
-2. Kühlung hinten links prüfen und Getränke hinten rechts auffüllen, in beliebiger Reihenfolge.
-3. An der Kasse rechts neben dem Eingang die Runde abschliessen.
+Customers visit Water, Energy and Chips locations, reserve products, queue, pay and leave. Refill matching product displays from warehouse stock, receive deliveries and complete the configured service tasks. Finish at the staff notes to save and advance. These are short functional prototypes, not the six finished story nights.
 
-Die Schiebetür in der vorderen Wand lässt sich mit E öffnen. Der kleine Vorplatz ist begehbar. Die Tür schliesst nicht, wenn der Player im Durchgang steht, und öffnet wieder, wenn er während des Schliessens hineinläuft.
+## Automated checks
 
-## Projektstruktur
-
-- `scenes/main/main.tscn`: Hauptszene, Licht, HUD und Audio-Nodes.
-- `scenes/main/shift.gd`: Kontrollrunde, Texte, Neustart und einfache synthetisierte Audio-Platzhalter.
-- `scenes/player/player.tscn` / `player.gd`: CharacterBody3D, SpriteFrames, Kamera, Bewegung und Auswahl naher Interaktionen.
-- `scenes/levels/prototype_room.tscn`: ursprünglicher Raum.
-- `scenes/levels/station.gd`: erzeugt Einrichtung und Vorplatz beim Spielstart und ersetzt die geschlossene Vorderwand durch den Eingang. Diese Ergänzungen sieht man deshalb erst beim Ausführen des Spiels.
-- `scenes/interactions/interactable.gd`: gemeinsame Basis für benutzbare Objekte.
-- `scenes/interactions/door.tscn` / `door.gd`: wiederverwendbare Schiebetür mit Freiraumprüfung.
-- `tests/smoke_test.gd`: automatisierte Regressionstests mit echter Godot-Physik und Input-Ereignissen.
-
-World liegt auf Kollisions-Layer 1, der Player auf Layer 2. Interaktionen sind auf 1,8 Meter begrenzt und prüfen die Sichtlinie gegen World. Es gibt keine Autoloads oder Add-ons.
-
-## Tests ausführen
-
-Im Projektordner mit dem Godot-Kommando bzw. dem vollständigen Pfad zur Godot-Console-EXE:
+Run headlessly without desktop input:
 
 ```text
-godot --headless --editor --import --quit
-godot --headless --script res://tests/smoke_test.gd
-godot --headless --script res://tests/sidewalk_test.gd
+godot --headless --path . --script res://tests/smoke_test.gd
+godot --headless --path . --script res://tests/menu_test.gd
+godot --headless --path . --script res://tests/story_continuity_test.gd
+godot --headless --path . --script res://tests/campaign_test.gd -- --three-nights --shift-layout
 ```
 
-Erwartet: `NIGHTSHIFT TESTS: 0 failure(s)` und Exit-Code 0. Die Tests decken Bewegungsrichtungen, Diagonaltempo, Animationsfortschritt, schnelle Richtungswechsel, Wandkollisionen, Sichtlinien, Aufgabenreihenfolge, Türsicherheit, Vorplatz, Audio-Umschaltung und Neustart ab.
+Require zero failures and inspect logs for script errors/warnings. `-- --dev-debug` enables optional customer and inventory diagnostics. Native keyboard focus and visual presentation still require a later human test.
 
 ## Player-Animation
 

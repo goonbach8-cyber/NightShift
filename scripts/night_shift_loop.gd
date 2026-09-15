@@ -67,6 +67,8 @@ func configure_night(config: Resource) -> void:
 	order_patterns.assign(config.orders)
 	delivery_manifest = config.delivery.duplicate()
 	required_tasks.assign(config.required_tasks)
+	layout.wc_point.available = required_tasks.has(&"wc")
+	layout.wc_mark.visible = required_tasks.has(&"wc") and not tasks.has(&"wc")
 
 func _inventory_changed() -> void:
 	update_supply_prompt()
@@ -85,7 +87,7 @@ func start() -> void:
 	active = true
 	preparing = false
 	spawn_clock = spawn_interval
-	notice.emit("Schicht gestartet. TAB wählt Nachfüllware, E bedient Kasse und Regale.")
+	notice.emit("Shift started. Serve customers and check the task list.")
 	changed.emit()
 
 func _process(delta: float) -> void:
@@ -107,7 +109,7 @@ func _process(delta: float) -> void:
 		delivery_ready = true
 		layout.delivery.available = true
 		layout.delivery_visual.show()
-		notice.emit("Lieferung im Hof: "+inventory.basket_text(delivery_manifest))
+		notice.emit("Delivery in the yard: "+inventory.basket_text(delivery_manifest))
 		changed.emit()
 	for customer in customers.duplicate():
 		# A reachable approach marker has a small browsing radius, avoiding a pile-up
@@ -200,7 +202,7 @@ func abandon_customer(customer: CharacterBody3D) -> void:
 	customer.status_text = "Zu lange gewartet"
 	customer.go_to(layout.spawn_point)
 	update_queue()
-	notice.emit("Ein Kunde geht unbedient. Reservierte Ware ist wieder frei.")
+	notice.emit("A customer left unserved. Their reserved stock is available again.")
 	changed.emit()
 
 func customer_removed(owner_id: int) -> void:
@@ -290,7 +292,7 @@ func checkout() -> bool:
 func cycle_supply() -> void:
 	supply_selection = (supply_selection+1) % inventory.products.size()
 	update_supply_prompt()
-	notice.emit("Nachfüllware gewählt: "+inventory.products[selected_product()].display_name)
+	notice.emit("Selected stock: "+inventory.products[selected_product()].display_name)
 	changed.emit()
 
 func selected_product() -> StringName:
@@ -298,12 +300,12 @@ func selected_product() -> StringName:
 
 func update_supply_prompt() -> void:
 	var id := selected_product()
-	layout.warehouse.get_node("Supply").prompt = "Lieferung einlagern" if delivery_carried else "%s holen (Lager %d) — TAB wechseln" % [inventory.products[id].display_name,inventory.stocks[id].warehouse_units]
+	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else "Collect %s (warehouse %d) — TAB select" % [inventory.products[id].display_name,inventory.stocks[id].warehouse_units]
 
 func fill_shelf(id: StringName) -> void:
 	if inventory.restock(id):
 		tasks[&"restock"] = true
-		notice.emit(inventory.products[id].display_name+" aufgefüllt.")
+		notice.emit(inventory.products[id].display_name+" restocked.")
 	else:
 		var carried: StringName = inventory.carried_product()
 		if carried != &"" and carried != id:
@@ -318,6 +320,12 @@ func interact(action: StringName, player: Node3D) -> void:
 		fill_shelf(StringName(String(action).trim_prefix("stock_")))
 	else:
 		match action:
+			&"wc":
+				if required_tasks.has(&"wc") and not tasks.has(&"wc"):
+					tasks[&"wc"] = true
+					layout.wc_mark.hide()
+					layout.wc_point.available = false
+					notice.emit("WC checked. Floor cleaned.")
 			&"service":
 				tasks[&"service"] = true
 				notice.emit("Waste bin emptied. Service check complete.")
@@ -326,7 +334,7 @@ func interact(action: StringName, player: Node3D) -> void:
 				if inventory.carried_product() != &"":
 					fill_shelf(&"energy")
 				else:
-					notice.emit("Kühlung kontrolliert: 4 °C.")
+					notice.emit("Refrigeration checked: 4 °C.")
 			&"shelf":
 				fill_shelf(&"water")
 			&"supply":
@@ -334,25 +342,25 @@ func interact(action: StringName, player: Node3D) -> void:
 					if inventory.receive_delivery(&"shift_delivery",delivery_manifest):
 						delivery_carried = false
 						tasks[&"delivery"] = true
-						notice.emit("Eingelagert: "+inventory.basket_text(delivery_manifest))
+						notice.emit("Stored: "+inventory.basket_text(delivery_manifest))
 				elif inventory.take_crate(selected_product()):
-					notice.emit("Nachfüllware dabei: "+inventory.products[selected_product()].display_name)
+					notice.emit("Carrying stock: "+inventory.products[selected_product()].display_name)
 				else:
-					notice.emit("Bereits Ware dabei, Regal voll oder Lagerbestand leer.")
+					notice.emit("Already carrying stock, display full, or warehouse empty.")
 			&"delivery":
 				if delivery_ready and inventory.carried_product() == &"":
 					delivery_ready = false
 					delivery_carried = true
 					layout.delivery.available = false
 					layout.delivery_visual.hide()
-					notice.emit("Lieferung dabei. Zum Lager-Nachfüllpunkt bringen.")
+					notice.emit("Carrying delivery. Bring it to warehouse supply.")
 				else:
-					notice.emit("Zuerst getragene Ware ins passende Regal füllen.")
+					notice.emit("First put carried stock in its matching display.")
 			&"finish":
 				if not layout.at_operator(player):
-					notice.emit("Kasse von der Mitarbeiterseite bedienen.")
+					notice.emit("Use checkout from the staff side.")
 				elif not checkout() and not can_finish():
-					notice.emit("Noch kein Kunde bereit. Kunden bedienen und Aufgaben abschließen.")
+					notice.emit("No customer ready yet. Check your other tasks.")
 	update_supply_prompt()
 	changed.emit()
 
@@ -366,14 +374,18 @@ func talk() -> void:
 		story_flags[content.seen_flag] = true
 
 func status_text() -> String:
-	var rows := PackedStringArray()
-	for id in inventory.stocks:
-		var item: Resource = inventory.stocks[id]
-		rows.append("%s %d/%d%s" % [inventory.products[id].display_name,item.shelf_units,item.capacity," !" if item.shelf_units-item.reserved_units <= 1 else ""])
+	var lines := PackedStringArray(["%s | Customers %d/%d | CHF %.2f" % [definition.title,served,customer_count,float(revenue_rappen)/100]])
+	var pending := PackedStringArray()
+	for task in required_tasks:
+		if not tasks.has(task): pending.append(String(task).capitalize())
+	lines.append("Tasks: "+", ".join(pending) if not pending.is_empty() else "Tasks complete")
 	var carried: StringName = inventory.carried_product()
-	var carry: String = "Lieferung dabei → Lager" if delivery_carried else ("Dabei: %s ×%d → Regal" % [inventory.products[carried].display_name,inventory.stocks[carried].carried_units] if carried != &"" else "TAB Nachfüllware: "+inventory.products[selected_product()].display_name)
-	var till: String = "Kasse frei" if queue.is_empty() else "Kasse: "+inventory.basket_text(queue[0].order)
-	if scanned_owner != 0: till += " | scanned %d — [E] scan/pay" % scanned_units
-	if required_tasks.has(&"service"): till += " | %s Waste bin" % ("[x]" if tasks.has(&"service") else "[ ]")
-	carry = definition.title+" | "+carry
-	return "SCHICHT %d/%d bedient | %d verloren | CHF %.2f | %d Artikel\n%s\n%s\n%s Kühlung  %s Nachfüllen  %s Lieferung\n%s\n%s" % [served,customer_count,lost_sales,float(revenue_rappen)/100,sold_units," · ".join(rows),carry,"[x]" if tasks.has(&"cooler") else "[ ]","[x]" if tasks.has(&"restock") else "[ ]","[x]" if tasks.has(&"delivery") else "[ ]",till,"Finish the night at the staff shift notes." if can_finish() else ("Lieferung im Hof abholen." if delivery_ready else "! = knapp / reserviert. Passende Ware nachfüllen.")]
+	if delivery_carried: lines.append("Carrying delivery → warehouse")
+	elif carried != &"": lines.append("Carrying %s ×%d → matching display" % [inventory.products[carried].display_name,inventory.stocks[carried].carried_units])
+	elif delivery_ready: lines.append("Delivery waiting in the yard")
+	if can_finish(): lines.append("Finish at the staff shift notes")
+	if "--dev-debug" in OS.get_cmdline_user_args():
+		for id in inventory.stocks:
+			var item: Resource = inventory.stocks[id]
+			lines.append("%s shelf=%d reserved=%d warehouse=%d" % [id,item.shelf_units,item.reserved_units,item.warehouse_units])
+	return "\n".join(lines)

@@ -29,6 +29,8 @@ var product_points: Dictionary = {}
 var product_nodes: Dictionary = {}
 var product_labels: Dictionary = {}
 var story_areas: Array[Area3D] = []
+var wc_point: Node3D
+var wc_mark: MeshInstance3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -47,7 +49,7 @@ func _ready() -> void:
 	delivery.name = "DeliveryParcel"
 	delivery.set_script(preload("res://scenes/interactions/interactable.gd"))
 	delivery.action_id = &"delivery"
-	delivery.prompt = "Lieferung aufnehmen"
+	delivery.prompt = "Collect delivery"
 	delivery.available = false
 	warehouse.get_node("DeliveryDoor").add_child(delivery)
 	# Parent door root is scaled for its opening; keep the parcel at physical size.
@@ -135,6 +137,28 @@ func _ready() -> void:
 	prop.position = Vector3(0.7,1.05,0.6)
 	model.box(prop,Vector3.ZERO,Vector3(0.38,0.36,0.36),Color("b59a73"))
 	model.box(prop,Vector3(0,0.185,0),Vector3(0.07,0.01,0.36),Color("e0cc9f"))
+	wc_point = Node3D.new()
+	wc_point.name = "WCService"
+	wc_point.set_script(preload("res://scenes/interactions/interactable.gd"))
+	wc_point.action_id = &"wc"
+	wc_point.prompt = "Clean floor / Check WC"
+	wc_point.available = false
+	warehouse.add_child(wc_point)
+	wc_point.position = warehouse.get_node("WCEntry").position+Vector3(-0.3,0,1.2)
+	marker(wc_point,"Approach",Vector3(0,0,-0.25))
+	wc_mark = MeshInstance3D.new()
+	var spill := CylinderMesh.new()
+	spill.top_radius = 0.32
+	spill.bottom_radius = 0.32
+	spill.height = 0.006
+	wc_mark.mesh = spill
+	wc_mark.position.y = 0.014
+	var damp := StandardMaterial3D.new()
+	damp.albedo_color = Color("555b4a")
+	damp.roughness = 0.25
+	wc_mark.material_override = damp
+	wc_point.add_child(wc_mark)
+	wc_mark.hide()
 
 func register_event_lights(node: Node) -> void:
 	if node is Light3D and (node.global_position.distance_to(product_nodes[&"energy"].global_position) < 4 or node.global_position.distance_to(checkout.global_position) < 2.5):
@@ -158,7 +182,7 @@ func sync_products() -> void:
 		var title: String = inventory.products[id].display_name
 		product_labels[id].visible = false
 		product_labels[id].text = "%s%s" % [title," — RESTOCK" if item.shelf_units == 0 else ""]
-		product_nodes[id].prompt = "%s auffüllen (%d/%d)" % [title,item.shelf_units,item.capacity]
+		product_nodes[id].prompt = "Restock %s (%d/%d)" % [title,item.shelf_units,item.capacity]
 	product_nodes[&"energy"].prompt = "Restock Energy" if inventory.carried_product() != &"" else "Check refrigeration"
 
 func marker(parent: Node3D, node_name: String, offset: Vector3) -> Marker3D:
@@ -176,7 +200,7 @@ func sync_stock() -> void:
 	var items: Array = shelf.get_parent().restock_items
 	for i in items.size():
 		items[i].visible = i < warehouse.stock.shelf_units
-	shelf.prompt = "Wasser auffüllen (%d/%d)" % [warehouse.stock.shelf_units,warehouse.stock.capacity]
+	shelf.prompt = "Restock water (%d/%d)" % [warehouse.stock.shelf_units,warehouse.stock.capacity]
 
 func at_operator(player: Node3D) -> bool:
 	return player.global_position.distance_to(operator_point.global_position) < 0.85

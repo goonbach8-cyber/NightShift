@@ -1,34 +1,43 @@
-# Exakter Fortsetzungspunkt — 14.09.2026
+# Exact continuation — 15 September 2026
 
-Nicht Produkt-, Queue-, Save-, Event- oder Dialogsystem erneut bauen. Aktueller Überblick: `VERTICAL_SLICE.md`.
+## Constraints and product baseline
 
-## Erreicht
+- User is working on the same computer. **No Computer Use, desktop focus, native keyboard/mouse injection, or GUI editor automation.** Use CLI/headless/in-engine InputEvents. Native keyboard verification remains manual pending.
+- User designated `C:/Users/e558926/Downloads/03-17_Businessplan_September_2026.pdf` as the game's foundation. Read all 12 pages; concise internal reference: PROJECT_DIRECTION.md. Public title 03:17, internal NightShift, Mike/Josh, six-night Redwood/Redwater arc. Do not invent an explanation or expand into a large simulator.
 
-Default Night 1 (6 Kunden) und Night 2 (8 Kunden) wurden vollständig grafisch durchgespielt, einschließlich dreier Produkte, mehrteiliger Warenkörbe, Scans/Zahlungen, Nachfüllen, gemischter Lieferung, Serviceauftrag, Dialogantwort, Main Events, Radio und Speichern/Nachtübergang. Ergebnis: 14 Kunden, 24 Artikel, CHF 66.10; Night 3 als Folgevorlage geladen. 431 Prüfungen in den ausgewerteten erfolgreichen Läufen, keine Engine-Warnings/-Errors darin.
+## Implemented and verified this block
 
-## Nächster sinnvoller Schritt
+- Checkout now shows last scanned product, scanned/total/remaining items, scanned subtotal and accept-payment readiness; payment reports final total. Existing atomic reservation/payment logic preserved.
+- Night 2/3 follow-up conversation differs for asked/denied Night 1 answers, through actual save/load and F input. Follow-up only opens once per night.
+- Night 3 distinct configuration: 7 customers, 9-second spawn interval, WC instead of waste task, main message plus later stockroom physical event.
+- Event prerequisites: time, sales, flag, task, previous event, occupied Area3D. Stockroom trigger binds relative to existing supply. Falling carton is a deterministic tween, not unstable rigid-body physics; remains displaced for that night, does not block movement.
+- WC floor mark/check point in existing room; E completes configured task and removes mark. Only available when required, cannot repeat after completion.
+- Master/SFX/Radio/Ambience routing, including three spatial ambient emitters. Legacy Music setting remains parent of Radio for compatibility. Custom music/streamer mode intentionally deferred as optional in business plan.
+- Menu title 03:17. Completion adds lost customers/tasks. Night 1/2 pre-shift text briefings introduce Josh's warning/denial; not an animated Josh scene.
+- HUD streamlined, touched notices English. `--dev-debug` enables NPC state/target/path/wait and stock diagnostics; default off.
+- README and VERTICAL_SLICE corrected; old instructions wrongly finished at checkout and lacked menus/customers.
 
-1. Manuellen Night-1-Bedienungstest durchführen, besonders Tastaturfokus, Scannen, Antworten und TAB-Nachfüllwahl. `tests/manual_interaction_test.gd` ist eine vorbereitete Ein-Kunden-Testszene am Kassenplatz (Schichtstart und Position sind Fixture, danach keine automatischen Gameplay-Eingaben). Der Windows-Computer-Use-Helper konnte das Fenster zeigen/fokussieren, aber E/F bewirkten keine registrierte Aktion. Nicht als erfolgreichen manuellen Test darstellen. Bei Bedarf zunächst einen InputEventKey-Audit ergänzen, um Helper-/Fokusproblem von Spielinput zu unterscheiden. Keine aktuelle bekannte Godot-Fehlermeldung dazu.
-2. Danach Inhalte/Balancing der Folgenacht-Vorlage in `scripts/night_catalog.gd` und Testdialoge in `scripts/dialogue_catalog.gd` verfeinern. Ressourcen-Schnittstellen sind vorhanden. Keine endgültige Story-Erklärung festlegen.
-3. Optional Radio-Musikordner und Streamer Mode ergänzen; derzeit absichtlich nur zwei eigene synthetisierte Tracks. Kein Design-Pass.
+## Tests and evidence
 
-## Letzte behobene Probleme
+26 selected successful logs, **607 PASS assertions**, zero FAIL/SCRIPT ERROR/ERROR/WARNING matches. Manifest: `C:/Users/e558926/Documents/Codex/2026-09-10/du-arbeitest-direkt-an-meinem-lokalen/outputs/test-manifest.json`. This is a count across the selected regression runs, not a claim of 607 independent unit cases.
 
-- Resource-Signal-Lambda hielt Bestands-Resources zyklisch fest: benannte Methode verwendet.
-- Kunden konnten beim gegenseitigen Ausweichen einen weiterhin blockierten ersten Wegschritt bekommen: dynamische Sperrzellen korrigiert.
-- Queue-Leader lief zum alten Rastermittelpunkt zurück und gegen den folgenden Kunden: ersten nahen Startpunkt überspringen.
-- Navigationsprobe prüft auch niedrige Sockel auf Fußhöhe.
-- Save-Validierung akzeptiert StringName-Flags vor der JSON-Serialisierung; beschädigte JSON-Dateien werden ohne Engine-Fehler geparst und auf Backup zurückgeführt.
-- Scans und Reservierungen werden bei unerwartetem NPC-Abgang zurückgesetzt; Radio-Unterbrechungen überschreiben keinen Mute-/Lautstärkewunsch.
+Key logs in that outputs directory:
+- `final-three-nights-cli.log`: 165 checks, complete translated-map Night 1→2→3, 21 customers/36 items/CHF 98.50, WC, stockroom event, tasks, saves, no customer/reservation leftovers. All headless. Later changes only English notices and text briefings; menu/story/smoke retested afterward.
+- `briefing-story_continuity.log`: 22 checks, both saved choices, F follow-up, true player-area entry, physical prop and WC E interaction.
+- `briefing-menu.log`: 29 checks; `regression-pause_gameplay.log`: 8 checks with active customer/dialogue and blocked inputs.
+- `process-night-1/2/3.log`: three separate processes verify boundary state/revenue/stock/flags/history and Night 3 dialogue selection (boundary fixtures; full gameplay separately covered by campaign).
+- `scene-lifecycle.log`: 14 checks, stable node count and single event signal/area/prop after teardown/reload.
+- `resume-cli-world_binding.log` 51, `resume-cli-product_route.log` 13, `hud-checkout.log` 13.
+- Audio/story/player/room/save/stock/navigation regressions listed in manifest.
 
-## Nachweise im Arbeitsverzeichnis
+Earlier failing development logs are preserved: story fixture initially omitted ACTIVE phase, then rebuilt navigation before physics synchronization; pause fixture supplied an untyped empty choice array. These test setup errors were fixed and rerun successfully. Do not treat their old logs as current failures.
 
-`C:/Users/e558926/Documents/Codex/2026-09-10/du-arbeitest-direkt-an-meinem-lokalen/outputs/`
+## Continue here, no whole-project reanalysis
 
-Erfolgreiche Logs: `nights-campaign-final.log`, `nights-moved-layout.log`, `nights-queue-final.log`, `nights-save-final.log`, `nights-save-write.log`, `nights-save-read.log`, `nights-lifecycle.log`, `nights-narrative_test.log`, `nights-checkout_test.log` und die acht `nights-regression-*.log`.
+1. Read PROJECT_DIRECTION.md and this handoff. Verify the last manifest/log tails and local diff.
+2. Next meaningful player-facing work: improve Josh's preliminary warning/denial from persistent start text into a compact authored handover conversation, preserving the PDF direction and existing dialogue controls. Keep normal gameplay dominant.
+3. Strengthen Night 3 physical evidence presentation from normal camera when a non-focus-stealing render workflow is available; human visual/audio and native input test remain pending. Do not use Computer Use without new explicit permission.
+4. Separate optional story/debug panels if useful; extend save compatibility for added product definitions only with migration tests.
+5. Full six-night content, road/depot, cracks/Redwater world states, demo, polished sound/assets and release-length pacing remain unfinished. Night 4+ currently reuse following-night template; never call this a complete campaign.
 
-Screenshots: `Slice-night1-complete.png`, `Slice-night2-complete.png`, `Slice-night1-dialogue-and-queue.png`, `Slice-night2-dialogue-and-queue.png`. `nights-native-input.log` dokumentiert den nicht bestandenen nativen Eingabeversuch.
-
-Frühere Logs ohne `final` können behobene Fehler enthalten. Nicht erneut als offene Fehler zählen, ohne den erfolgreichen Nachtest zu berücksichtigen. Der letzte gezielte Checkout-Test umfasst außerdem den ausgelagerten Dialogkatalog und die alternative Antwort.
-
-Testprozesse sind beendet. Keine Commits, Pushes oder Git-Resets durch den Agenten. Änderungen direkt im bestehenden Projekt; bestehende zwischenzeitliche Benutzer-Commits nicht zurücksetzen.
+Do not run the old `work/world/prepare.ps1`: it contains stale files and can overwrite improvements. Do not reset, commit or push without the appropriate task scope. Original player frames and colliders were preserved.

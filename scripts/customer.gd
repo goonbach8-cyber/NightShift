@@ -51,6 +51,7 @@ func _ready() -> void:
 	label.font_size = 32
 	label.pixel_size = 0.004
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.visible = "--dev-debug" in OS.get_cmdline_user_args()
 	add_child(label)
 
 func go_to(marker: Marker3D) -> void:
@@ -71,7 +72,8 @@ func plan(avoid_people: bool = false) -> void:
 	retry_time = 0
 
 func _physics_process(delta: float) -> void:
-	$Status.text = status_text
+	if $Status.visible:
+		$Status.text = "%s\n%s | path %d | wait %.0f" % [state,target.name if is_instance_valid(target) else "none",route.size(),wait_seconds]
 	velocity.y = -2.0
 	velocity.x = 0
 	velocity.z = 0
