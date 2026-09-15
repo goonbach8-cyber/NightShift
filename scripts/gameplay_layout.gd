@@ -28,6 +28,7 @@ var inventory: Resource
 var product_points: Dictionary = {}
 var product_nodes: Dictionary = {}
 var product_labels: Dictionary = {}
+var story_areas: Array[Area3D] = []
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -116,6 +117,24 @@ func _ready() -> void:
 	service.position = Vector3(-6.05,0,3.95)
 	marker(service,"Approach",Vector3(0.7,0,0))
 	register_event_lights(shelf.get_parent())
+	var area = preload("res://scripts/story_area.gd").new()
+	area.name = "StockroomStoryArea"
+	area.area_id = &"stockroom"
+	warehouse.get_node("Supply").add_child(area)
+	area.position = Vector3(0,1,1)
+	var region := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(2,2,2)
+	region.shape = shape
+	area.add_child(region)
+	story_areas.append(area)
+	var prop = preload("res://scripts/story_prop.gd").new()
+	prop.name = "LooseCarton"
+	prop.target_id = &"stockroom_parcel"
+	warehouse.get_node("Supply").add_child(prop)
+	prop.position = Vector3(0.7,1.05,0.6)
+	model.box(prop,Vector3.ZERO,Vector3(0.38,0.36,0.36),Color("b59a73"))
+	model.box(prop,Vector3(0,0.185,0),Vector3(0.07,0.01,0.36),Color("e0cc9f"))
 
 func register_event_lights(node: Node) -> void:
 	if node is Light3D and (node.global_position.distance_to(product_nodes[&"energy"].global_position) < 4 or node.global_position.distance_to(checkout.global_position) < 2.5):

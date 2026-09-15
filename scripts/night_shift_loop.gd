@@ -52,6 +52,7 @@ func setup(bindings: Node) -> void:
 	events = Node.new()
 	events.set_script(preload("res://scripts/event_director.gd"))
 	add_child(events)
+	for area in layout.story_areas: area.director = events
 	dialogue = Node.new()
 	dialogue.set_script(preload("res://scripts/dialogue_session.gd"))
 	add_child(dialogue)
@@ -80,6 +81,7 @@ func start() -> void:
 	if not use_loaded_stock:
 		inventory.initialize_shelves()
 	events.setup(definition.events,event_history,story_flags)
+	events.minimum_interval = definition.event_spacing_seconds
 	active = true
 	preparing = false
 	spawn_clock = spawn_interval
@@ -90,7 +92,7 @@ func _process(delta: float) -> void:
 	if not active:
 		return
 	elapsed += delta
-	events.advance(elapsed,served)
+	events.advance(elapsed,served,tasks)
 	spawn_clock += delta
 	retry_clock += delta
 	if spawn_clock >= spawn_interval and spawned < customer_count and customers.size() < layout.queue_points.size():
@@ -226,6 +228,28 @@ func update_queue() -> void:
 		if queue[i].target != point or queue[i].global_position.distance_to(point.global_position) > 0.5:
 			queue[i].go_to(point)
 
+func checkout_details() -> Dictionary:
+	if queue.is_empty(): return {}
+	var customer := queue[0]
+	var items: Array[StringName] = []
+	for id in customer.order:
+		for unit in int(customer.order[id]): items.append(id)
+	var count := mini(scanned_units,items.size()) if scanned_owner == customer.get_instance_id() else 0
+	var subtotal := 0
+	var total := 0
+	for i in items.size():
+		var price: int = inventory.products[items[i]].line_total(1)
+		total += price
+		if i < count: subtotal += price
+	return {"scanned":count,"count":items.size(),"remaining":items.size()-count,"subtotal":subtotal,"total":total,"last":inventory.products[items[count-1]].display_name if count > 0 else "","next":inventory.products[items[count]].display_name if count < items.size() else ""}
+
+func checkout_text() -> String:
+	var detail := checkout_details()
+	if detail.is_empty(): return "Checkout ready"
+	var heading: String = "%s scanned" % detail.last if detail.scanned > 0 else "Next: "+detail.next
+	var action: String = "All items scanned — [E] Accept payment" if detail.remaining == 0 else "[E] Scan "+detail.next
+	return "%s\n%d / %d items · %d remaining\nSubtotal: CHF %.2f\n%s" % [heading,detail.scanned,detail.count,detail.remaining,float(detail.subtotal)/100,action]
+
 func checkout() -> bool:
 	if queue.is_empty():
 		return false
@@ -238,14 +262,10 @@ func checkout() -> bool:
 	if scanned_owner != customer.get_instance_id():
 		scanned_owner = customer.get_instance_id()
 		scanned_units = 0
-	var total_units := 0
-	var total_price := 0
-	for id in customer.order:
-		total_units += int(customer.order[id])
-		total_price += inventory.products[id].line_total(customer.order[id])
+	var total_units: int = checkout_details().count
 	if not quick_checkout and scanned_units < total_units:
 		scanned_units += 1
-		notice.emit("Scanned %d/%d articles. Total CHF %.2f. [E] %s" % [scanned_units,total_units,float(total_price)/100,"Take payment" if scanned_units == total_units else "Scan next"])
+		notice.emit("%s scanned · CHF %.2f" % [checkout_details().last,float(checkout_details().subtotal)/100])
 		changed.emit()
 		return true
 	var receipt: Dictionary = inventory.commit(customer.get_instance_id())
@@ -254,7 +274,7 @@ func checkout() -> bool:
 	queue.pop_front()
 	customer.paid = true
 	customer.state = &"leaving"
-	customer.status_text = "Danke!"
+	customer.status_text = "Thank you!"
 	revenue_rappen += int(receipt.total)
 	sold_units += int(receipt.units)
 	served += 1
@@ -263,7 +283,7 @@ func checkout() -> bool:
 	scanned_units = 0
 	customer.go_to(layout.spawn_point)
 	update_queue()
-	notice.emit("%s — CHF %.2f" % [inventory.basket_text(receipt.items),float(receipt.total)/100])
+	notice.emit("Payment accepted · %d items · CHF %.2f" % [receipt.units,float(receipt.total)/100])
 	changed.emit()
 	return true
 
@@ -341,8 +361,9 @@ func can_finish() -> bool:
 
 func talk() -> void:
 	if queue.is_empty() or queue[0].walking: return
-	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(event_history,story_flags)
-	dialogue.begin(queue[0].get_instance_id(),content.lines,content.choices,story_flags)
+	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(event_history,story_flags,career_shifts+1)
+	if dialogue.begin(queue[0].get_instance_id(),content.lines,content.choices,story_flags) and content.has("seen_flag"):
+		story_flags[content.seen_flag] = true
 
 func status_text() -> String:
 	var rows := PackedStringArray()

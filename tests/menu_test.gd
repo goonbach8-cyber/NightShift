@@ -45,6 +45,12 @@ func run() -> void:
 	await create_timer(0.5).timeout
 	start = current_scene
 	check(start.has_checkpoint(),"Main menu discovers existing save")
+	var previous: Dictionary = start.save.read_data(path)
+	previous.shifts = 1
+	previous.revenue = 1234
+	previous.flags = {"prior_choice":true}
+	previous.events = {"night_1_main":true}
+	check(start.save.store_data(previous,start.inventory),"Menu fixture stores completed-night checkpoint")
 	var old: String = FileAccess.get_file_as_string(path)
 	start.request_new()
 	check(start.page == "confirm_new" and FileAccess.get_file_as_string(path) == old,"New Game cannot overwrite without confirmation")
@@ -52,7 +58,17 @@ func run() -> void:
 	start.continue_game()
 	await create_timer(0.8).timeout
 	bind_world()
-	check(loop.career_shifts == 0 and loop.inventory.stocks[&"water"].shelf_units == 2,"Continue restores start checkpoint stock")
+	check(loop.career_shifts == 1 and loop.inventory.stocks[&"water"].shelf_units == 2,"Continue restores Night 2 checkpoint stock")
+	check(loop.career_revenue == 1234 and loop.story_flags.get("prior_choice",false) and loop.event_history.has("night_1_main"),"Menu Continue restores revenue, decisions and main events")
+	world.menu.return_main()
+	await create_timer(0.5).timeout
+	start = current_scene
+	start.request_new()
+	check(start.page == "confirm_new","Existing campaign requests New Game confirmation")
+	start.new_game()
+	await create_timer(0.8).timeout
+	bind_world()
+	check(loop.career_shifts == 0 and loop.career_revenue == 0 and loop.story_flags.is_empty() and loop.event_history.is_empty(),"Confirmed New Game resets campaign to Night 1")
 	world.queue_free()
 	await process_frame
 	var broken := FileAccess.open(path,FileAccess.WRITE)
@@ -61,7 +77,9 @@ func run() -> void:
 	start = load("res://scenes/main/menu.tscn").instantiate()
 	root.add_child(start)
 	current_scene = start
-	check(not start.has_checkpoint(),"Corrupt save is safely unavailable")
+	check(start.has_checkpoint(),"Corrupt primary save retains Continue through valid backup")
+	DirAccess.remove_absolute(path+".bak")
+	check(not start.has_checkpoint(),"Corrupt save without backup is safely unavailable")
 	for version in [true,"1",{},[],null,-1,2]:
 		check(not start.save.valid({"version":version},start.inventory),"Invalid checkpoint version rejected: %s" % str(version))
 	var config = preload("res://scripts/game_settings.gd").new()

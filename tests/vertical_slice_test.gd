@@ -29,8 +29,17 @@ func use() -> void:
 
 func capture(label: String) -> void:
 	if DisplayServer.get_name() != "headless":
-		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(OUT+"Slice-"+label+".png")
+		var rendered := [false]
+		var mark_rendered := func(): rendered[0] = true
+		RenderingServer.frame_post_draw.connect(mark_rendered,CONNECT_ONE_SHOT)
+		var deadline := Time.get_ticks_msec()+2000
+		while not rendered[0] and Time.get_ticks_msec() < deadline:
+			await process_frame
+		if rendered[0]:
+			root.get_texture().get_image().save_png(OUT+"Slice-"+label+".png")
+		else:
+			RenderingServer.frame_post_draw.disconnect(mark_rendered)
+			print("CAPTURE SKIPPED: no rendered frame for ",label," (window may be occluded)")
 
 func walk(to: Vector3) -> bool:
 	var route: PackedVector3Array = loop.navigation.path(player.global_position,to)

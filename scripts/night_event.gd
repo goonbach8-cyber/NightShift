@@ -7,3 +7,8 @@ extends Resource
 @export var effect: StringName
 @export var text: String
 @export var required_flag: StringName
+@export var required_task: StringName
+@export var required_event: StringName
+@export var required_area: StringName
+@export var at_checkout: bool = true
+@export var effect_target: StringName

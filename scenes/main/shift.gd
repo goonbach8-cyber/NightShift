@@ -12,8 +12,10 @@ var effects: Node
 var menu: CanvasLayer
 var story_label: Label
 var story_time := 0.0
+var story_cooldown := 0.0
 var pending_events: Array[Resource] = []
 var dialogue_label: Label
+var checkout_label: Label
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -58,6 +60,14 @@ func _ready() -> void:
 	story_label.add_theme_constant_override("shadow_offset_x",2)
 	story_label.add_theme_constant_override("shadow_offset_y",2)
 	$HUD.add_child(story_label)
+	checkout_label = Label.new()
+	checkout_label.position = Vector2(24,225)
+	checkout_label.size = Vector2(640,140)
+	checkout_label.add_theme_font_size_override("font_size",22)
+	checkout_label.add_theme_color_override("font_shadow_color",Color.BLACK)
+	checkout_label.add_theme_constant_override("shadow_offset_x",2)
+	checkout_label.add_theme_constant_override("shadow_offset_y",2)
+	$HUD.add_child(checkout_label)
 	dialogue_label = Label.new()
 	dialogue_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	dialogue_label.offset_left = 24
@@ -97,15 +107,32 @@ func _on_event(event: Resource) -> void:
 func _process(delta: float) -> void:
 	var special: bool = not gameplay.event_history.is_empty() and not gameplay.story_flags.get(&"asked_about_call",false) and not gameplay.story_flags.get(&"denied_call",false)
 	var customer_ready: bool = not gameplay.queue.is_empty() and not gameplay.queue[0].walking
-	if not pending_events.is_empty() and story_time <= 0 and layout.at_operator(player) and customer_ready:
-		var event: Resource = pending_events.pop_front()
+	checkout_label.visible = customer_ready and layout.at_operator(player) and not gameplay.dialogue.active
+	checkout_label.text = gameplay.checkout_text() if checkout_label.visible else ""
+	story_cooldown = maxf(0,story_cooldown-delta)
+	var ready_event := -1
+	for i in pending_events.size():
+		var candidate: Resource = pending_events[i]
+		var in_area: bool = candidate.required_area == &"" or gameplay.events.occupied_areas.has(candidate.required_area)
+		if in_area and (not candidate.at_checkout or (layout.at_operator(player) and customer_ready)):
+			ready_event = i
+			break
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active:
+		var event: Resource = pending_events[ready_event]
+		pending_events.remove_at(ready_event)
 		story_label.text = "The customer pauses.\n“You answered the phone earlier, didn't you?”\n[F] Talk" if event.main_event and gameplay.career_shifts == 0 else event.text
 		story_time = 16
+		story_cooldown = gameplay.definition.event_spacing_seconds
 		if event.effect == &"light_dip": effects.light_dip()
 		if event.effect == &"radio_interrupt": radio.interrupt_briefly()
+		if event.effect == &"world_state":
+			for prop in get_tree().get_nodes_in_group("story_prop"):
+				if prop.target_id == event.effect_target: prop.apply_state()
 		gameplay.story_flags[&"noticed_call"] = true
 		gameplay.changed.emit()
-	story_time = maxf(0, story_time-delta)
+	# A conversation hides this caption; keep its remaining reading time intact.
+	if not gameplay.dialogue.active:
+		story_time = maxf(0, story_time-delta)
 	story_label.visible = story_time > 0 and not gameplay.dialogue.active
 	get_node("Station/ShiftBoard").prompt = "Finish shift" if phase == Phase.ACTIVE and gameplay.can_finish() else "Shift notes / Start night"
 	var target: Node3D = player.interaction_target

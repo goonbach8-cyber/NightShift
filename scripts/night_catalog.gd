@@ -27,4 +27,22 @@ static func for_night(number: int) -> Resource:
 	variable.effect = &"light_dip"
 	variable.text = "The cooler light fades for a moment. It settles again."
 	night.events.append(variable)
+	if number == 3:
+		night.customers = 7
+		night.spawn_seconds = 9
+		night.title = "Night 3 — The return call"
+		main.after_sales = 1
+		main.effect = &"message"
+		main.text = "The customer places a blank receipt on the counter.\n‘I was told you would remember the number.’\n[F] Talk"
+		var parcel := EVENT.new()
+		parcel.event_id = &"night_3_store_parcel"
+		parcel.main_event = true
+		parcel.after_seconds = 0
+		parcel.required_event = &"night_3_main"
+		parcel.required_area = &"stockroom"
+		parcel.at_checkout = false
+		parcel.effect = &"world_state"
+		parcel.effect_target = &"stockroom_parcel"
+		parcel.text = "A carton slides off the shelf. Nothing else moves."
+		night.events.append(parcel)
 	return night

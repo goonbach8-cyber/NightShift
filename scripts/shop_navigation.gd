@@ -2,7 +2,7 @@ extends Node
 ## A small flat-world navigation grid sampled from actual floor and obstacle colliders.
 ## No shop dimensions or route coordinates live here. Rebuild after layout changes.
 var grid := AStarGrid2D.new()
-var cell: float = 0.4
+var cell: float = 0.2
 var space: PhysicsDirectSpaceState3D
 var door_exclusions: Array[RID] = []
 var probe := CapsuleShape3D.new()
@@ -76,12 +76,19 @@ func path(from: Vector3, to: Vector3, avoid: Array[Vector3] = []) -> PackedVecto
 	var temporary: Array[Vector2i] = []
 	for obstacle in avoid:
 		var center := Vector2i(roundi(obstacle.x/cell),roundi(obstacle.z/cell))
-		for x in range(-2,3):
-			for y in range(-2,3):
+		var extent := ceili(0.72/cell)
+		for x in range(-extent,extent+1):
+			for y in range(-extent,extent+1):
 				var id := center+Vector2i(x,y)
 				var cell_position := Vector2(id.x*cell,id.y*cell)
 				var near_obstacle := cell_position.distance_to(Vector2(obstacle.x,obstacle.z)) < 0.72
-				if near_obstacle and id != start and id != end and grid.region.has_point(id) and not grid.is_point_solid(id):
+				# Bodies can already be inside the planning margin while a queue advances.
+				# Permit movement out of that margin, never closer to the other body.
+				var origin := Vector2(from.x,from.z)
+				var obstacle_position := Vector2(obstacle.x,obstacle.z)
+				var initial_distance := origin.distance_to(obstacle_position)
+				var escaping := initial_distance < 0.72 and cell_position.distance_to(origin) < 0.9 and cell_position.distance_to(obstacle_position) >= initial_distance
+				if near_obstacle and not escaping and id != start and id != end and grid.region.has_point(id) and not grid.is_point_solid(id):
 					grid.set_point_solid(id,true)
 					temporary.append(id)
 	if grid.region.has_point(start) and grid.region.has_point(end) and not grid.is_point_solid(start) and not grid.is_point_solid(end):

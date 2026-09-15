@@ -13,6 +13,7 @@ func key(code: Key) -> void:
 
 func bind_world() -> void:
 	world = current_scene
+	if "--shift-layout" in OS.get_cmdline_user_args(): world.position = Vector3(20,0,-15)
 	player = world.get_node("Player")
 	loop = world.gameplay
 	layout = world.layout

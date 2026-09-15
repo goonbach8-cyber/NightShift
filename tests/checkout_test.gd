@@ -19,8 +19,12 @@ func run() -> void:
 	var owner_id: int = customer.get_instance_id()
 	loop.inventory.reserve(owner_id,&"water",1)
 	loop.inventory.reserve(owner_id,&"chips",1)
+	check(loop.checkout_details().subtotal == 0 and loop.checkout_details().remaining == 2,"Unscanned basket starts with zero subtotal")
 	check(loop.checkout() and loop.scanned_units == 1 and loop.revenue_rappen == 0,"First input scans without sale")
+	check(loop.checkout_details().subtotal == 220 and loop.checkout_details().remaining == 1,"Subtotal includes only scanned product")
+	check(loop.checkout_text().contains(loop.inventory.products[&"water"].display_name) and loop.checkout_text().contains("1 / 2"),"Checkout names scanned product and item progress")
 	check(loop.checkout() and loop.scanned_units == 2 and loop.stock.shelf_units == 2,"Second article scans without decrementing shelf")
+	check(loop.checkout_details().subtotal == 510 and loop.checkout_text().contains("Accept payment"),"Complete basket exposes exact total and payment action")
 	loop.event_history[&"prototype"] = true
 	loop.talk()
 	check(loop.dialogue.active and loop.dialogue.choices.size() == 2,"Checkout selects authored dialogue from separate content catalog")
@@ -31,6 +35,7 @@ func run() -> void:
 	check(loop.story_flags.get(&"denied_call",false),"Alternative reply persists its own decision")
 	check(loop.checkout() and loop.revenue_rappen == 510 and loop.sold_units == 2,"Payment atomically sells scanned basket")
 	check(not loop.checkout() and loop.revenue_rappen == 510,"Repeated payment cannot double-charge")
+	check(loop.checkout_details().is_empty(),"Paid basket leaves no stale checkout presentation")
 	loop.order_patterns.assign([{&"water":1}])
 	loop.spawn_customer()
 	customer = loop.customers[-1]

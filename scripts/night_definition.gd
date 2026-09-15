@@ -6,3 +6,4 @@ extends Resource
 @export var delivery: Dictionary = {}
 @export var required_tasks: Array[StringName] = [&"cooler",&"restock",&"delivery"]
 @export var events: Array[Resource] = []
+@export_range(0,120) var event_spacing_seconds: float = 35
