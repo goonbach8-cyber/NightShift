@@ -20,6 +20,9 @@ var patience: float = 240
 var move_speed: float = 1.8
 var status_text: String = "Kunde"
 var abandoned: bool = false
+var profile_id: StringName = &"regular"
+var greeting: String = ""
+var clothing_color := Color("b0a079")
 
 func _ready() -> void:
 	add_to_group("customer")
@@ -42,7 +45,7 @@ func _ready() -> void:
 	visual.mesh = mesh
 	visual.position.y = 0.6
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("b0a079")
+	material.albedo_color = clothing_color
 	visual.material_override = material
 	add_child(visual)
 	var label := Label3D.new()

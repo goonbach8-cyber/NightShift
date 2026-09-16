@@ -1,6 +1,7 @@
 extends Node
 signal changed
 var active: bool = false
+var completed: bool = false
 var lines: PackedStringArray = []
 var choices: Array[Dictionary] = []
 var index: int = 0
@@ -14,6 +15,7 @@ func begin(speaker_id: int, text_lines: PackedStringArray, answers: Array[Dictio
 	choices = answers
 	flags = story_flags
 	index = 0
+	completed = false
 	active = true
 	changed.emit()
 	return true
@@ -23,7 +25,7 @@ func advance() -> void:
 	if index+1 < lines.size():
 		index += 1
 	elif choices.is_empty():
-		close()
+		close(true)
 	changed.emit()
 
 func choose(choice: int) -> void:
@@ -35,7 +37,8 @@ func choose(choice: int) -> void:
 	index = 0
 	changed.emit()
 
-func close() -> void:
+func close(was_completed: bool = false) -> void:
+	completed = was_completed
 	active = false
 	owner_id = 0
 	changed.emit()

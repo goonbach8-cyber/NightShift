@@ -112,6 +112,7 @@ func show_page(next: String) -> void:
 			button("CONTINUE TO NEXT NIGHT [N]", next_night)
 			button("RETURN TO MAIN MENU", save_and_return)
 		"ending":
+			panel.color = Color(0.018,0.035,0.043,0.55)
 			label("03:17",32)
 			label("The station looks familiar again.\nThe roadside sign still says Redwater.",20)
 			button("CONTINUE",func(): show_page("josh_call" if preload("res://scripts/clue_catalog.gd").eligible(world.gameplay.story_flags) else "credits"))
@@ -173,7 +174,7 @@ func next_night() -> void:
 		if not world.checkpoint.write_checkpoint(world.gameplay):
 			status.text = "Save failed. Please try again."
 			return
-		world.story_world.ending_started = true
+		world.story_world.enter_ending()
 		show_page("ending")
 		return
 	if not world.checkpoint.write_checkpoint(world.gameplay):

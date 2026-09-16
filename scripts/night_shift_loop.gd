@@ -38,6 +38,7 @@ var story_flags: Dictionary = {}
 var event_history: Dictionary = {}
 var events: Node
 var dialogue: Node
+var pending_dialogue_seen: StringName
 var quick_checkout: bool = false
 var scanned_owner: int = 0
 var scanned_units: int = 0
@@ -56,6 +57,7 @@ func setup(bindings: Node) -> void:
 	dialogue = Node.new()
 	dialogue.set_script(preload("res://scripts/dialogue_session.gd"))
 	add_child(dialogue)
+	dialogue.changed.connect(_dialogue_progress_changed)
 	configure_night(preload("res://scripts/night_catalog.gd").for_night(1))
 	inventory.changed.connect(_inventory_changed)
 	update_supply_prompt()
@@ -137,6 +139,11 @@ func spawn_customer() -> void:
 	customer.remaining_products = customer.order.keys()
 	customer.move_speed = 1.65 + (spawned % 3)*0.15
 	customer.patience = 240 + (spawned % 3)*30
+	if not definition.customer_profiles.is_empty():
+		var profile: Dictionary = definition.customer_profiles[spawned % definition.customer_profiles.size()]
+		customer.profile_id = profile.get("id",&"regular")
+		customer.greeting = profile.get("greeting","")
+		customer.clothing_color = profile.get("color",Color("b0a079"))
 	get_parent().add_child(customer)
 	customer.global_position = layout.spawn_point.global_position + Vector3.UP*0.05
 	customer.arrived.connect(customer_arrived)
@@ -365,13 +372,20 @@ func interact(action: StringName, player: Node3D) -> void:
 	changed.emit()
 
 func can_finish() -> bool:
-	return served+lost_sales == customer_count and departed == customer_count and required_tasks.all(func(id): return tasks.has(id))
+	return served+lost_sales == customer_count and departed == customer_count and required_tasks.all(func(id): return tasks.has(id)) and definition.required_story.all(func(id): return story_flags.get(StringName("presented_"+String(id)),false))
 
 func talk() -> void:
 	if queue.is_empty() or queue[0].walking: return
 	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(event_history,story_flags,career_shifts+1)
+	if content.get("routine",false) and not queue[0].greeting.is_empty():
+		content.lines.insert(0,queue[0].greeting)
 	if dialogue.begin(queue[0].get_instance_id(),content.lines,content.choices,story_flags) and content.has("seen_flag"):
-		story_flags[content.seen_flag] = true
+		pending_dialogue_seen = content.seen_flag
+
+func _dialogue_progress_changed() -> void:
+	if dialogue.active or pending_dialogue_seen == &"": return
+	if dialogue.completed: story_flags[pending_dialogue_seen] = true
+	pending_dialogue_seen = &""
 
 func status_text() -> String:
 	var lines := PackedStringArray(["%s | Customers %d/%d | CHF %.2f" % [definition.title,served,customer_count,float(revenue_rappen)/100]])
@@ -384,6 +398,7 @@ func status_text() -> String:
 	elif carried != &"": lines.append("Carrying %s ×%d → matching display" % [inventory.products[carried].display_name,inventory.stocks[carried].carried_units])
 	elif delivery_ready: lines.append("Delivery waiting in the yard")
 	if can_finish(): lines.append("Finish at the staff shift notes")
+	elif not definition.required_story.is_empty() and served+lost_sales == customer_count: lines.append("Check the stockroom before leaving")
 	if "--dev-debug" in OS.get_cmdline_user_args():
 		for id in inventory.stocks:
 			var item: Resource = inventory.stocks[id]

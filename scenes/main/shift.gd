@@ -104,7 +104,7 @@ func _ready() -> void:
 	add_child(story_world)
 	story_world.setup(self)
 	if gameplay.career_shifts >= 6:
-		story_world.ending_started = true
+		story_world.enter_ending()
 		menu.show_page("ending")
 	_update_objective()
 
@@ -137,6 +137,7 @@ func _process(delta: float) -> void:
 			for prop in get_tree().get_nodes_in_group("story_prop"):
 				if prop.target_id == event.effect_target: prop.apply_state()
 		gameplay.story_flags[&"noticed_call"] = true
+		gameplay.story_flags[StringName("presented_"+String(event.event_id))] = true
 		gameplay.changed.emit()
 	# A conversation hides this caption; keep its remaining reading time intact.
 	if not gameplay.dialogue.active:

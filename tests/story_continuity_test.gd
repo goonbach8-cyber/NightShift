@@ -39,9 +39,9 @@ func run() -> void:
 			return
 		branches.append(loop.dialogue.lines[0])
 		check(loop.dialogue.lines[0].contains("asking" if answer == 0 else "nobody"),"Visible dialogue responds to earlier choice")
-		loop.dialogue.close()
+		while loop.dialogue.active: await key(KEY_SPACE)
 		loop.talk()
-		check(loop.dialogue.lines[0] == "Evening. Long shift?","Follow-up does not repeat for every conversation")
+		check(loop.dialogue.lines.has("Evening. Long shift?"),"Completed follow-up gives way to routine conversation")
 		world.queue_free()
 		await process_frame
 	check(branches[0] != branches[1],"Saved answers produce distinct playable dialogue")
@@ -66,7 +66,8 @@ func run() -> void:
 	loop.events.advance(100,0)
 	await create_timer(0.9).timeout
 	check(prop.changed_state and prop.position.y < before.y-0.7,"World event leaves carton visibly lowered")
-	check(world.story_label.visible and world.story_label.text.contains("carton"),"Physical event is presented at its room, not the checkout")
+	check(world.story_label.visible and world.story_label.text.contains("rack"),"Physical event is presented at its room, not the checkout")
+	check(absf(prop.rotation.z) > 0.9,"Loaded service rack remains visibly tipped")
 	var settled: Vector3 = prop.position
 	loop.events.advance(200,10)
 	await create_timer(0.8).timeout

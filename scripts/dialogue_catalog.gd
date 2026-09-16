@@ -2,6 +2,10 @@ extends RefCounted
 ## Replaceable prototype dialogue content; no story text in checkout/inventory logic.
 static func for_context(history: Dictionary, flags: Dictionary, night: int = 1) -> Dictionary:
 	var lines := PackedStringArray(["Evening. Long shift?", "Just these, please. Thank you."])
+	if night == 5:
+		lines = PackedStringArray(["Just these, please. Is the roadwork holding up the deliveries?", "I always stop here on my way through Redwater."])
+	elif night == 6:
+		lines = PackedStringArray(["Evening, Mike. The usual, please.", "Didn't they move the bus stop behind the station last year?"])
 	var choices: Array[Dictionary] = []
 	var followup := StringName("call_followup_night_%d" % night)
 	if night >= 2 and not flags.get(followup,false):
@@ -12,4 +16,4 @@ static func for_context(history: Dictionary, flags: Dictionary, night: int = 1) 
 	if not history.is_empty() and not flags.get(&"asked_about_call",false) and not flags.get(&"denied_call",false):
 		lines = PackedStringArray(["You answered the phone earlier, didn't you?", "I thought I heard you say 03:17."])
 		choices.assign([{"text":"Which phone call?","flag":&"asked_about_call","reply":"Maybe I have the wrong place. Sorry."},{"text":"I haven't answered a call.","flag":&"denied_call","reply":"No? Then I must have misheard."}])
-	return {"lines":lines,"choices":choices}
+	return {"lines":lines,"choices":choices,"routine":choices.is_empty()}

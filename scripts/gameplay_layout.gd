@@ -133,10 +133,16 @@ func _ready() -> void:
 	var prop = preload("res://scripts/story_prop.gd").new()
 	prop.name = "LooseCarton"
 	prop.target_id = &"stockroom_parcel"
+	prop.settled_roll = 1.0
 	warehouse.get_node("Supply").add_child(prop)
 	prop.position = Vector3(0.7,1.05,0.6)
 	model.box(prop,Vector3.ZERO,Vector3(0.38,0.36,0.36),Color("b59a73"))
 	model.box(prop,Vector3(0,0.185,0),Vector3(0.07,0.01,0.36),Color("e0cc9f"))
+	# A small loaded service rack tips with the parcel; its state remains visible.
+	for x in [-0.32,0.32]:
+		model.box(prop,Vector3(x,0.28,0),Vector3(0.035,0.58,0.36),Color("798581"))
+	for y in [0.02,0.55]:
+		model.box(prop,Vector3(0,y,0),Vector3(0.68,0.035,0.4),Color("919c96"))
 	wc_point = Node3D.new()
 	wc_point.name = "WCService"
 	wc_point.set_script(preload("res://scenes/interactions/interactable.gd"))

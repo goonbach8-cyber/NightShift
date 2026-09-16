@@ -9,11 +9,13 @@ var crack: Node3D
 var construction: Node3D
 var branding: Label3D
 var alternate: Node3D
+var intrusions: Node3D
 var depot: Node3D
 var josh: Node3D
 var configured_night := 0
 var pending_read: StringName
 var pending_handover := false
+var pending_depot := false
 var in_depot := false
 var trip_busy := false
 var ending_started := false
@@ -56,21 +58,34 @@ func setup(owner_world: Node3D) -> void:
 	alternate = Node3D.new()
 	alternate.name = "RedwaterDetails"
 	add_child(alternate)
+	intrusions = Node3D.new()
+	intrusions.name = "RedwaterIntrusions"
+	add_child(intrusions)
 	var sign_at := to_local(layout.radio_point.global_position)
-	label(alternate,"REDWATER\n14 SERVICE ROAD",sign_at+Vector3(-0.8,1.6,0),28)
-	model.box(alternate,sign_at+Vector3(-0.8,1.3,0),Vector3(0.8,0.12,0.25),Color("547c85"))
+	label(intrusions,"REDWATER\n14 SERVICE ROAD",sign_at+Vector3(-0.8,1.6,0),28)
+	model.box(intrusions,sign_at+Vector3(-0.8,1.3,0),Vector3(0.8,0.12,0.25),Color("547c85"))
+	# The alternative keeps the station's footprint but changes the surroundings.
+	model.box(alternate,forecourt+Vector3(-2,-0.03,3),Vector3(8,0.04,1.8),Color("455658"))
+	for i in 3:
+		model.box(alternate,forecourt+Vector3(-5+i*3,1.1,5),Vector3(1.8,2.2,1.5),Color("60777c"))
+	label(intrusions,"RIVERLINE DRINKS",to_local(layout.product_nodes[&"energy"].global_position)+Vector3(0,1.8,0.3),28)
+	label(intrusions,"REDWATER DISTRIBUTION",to_local(layout.warehouse.global_position)+Vector3(9,1.7,-4),28)
 	var sites = [layout.checkout,layout.product_nodes[&"chips"],layout.warehouse.get_node("Supply"),layout.radio_point]
 	var ids: Array[StringName] = [&"accident",&"map",&"missing",&"redwater"]
+	var offsets := [Vector3(-1.4,0,0.4),Vector3(-0.9,0,-1.2),Vector3(1.2,0,0.2),Vector3(-1.4,0,0.4)]
 	for i in ids.size():
-		var reader := point(self,ids[i],to_local(sites[i].global_position)+Vector3(-1.4,0,0.4),"Read "+preload("res://scripts/clue_catalog.gd").ENTRIES[ids[i]].title)
+		var reader := point(self,ids[i],to_local(sites[i].global_position)+offsets[i],"Read "+preload("res://scripts/clue_catalog.gd").ENTRIES[ids[i]].title)
 		model.box(reader,Vector3(0,0.9,0),Vector3(0.32,0.015,0.25),Color("d0c9ad"))
 	depot = Node3D.new()
 	depot.name = "Depot"
 	depot.position = Vector3(24,0,0)
 	add_child(depot)
 	floor_box(depot,Vector3(0,-0.1,0),Vector3(6,0.2,6))
-	model.box(depot,Vector3(0,1,-2.8),Vector3(6,2,0.15),Color("667377"))
-	model.box(depot,Vector3(1,0.5,-1.8),Vector3(2,1,0.7),Color("8b8370"))
+	floor_box(depot,Vector3(0,1,-2.9),Vector3(6,2,0.2))
+	# Compact enclosed collection yard: the player cannot walk off its floor.
+	for x in [-2.9,2.9]: floor_box(depot,Vector3(x,0.5,0),Vector3(0.2,1,6))
+	floor_box(depot,Vector3(0,0.5,2.9),Vector3(6,1,0.2))
+	floor_box(depot,Vector3(1,0.5,-1.8),Vector3(2,1,0.7))
 	label(depot,"DEPOT / COLLECTIONS",Vector3(0,1.8,-2.6),32)
 	person(depot,Vector3(1,0,-2.3))
 	point(depot,"depot_clerk",Vector3(1,0,-1),"Talk to depot clerk")
@@ -129,7 +144,8 @@ func apply_night() -> void:
 	configured_night = loop.career_shifts+1
 	if is_instance_valid(josh): josh.queue_free()
 	if not loop.definition.handover.is_empty() and not loop.story_flags.get(handover_flag(),false):
-		josh = person(self,to_local(world.get_node("Station/ShiftBoard").global_position)+Vector3(-0.8,0,0.6))
+		# Meet Mike near his arrival position, clear of stock and checkout prompts.
+		josh = person(self,to_local(world.player.global_position)+Vector3(1.4,0,-0.3))
 		point(josh,&"josh",Vector3.ZERO,"Talk to Josh")
 		label(josh,"Josh",Vector3(0,1.45,0),24)
 
@@ -139,10 +155,15 @@ func handover_flag() -> StringName:
 func dialogue_changed() -> void:
 	if loop.dialogue.active: return
 	if pending_read != &"":
-		loop.story_flags[StringName("clue_"+String(pending_read))] = true
+		if loop.dialogue.completed:
+			loop.story_flags[StringName("clue_"+String(pending_read))] = true
 		pending_read = &""
+	if pending_depot:
+		if loop.dialogue.completed: loop.tasks[&"depot"] = true
+		pending_depot = false
 	if pending_handover:
 		pending_handover = false
+		if not loop.dialogue.completed: return
 		loop.story_flags[handover_flag()] = true
 		if is_instance_valid(josh):
 			josh.get_node("josh").available = false
@@ -156,6 +177,7 @@ func interact(id: StringName) -> void:
 	if loop.dialogue.active or trip_busy: return
 	var choices: Array[Dictionary] = []
 	if preload("res://scripts/clue_catalog.gd").ENTRIES.has(id):
+		if configured_night < preload("res://scripts/clue_catalog.gd").FIRST_NIGHT[id]: return
 		var entry: Dictionary = preload("res://scripts/clue_catalog.gd").ENTRIES[id]
 		pending_read = id
 		loop.dialogue.begin(-20,PackedStringArray(entry.lines),choices,loop.story_flags)
@@ -170,8 +192,8 @@ func interact(id: StringName) -> void:
 		if configured_night == 4: travel(true)
 		elif road.visible: world._say("The access is closed.")
 	elif id == &"depot_clerk" and in_depot:
+		pending_depot = true
 		loop.dialogue.begin(-40,PackedStringArray(["Depot clerk: The station collection? It's ready, same as every week.","Take the usual road back. Your delivery account has been here for years."]),choices,loop.story_flags)
-		loop.tasks[&"depot"] = true
 	elif id == &"return" and in_depot:
 		if loop.tasks.has(&"depot"): travel(false)
 		else: world._say("Collect the delivery from the clerk first.")
@@ -204,7 +226,7 @@ func travel(outbound: bool) -> void:
 func _process(_delta: float) -> void:
 	if not is_instance_valid(loop): return
 	if configured_night != loop.career_shifts+1: apply_night()
-	if configured_night == 3 and loop.served >= 5 and loop.event_history.has(&"night_3_store_parcel"):
+	if configured_night == 3 and loop.served+loop.lost_sales >= 5 and loop.story_flags.get(&"presented_night_3_store_parcel",false):
 		loop.story_flags[&"road_exists"] = true
 		loop.story_flags[&"crack_exists"] = true
 	road.visible = loop.story_flags.get(&"road_exists",false) or loop.definition.world_states.has(&"road")
@@ -212,6 +234,7 @@ func _process(_delta: float) -> void:
 	construction.visible = loop.definition.world_states.has(&"construction")
 	var redwater: bool = loop.definition.reality == &"redwater" and not ending_started
 	alternate.visible = redwater
+	intrusions.visible = configured_night >= 5 and not ending_started
 	branding.text = "REDWATER SERVICE" if redwater or ending_started else "REDWOOD SERVICE"
 	if configured_night == 6 and loop.event_history.has(&"night_6_main") and not ending_started:
 		branding.text = "REDWOOD / REDWATER\n03:17"
@@ -220,3 +243,15 @@ func _process(_delta: float) -> void:
 		if child.has_method("is_available"): child.available = in_depot
 	for child in construction.get_children():
 		if child.has_method("is_available"): child.available = construction.visible
+	for id in preload("res://scripts/clue_catalog.gd").FIRST_NIGHT:
+		var reader := get_node_or_null(NodePath(String(id)))
+		if reader != null:
+			reader.visible = configured_night >= preload("res://scripts/clue_catalog.gd").FIRST_NIGHT[id]
+			reader.available = reader.visible
+
+func enter_ending() -> void:
+	ending_started = true
+	alternate.hide()
+	intrusions.hide()
+	construction.hide()
+	branding.text = "REDWATER SERVICE"

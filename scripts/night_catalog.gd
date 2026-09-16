@@ -1,10 +1,14 @@
 extends RefCounted
-## Night 1 and a configurable following-night template; not final story content.
+## Six compact story prototypes; pacing and dialogue are not final production content.
 const NIGHT = preload("res://scripts/night_definition.gd")
 const EVENT = preload("res://scripts/night_event.gd")
 
 static func for_night(number: int) -> Resource:
 	var night := NIGHT.new()
+	night.customer_profiles.assign([
+		{"id":&"regular_driver","color":Color("b0a079"),"greeting":"Evening. Just stopped on the way home."},
+		{"id":&"local_worker","color":Color("6c8796"),"greeting":"Long day. Glad you're still open."}
+	])
 	night.title = "Night %d" % number
 	if number == 1:
 		night.handover = PackedStringArray(["Josh: First shift, Mike? The till's ready. Stock is out back.","Josh: One more thing. If the phone rings at 03:17… don't answer it.","Josh: Anyway. See you tomorrow."])
@@ -36,13 +40,15 @@ static func for_night(number: int) -> Resource:
 	variable.text = "The cooler light fades for a moment. It settles again."
 	night.events.append(variable)
 	if number == 3:
+		night.required_story.assign([&"night_3_store_parcel"])
 		night.required_tasks.erase(&"service")
 		night.required_tasks.append(&"wc")
 		night.customers = 7
 		night.spawn_seconds = 9
 		night.title = "Night 3 — Reality changes"
 		night.briefing = "Shift notes: check the WC and put away the delivery."
-		main.after_sales = 1
+		# Required physical story must remain reachable even if customers leave unpaid.
+		main.after_sales = 0
 		main.effect = &"message"
 		main.text = "The customer places a blank receipt on the counter.\n‘I was told you would remember the number.’\n[F] Talk"
 		var parcel := EVENT.new()
@@ -54,7 +60,7 @@ static func for_night(number: int) -> Resource:
 		parcel.at_checkout = false
 		parcel.effect = &"world_state"
 		parcel.effect_target = &"stockroom_parcel"
-		parcel.text = "A carton slides off the shelf. Nothing else moves."
+		parcel.text = "The small stock rack tips over beside you. Its contents stay where they fall."
 		night.events.append(parcel)
 	if number >= 4:
 		night.world_states.assign([&"road",&"crack"])
@@ -74,6 +80,10 @@ static func for_night(number: int) -> Resource:
 		main.text = "Radio: ‘Road works begin today on the new Redwater access road.’"
 		main.effect = &"radio_interrupt"
 	if number == 6:
+		night.customer_profiles.assign([
+			{"id":&"regular_driver","color":Color("b0a079"),"greeting":"Evening, Mike. You saved me a trip again."},
+			{"id":&"redwater_courier","color":Color("8d748d"),"greeting":"Last delivery in Redwater tonight. Just something for the road."}
+		])
 		night.title = "Night 6 — Redwater"
 		night.briefing = "Redwater Service. The rota has your name on every previous week."
 		night.reality = &"redwater"
