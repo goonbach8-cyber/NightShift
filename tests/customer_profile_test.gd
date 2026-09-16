@@ -17,6 +17,7 @@ func run() -> void:
 	var customer = loop.customers[0]
 	check(customer.profile_id == &"regular_driver" and customer.greeting.contains("Mike"),"Configured visitor recognizes Mike")
 	customer.walking = false
+	customer.global_position = layout.queue_points[0].global_position
 	loop.queue.append(customer)
 	loop.story_flags[&"asked_about_call"] = true
 	loop.story_flags[&"call_followup_night_6"] = true

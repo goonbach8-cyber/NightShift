@@ -15,6 +15,7 @@ var story_time := 0.0
 var story_cooldown := 0.0
 var pending_events: Array[Resource] = []
 var dialogue_label: Label
+var dialogue_backdrop: Panel
 var checkout_label: Label
 var checkout_backdrop: Panel
 var story_world: Node3D
@@ -82,17 +83,28 @@ func _ready() -> void:
 	checkout_label.add_theme_constant_override("shadow_offset_x",2)
 	checkout_label.add_theme_constant_override("shadow_offset_y",2)
 	$HUD.add_child(checkout_label)
+	dialogue_backdrop = Panel.new()
+	dialogue_backdrop.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	dialogue_backdrop.offset_left = 12
+	dialogue_backdrop.offset_right = -12
+	dialogue_backdrop.offset_top = -332
+	dialogue_backdrop.offset_bottom = -168
+	dialogue_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dialogue_backdrop.add_theme_stylebox_override("panel",checkout_style.duplicate())
+	dialogue_backdrop.hide()
+	$HUD.add_child(dialogue_backdrop)
 	dialogue_label = Label.new()
 	dialogue_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	dialogue_label.offset_left = 24
 	dialogue_label.offset_right = -24
 	dialogue_label.offset_top = -320
-	dialogue_label.offset_bottom = -170
+	dialogue_label.offset_bottom = -180
 	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue_label.add_theme_font_size_override("font_size",20)
 	dialogue_label.add_theme_color_override("font_shadow_color",Color.BLACK)
 	dialogue_label.add_theme_constant_override("shadow_offset_x",2)
 	dialogue_label.add_theme_constant_override("shadow_offset_y",2)
+	dialogue_label.hide()
 	$HUD.add_child(dialogue_label)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -103,7 +115,8 @@ func _ready() -> void:
 	$HUD/ObjectiveBackdrop.offset_right = 440
 	$HUD/ObjectiveBackdrop.offset_bottom = 180
 	objective.offset_right = 425
-	objective.offset_bottom = 185
+	objective.offset_bottom = 172
+	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	objective.add_theme_font_size_override("font_size",15)
 	layout.checkout.prompt = "Scan item / Take payment"
 	$HUD/Controls.text = "WASD Move  E Interact  F Talk  Space Continue  TAB Warehouse product  ESC Pause"
@@ -127,7 +140,7 @@ func _on_event(event: Resource) -> void:
 func _process(delta: float) -> void:
 	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(gameplay.event_history,gameplay.story_flags,gameplay.career_shifts+1)
 	var special: bool = content.has("seen_flag") or not content.choices.is_empty()
-	var customer_ready: bool = not gameplay.queue.is_empty() and not gameplay.queue[0].walking
+	var customer_ready: bool = gameplay.checkout_ready()
 	checkout_label.visible = customer_ready and layout.at_operator(player) and not gameplay.dialogue.active
 	checkout_backdrop.visible = checkout_label.visible
 	checkout_label.text = gameplay.checkout_text() if checkout_label.visible else ""
@@ -165,6 +178,7 @@ func _process(delta: float) -> void:
 	message_time = maxf(0,message_time-delta)
 	message.visible = message_time > 0
 	dialogue_label.visible = gameplay.dialogue.active
+	dialogue_backdrop.visible = dialogue_label.visible
 	dialogue_label.text = gameplay.dialogue.display_text()
 	radio.globally_muted = muted
 

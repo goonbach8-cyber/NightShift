@@ -54,6 +54,9 @@ func run() -> void:
 		await walk(layout.product_points[id].global_position)
 		await use()
 		check(loop.inventory.carried_product() == &"" and loop.inventory.stocks[id].shelf_units > 0,"Matching shelf replenished: "+String(id))
+		if id == &"energy":
+			await use()
+			check(loop.tasks.has(&"cooler"),"Player explicitly checks refrigeration")
 	await walk(layout.delivery.global_position+Vector3(-1,0,0))
 	await use()
 	check(loop.delivery_carried,"Mixed delivery picked up during customer operation")

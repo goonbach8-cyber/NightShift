@@ -6,6 +6,7 @@ func run() -> void:
 	bind_world()
 	check(loop.interaction_prompt(layout.product_nodes[&"water"],player).begins_with("Check"),"Empty hands do not promise immediate restocking")
 	loop.inventory.take_crate(&"water")
+	check(loop.interaction_prompt(layout.delivery,player).contains("Refill") and not loop.interaction_prompt(layout.delivery,player).contains("Collect"),"Full hands do not advertise delivery pickup")
 	check(loop.interaction_prompt(layout.product_nodes[&"water"],player).begins_with("Restock"),"Matching load offers restocking")
 	check(loop.interaction_prompt(layout.product_nodes[&"chips"],player).begins_with("Check"),"Wrong load does not promise restocking")
 	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player).contains("Refill its display"),"Supply identifies the currently blocked action")
@@ -18,6 +19,7 @@ func run() -> void:
 	loop.spawn_customer()
 	var customer = loop.customers[0]
 	customer.walking = false
+	customer.global_position = layout.queue_points[0].global_position
 	loop.queue.append(customer)
 	player.global_position = layout.operator_point.global_position
 	check(loop.interaction_prompt(layout.checkout,player).begins_with("Scan"),"Checkout prompt names the scan action")

@@ -1,6 +1,7 @@
 extends Node
 signal changed
 signal notice(text: String)
+const TASK_LABELS := {&"cooler":"Check refrigeration", &"restock":"Refill a display", &"delivery":"Store delivery", &"service":"Empty waste bin", &"wc":"Check WC", &"depot":"Collect depot order"}
 const CUSTOMER = preload("res://scripts/customer.gd")
 var layout: Node
 var navigation: Node
@@ -274,12 +275,14 @@ func checkout_text() -> String:
 	var amount_label := "Total" if detail.remaining == 0 else "Subtotal"
 	return "%s\n%d / %d items · %d remaining\n%s: CHF %.2f\n%s" % [heading,detail.scanned,detail.count,detail.remaining,amount_label,float(detail.subtotal)/100,action]
 
-func checkout() -> bool:
-	if queue.is_empty():
-		return false
+func checkout_ready() -> bool:
+	if queue.is_empty() or not is_instance_valid(queue[0]): return false
 	var customer := queue[0]
-	if customer.walking or customer.paid or customer.global_position.distance_to(layout.queue_points[0].global_position) > 0.6:
-		return false
+	return not customer.walking and not customer.paid and customer.global_position.distance_to(layout.queue_points[0].global_position) <= 0.6
+
+func checkout() -> bool:
+	if not checkout_ready(): return false
+	var customer := queue[0]
 	if dialogue.active:
 		notice.emit("Finish the conversation with Space or choose an answer.")
 		return false
@@ -323,7 +326,7 @@ func selected_product() -> StringName:
 func interaction_prompt(target: Node3D, player: Node3D) -> String:
 	if target == layout.checkout:
 		if not layout.at_operator(player): return "Checkout — use the staff side"
-		if queue.is_empty() or queue[0].walking: return "Checkout — waiting for a customer"
+		if not checkout_ready(): return "Checkout — waiting for a customer"
 		var details := checkout_details()
 		if details.remaining == 0: return "Accept payment · CHF %.2f" % (float(details.total)/100)
 		return "Scan %s" % details.next
@@ -345,7 +348,9 @@ func interaction_prompt(target: Node3D, player: Node3D) -> String:
 		var title: String = inventory.products[selected_product()].display_name
 		if selected.warehouse_units == 0: return "Check %s · Warehouse empty · [TAB] Select product" % title
 		if selected.shelf_units == selected.capacity: return "Check %s · Display full · [TAB] Select product" % title
-	if target == layout.delivery: return "Collect delivery · "+inventory.basket_text(delivery_manifest)
+	if target == layout.delivery:
+		if carried != &"": return "Delivery · Refill %s first" % inventory.products[carried].display_name
+		return "Collect delivery · "+inventory.basket_text(delivery_manifest)
 	return target.prompt
 
 func update_supply_prompt() -> void:
@@ -353,9 +358,11 @@ func update_supply_prompt() -> void:
 	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else "Collect %s (warehouse %d) — TAB select" % [inventory.products[id].display_name,inventory.stocks[id].warehouse_units]
 
 func fill_shelf(id: StringName) -> void:
+	var before: int = inventory.stocks[id].shelf_units
 	if inventory.restock(id):
 		tasks[&"restock"] = true
-		notice.emit(inventory.products[id].display_name+" restocked.")
+		var item: Resource = inventory.stocks[id]
+		notice.emit("Restocked %d × %s · %d/%d on display." % [item.shelf_units-before,inventory.products[id].display_name,item.shelf_units,item.capacity])
 	else:
 		var carried: StringName = inventory.carried_product()
 		if carried != &"" and carried != id:
@@ -380,10 +387,10 @@ func interact(action: StringName, player: Node3D) -> void:
 				tasks[&"service"] = true
 				notice.emit("Waste bin emptied. Service check complete.")
 			&"cooler":
-				tasks[&"cooler"] = true
 				if inventory.carried_product() != &"":
 					fill_shelf(&"energy")
 				else:
+					tasks[&"cooler"] = true
 					notice.emit("Refrigeration checked: 4 °C.")
 			&"shelf":
 				fill_shelf(&"water")
@@ -421,7 +428,7 @@ func can_finish() -> bool:
 	return served+lost_sales == customer_count and departed == customer_count and required_tasks.all(func(id): return tasks.has(id)) and definition.required_story.all(func(id): return story_flags.get(StringName("presented_"+String(id)),false))
 
 func talk() -> void:
-	if queue.is_empty() or queue[0].walking: return
+	if not checkout_ready(): return
 	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(event_history,story_flags,career_shifts+1)
 	if content.get("routine",false) and not queue[0].greeting.is_empty():
 		content.lines.insert(0,queue[0].greeting)
@@ -437,7 +444,7 @@ func status_text() -> String:
 	var lines := PackedStringArray(["%s | Customers %d/%d | CHF %.2f" % [definition.title,served,customer_count,float(revenue_rappen)/100]])
 	var pending := PackedStringArray()
 	for task in required_tasks:
-		if not tasks.has(task): pending.append(String(task).capitalize())
+		if not tasks.has(task): pending.append(TASK_LABELS.get(task,String(task).capitalize()))
 	lines.append("Tasks: "+", ".join(pending) if not pending.is_empty() else "Tasks complete")
 	var carried: StringName = inventory.carried_product()
 	if delivery_carried: lines.append("Carrying delivery → warehouse")

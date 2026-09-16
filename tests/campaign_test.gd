@@ -76,6 +76,9 @@ func run() -> void:
 			await walk(layout.product_points[id].global_position)
 			await use()
 			check(loop.inventory.carried_product() == &"","Load deposited at matching shelf")
+			if id == &"energy":
+				await use()
+				check(loop.tasks.has(&"cooler"),"Refrigeration is explicitly checked after restocking")
 		await walk(layout.delivery.global_position+Vector3(-1,0,0))
 		await use()
 		check(loop.delivery_carried,"Delivery arrives during customer operation")
