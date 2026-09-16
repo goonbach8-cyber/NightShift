@@ -10,6 +10,7 @@ extends Node
 @export var customer_offset := Vector3(0,0,1.0)
 @export var queue_step := Vector3(-1.0,0,0)
 @export var spawn_offset := Vector3(0,0,2.7)
+@export var entry_wait_offset := Vector3(0.95,0,2.7)
 var shelf: Node3D
 var checkout: Node3D
 var warehouse: Node3D
@@ -17,6 +18,7 @@ var entrance: Node3D
 var shelf_point: Marker3D
 var operator_point: Marker3D
 var spawn_point: Marker3D
+var entry_wait_point: Marker3D
 var queue_points: Array[Marker3D] = []
 var doors: Array[Node3D] = []
 var delivery: Node3D
@@ -40,6 +42,7 @@ func _ready() -> void:
 	shelf_point = marker(shelf,"CustomerApproach",shelf_approach)
 	operator_point = marker(checkout,"Operator",operator_offset)
 	spawn_point = marker(entrance,"CustomerSpawn",spawn_offset)
+	entry_wait_point = marker(entrance,"CustomerEntryWait",entry_wait_offset)
 	for i in 4:
 		queue_points.append(marker(checkout,"Queue%d" % i,customer_offset+queue_step*i))
 	doors.append(entrance)

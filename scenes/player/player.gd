@@ -70,19 +70,23 @@ func _update_animation(actual_velocity: Vector3) -> void:
 
 
 func _update_interaction() -> void:
+	var previous_target := interaction_target
 	interaction_target = null
-	var nearest := interaction_distance
+	var nearest := INF
 	for candidate in get_tree().get_nodes_in_group("interactable"):
-		if not candidate is Node3D or not candidate.is_available():
+		if not candidate is Node3D or not candidate.is_visible_in_tree() or not candidate.is_available():
 			continue
 		var point: Vector3 = candidate.global_position + Vector3.UP * 0.8
 		var origin := global_position + Vector3.UP * 0.8
 		var distance := origin.distance_to(point)
-		if distance >= nearest:
+		if distance >= interaction_distance:
 			continue
+		# Small hysteresis prevents prompt flicker on a boundary between two objects.
+		var score: float = distance + candidate.interaction_bias() - (0.12 if candidate == previous_target else 0.0)
+		if score >= nearest: continue
 		var query := PhysicsRayQueryParameters3D.create(origin, point, 1, [get_rid()])
 		var hit := get_world_3d().direct_space_state.intersect_ray(query)
 		if not hit.is_empty() and not candidate.is_ancestor_of(hit.collider) and hit.collider != candidate:
 			continue
-		nearest = distance
+		nearest = score
 		interaction_target = candidate

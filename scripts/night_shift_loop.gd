@@ -117,7 +117,10 @@ func _process(delta: float) -> void:
 		# A reachable approach marker has a small browsing radius, avoiding a pile-up
 		# when another shopper is standing directly at the same shelf.
 		if customer.state == &"shopping" and customer.global_position.distance_to(layout.product_points[customer.current_product].global_position) < 0.8:
-			select_product(customer)
+			begin_browsing(customer)
+		if customer.state == &"browsing":
+			customer.browse_remaining -= delta
+			if customer.browse_remaining <= 0: select_product(customer)
 		if (customer.state == &"stock_wait" or customer.state == &"queued") and dialogue.owner_id != customer.get_instance_id():
 			customer.wait_seconds += delta
 			if customer.wait_seconds >= customer.patience:
@@ -134,6 +137,9 @@ func spawn_customer() -> void:
 	customer.set_script(CUSTOMER)
 	customer.name = "Customer%d" % (spawned+1)
 	customer.navigation = navigation
+	customer.entrance = layout.entrance
+	customer.arrival_origin = layout.spawn_point
+	customer.entry_wait_point = layout.entry_wait_point
 	customer.doors = layout.doors
 	customer.order = order_patterns[spawned % order_patterns.size()].duplicate()
 	customer.remaining_products = customer.order.keys()
@@ -173,15 +179,23 @@ func visit_next_product(customer: CharacterBody3D) -> void:
 
 func customer_arrived(customer: CharacterBody3D) -> void:
 	if customer.state == &"shopping":
-		select_product(customer)
+		begin_browsing(customer)
 	elif customer.state == &"leaving":
 		customers.erase(customer)
 		departed += 1
 		customer.queue_free()
 		changed.emit()
 
+func begin_browsing(customer: CharacterBody3D) -> void:
+	if customer.state != &"shopping": return
+	customer.state = &"browsing"
+	customer.walking = false
+	customer.velocity = Vector3.ZERO
+	customer.browse_remaining = customer.browse_seconds
+	customer.status_text = "Choosing "+inventory.products[customer.current_product].display_name
+
 func select_product(customer: CharacterBody3D) -> void:
-	if customer.state != &"shopping" and customer.state != &"stock_wait":
+	if customer.state != &"shopping" and customer.state != &"browsing" and customer.state != &"stock_wait":
 		return
 	var id: StringName = customer.current_product
 	if inventory.reserve(customer.get_instance_id(),id,customer.order[id]):
@@ -255,9 +269,10 @@ func checkout_details() -> Dictionary:
 func checkout_text() -> String:
 	var detail := checkout_details()
 	if detail.is_empty(): return "Checkout ready"
-	var heading: String = "%s scanned" % detail.last if detail.scanned > 0 else "Next: "+detail.next
-	var action: String = "All items scanned — [E] Accept payment" if detail.remaining == 0 else "[E] Scan "+detail.next
-	return "%s\n%d / %d items · %d remaining\nSubtotal: CHF %.2f\n%s" % [heading,detail.scanned,detail.count,detail.remaining,float(detail.subtotal)/100,action]
+	var heading: String = "%s scanned" % detail.last if detail.scanned > 0 else "Ready to scan"
+	var action: String = "All items scanned · Accept payment" if detail.remaining == 0 else "Next: "+detail.next
+	var amount_label := "Total" if detail.remaining == 0 else "Subtotal"
+	return "%s\n%d / %d items · %d remaining\n%s: CHF %.2f\n%s" % [heading,detail.scanned,detail.count,detail.remaining,amount_label,float(detail.subtotal)/100,action]
 
 func checkout() -> bool:
 	if queue.is_empty():
@@ -304,6 +319,34 @@ func cycle_supply() -> void:
 
 func selected_product() -> StringName:
 	return inventory.products.keys()[supply_selection]
+
+func interaction_prompt(target: Node3D, player: Node3D) -> String:
+	if target == layout.checkout:
+		if not layout.at_operator(player): return "Checkout — use the staff side"
+		if queue.is_empty() or queue[0].walking: return "Checkout — waiting for a customer"
+		var details := checkout_details()
+		if details.remaining == 0: return "Accept payment · CHF %.2f" % (float(details.total)/100)
+		return "Scan %s" % details.next
+	var carried: StringName = inventory.carried_product()
+	for id in layout.product_nodes:
+		if target != layout.product_nodes[id]: continue
+		var item: Resource = inventory.stocks[id]
+		var title: String = inventory.products[id].display_name
+		var stock_text := "%s · %d/%d" % [title,item.shelf_units,item.capacity]
+		if target.action_id == &"cooler" and carried == &"": return "Check refrigeration · "+stock_text
+		if carried == id and item.shelf_units < item.capacity: return "Restock "+stock_text
+		if item.shelf_units == item.capacity: return "Check "+stock_text+" · Full"
+		if carried != &"": return "Check "+stock_text+" · Carrying "+inventory.products[carried].display_name
+		return "Check "+stock_text+" · Stock from warehouse"
+	if target == layout.warehouse.get_node("Supply"):
+		if delivery_carried: return "Store delivery · "+inventory.basket_text(delivery_manifest)
+		if carried != &"": return "Carrying %s · Refill its display first" % inventory.products[carried].display_name
+		var selected: Resource = inventory.stocks[selected_product()]
+		var title: String = inventory.products[selected_product()].display_name
+		if selected.warehouse_units == 0: return "Check %s · Warehouse empty · [TAB] Select product" % title
+		if selected.shelf_units == selected.capacity: return "Check %s · Display full · [TAB] Select product" % title
+	if target == layout.delivery: return "Collect delivery · "+inventory.basket_text(delivery_manifest)
+	return target.prompt
 
 func update_supply_prompt() -> void:
 	var id := selected_product()
@@ -353,7 +396,10 @@ func interact(action: StringName, player: Node3D) -> void:
 				elif inventory.take_crate(selected_product()):
 					notice.emit("Carrying stock: "+inventory.products[selected_product()].display_name)
 				else:
-					notice.emit("Already carrying stock, display full, or warehouse empty.")
+					var carried: StringName = inventory.carried_product()
+					if carried != &"": notice.emit("You are carrying %s. Refill its display first." % inventory.products[carried].display_name)
+					elif inventory.stocks[selected_product()].warehouse_units == 0: notice.emit("No %s left in the warehouse." % inventory.products[selected_product()].display_name)
+					else: notice.emit("The %s display is already full." % inventory.products[selected_product()].display_name)
 			&"delivery":
 				if delivery_ready and inventory.carried_product() == &"":
 					delivery_ready = false

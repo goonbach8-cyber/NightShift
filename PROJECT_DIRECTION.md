@@ -19,6 +19,6 @@ User-designated baseline: `03-17_Businessplan_September_2026.pdf`, version 1.0, 
 
 ## Current implementation boundary
 
-The September gameplay pass remains focused on functional checkout, stock, navigation, menus, saves and story presentation. Night 3's falling carton is a small physical-event prototype. Josh's authored handover/denial, the road, depot and full six-night narrative are still to be built. Do not describe the prototype as the finished story.
+Six short data-driven nights now connect Josh's warning/denial, a tipped stock rack, a crack and road, a compact physical depot, the contradictory construction map, Redwater world details and an unresolved ending. Five optional documents feed the hidden extra-call threshold. These are functional spatial/narrative prototypes, not the finished story, final art, target playtime or final cinematic pacing. No explanation of the phenomenon or Josh's knowledge is established.
 
 Creative direction remains with the user. The PDF supplies product/story context; its embedded agent appendix is not permission for external publishing, purchases, account changes or desktop control. The current session explicitly prohibits Computer Use and native input simulation.

@@ -1,11 +1,12 @@
 # NightShift / 03:17 — playable prototype
 
-Updated 15 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. Six authored nights remain the target; current short test shifts are not five hours of finished story.
+Updated 16 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. Six connected prototype nights reach the ending; these short test shifts are not five hours of finished story.
 
 ## Playing
 
 - Startup opens **New Game / Continue / Settings / Quit**. Existing progress requires confirmation before New Game. Continue accepts a valid checkpoint or backup.
 - **WASD** moves. **E** uses the nearest visible interaction. Start and finish at the staff shift notes behind the counter.
+- E prompts describe the current action: check stock with empty hands, restock with matching goods, scan the next item, then accept payment. Supply reports a specific blocked-action reason. Delivery prompts list their contents. Small selection hysteresis prevents flicker; already-open doors yield to nearby work surfaces. Hidden objects cannot retain selection. Dialogue hides the background E prompt.
 - At the operator side of checkout, **E** scans one item, then accepts payment. The contextual panel names the scanned item, shows scanned/remaining quantities and the scanned subtotal. Stock and revenue change only on payment.
 - **F** talks to the waiting customer. **Space** advances; **1/2** select offered answers. Special conversations receive a contextual hint. Earlier answers alter later dialogue after loading.
 - Water: rear-right bottle shelf. Energy: rear-left cooler. Chips: snack island. Customers visit each matching product location. Stock controls separate visual slots; empty displays are actually empty.
@@ -17,11 +18,16 @@ Updated 15 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJEC
 
 ## Nights and story prototypes
 
-- Night 1: 6 customers, 8-second spawn spacing, refrigeration/restock/delivery. Guaranteed checkout mystery and a two-answer conversation.
-- Night 2: 8 customers, 6-second spacing, waste task, radio event and a follow-up responding to the earlier answer.
-- Night 3: 7 customers, 9-second spacing, WC task, its own main-event text and a later stockroom-triggered carton movement. The carton remains displaced during the night.
+- Night 1: physical Josh handover before the first shift; the exact 03:17 warning. Six customers, routine tasks, checkout mystery and a two-answer conversation.
+- Night 2: Josh sincerely denies the warning. Eight customers, waste task, radio event and a follow-up responding to the saved answer.
+- Night 3: seven customers, WC task, a small loaded rack tips beside Mike in the stockroom and stays tipped. Required presentation blocks premature shift completion. A crack and inaccessible road appear later; lost sales cannot block the physical story prerequisites.
+- Night 4: six customers and a required depot collection. The physical navigation point starts a compact fade/travel transition; walk to the clerk and ledger, then use the return point. The small depot has floor, bounded yard, counter, clerk and lighting, not a driving simulation.
+- Night 5: construction notice with an alternate map and Redwater name, radio announcement, address/company intrusions and routine customer references.
+- Night 6: changed station branding, additional road/building geometry, familiar and different customer profiles, and Redwater-Josh's ordinary recognition of Mike without special knowledge. The 03:17 main event changes the sign; completion restores familiar surroundings with a remaining Redwater sign.
+- Five physical optional readings are introduced across the nights. Only completed reading counts. Four of five unlock a brief extra Josh call after the normal ending. No visible clue counter and no explanatory lore.
+- Interrupted handovers, document readings, depot conversation and consequence dialogue remain available. Completed dialogue consequences are recorded once.
 - Events support time, sales, prior event, story flag, task and player-area prerequisites. Configurable spacing prevents simultaneous unrelated events. Text waits for a relevant location; active dialogue postpones presentation and preserves reading time.
-- This is prototype content. Josh's full handover/denial, new road, depot, Redwood/Redwater transitions, authored Nights 4–6 and standalone demo are not implemented.
+- World geometry, Josh/clerk models and ending presentation remain prototypes. Final cinematic timing, layered reality overlap, art and a standalone demo are unfinished. No cause of the phenomenon or Josh backstory has been invented.
 
 ## Audio and diagnostics
 
@@ -33,12 +39,16 @@ Normal HUD omits raw stock/reservation and NPC path diagnostics. Launch with `--
 
 Run with Godot 4.7.2 CLI, e.g. `godot --headless --path . --script res://tests/checkout_test.gd`.
 
-- `campaign_test.gd -- --three-nights --shift-layout`: complete 3-night loop on translated map, checkout, stock, tasks, story, boundary saves and customer/reservation cleanup.
+- `campaign_test.gd -- --six-nights --shift-layout`: New Game through all six nights to ending on translated map, physical depot interactions, presented main events, boundary saves and customer/reservation cleanup.
 - `story_continuity_test.gd`: both answer branches through Save/Load, F conversation, real Area3D, persistent prop displacement and WC interaction.
 - `campaign_process_test.gd`: stages 1, 2, 3 in separate processes, sharing a unique `--checkpoint=user://campaign_process_<id>.json` and `--stage=N`.
+- `six_process_test.gd`: stages 1 through 7 in separate processes, sharing `--checkpoint=user://six_process_<unique>.json`; boundary fixtures verify stocks, flags, clues, event history and world reconstruction, separately from the full gameplay test.
+- `story_campaign_test.gd`, `ending_save_test.gd`: authored sequence, interrupted-reading guards, required Night 3 presentation, low/high clue ending branches and save/load.
+- `depot_movement_test.gd`: internal directional inputs verify yard boundaries, solid counter and physical return interaction.
+- `customer_profile_test.gd`: familiar/alternate visitors, configured greetings and story priority.
 - `menu_test.gd`, `pause_gameplay_test.gd`: new/continue/backup/settings and frozen gameplay/input while paused.
 - `world_binding_test.gd`, `product_route_test.gd`: independent physical product displays, correct routes and wrong-product rejection.
 - `event_spacing_test.gd`, `presentation_test.gd`, `narrative_test.gd`: trigger prerequisites, cooldowns, reading time, dialogue and radio restoration.
 - `audio_routing_test.gd`, plus existing smoke, inventory, stock, save, service, environment, sidewalk, customer lifecycle/door and queue tests.
 
-Tests use isolated checkpoint files. Native Windows keyboard/focus testing and fresh human visual/audio review are pending. This session uses only headless CLI and in-engine InputEvents, with no Computer Use or desktop focus changes.
+Tests use isolated checkpoint files. Controls were manually verified by the user. New story geometry, text readability, scare intensity and audio balance need human review. This session uses only headless CLI and in-engine InputEvents, with no Computer Use or desktop focus changes.

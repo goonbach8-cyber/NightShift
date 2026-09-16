@@ -1,43 +1,52 @@
-# Exact continuation — 15 September 2026
+# 03:17 — continuation, 16 September 2026
 
-## Constraints and product baseline
+## Current direction (latest user instruction)
 
-- User is working on the same computer. **No Computer Use, desktop focus, native keyboard/mouse injection, or GUI editor automation.** Use CLI/headless/in-engine InputEvents. Native keyboard verification remains manual pending.
-- User designated `C:/Users/e558926/Downloads/03-17_Businessplan_September_2026.pdf` as the game's foundation. Read all 12 pages; concise internal reference: PROJECT_DIRECTION.md. Public title 03:17, internal NightShift, Mike/Josh, six-night Redwood/Redwater arc. Do not invent an explanation or expand into a large simulator.
+**Stop expanding breadth. Improve depth.** The six-night campaign is technically connected. Prioritize existing player-facing interactions/prompts, shopping/queue behavior, checkout, shelf stock, restocking/delivery, tasks, dialogue/event presentation and night differentiation. Do not implement old backlog items merely because they are absent. Preserve the full campaign after major changes.
 
-## Implemented and verified this block
+No Computer Use, native keyboard/mouse, window focus or GUI automation. The user works on this PC and has manually verified controls. Use files/CLI/headless/internal InputEvents. Human evaluation of new visual/audio presentation remains pending; an old Windows helper failure is not a gameplay bug.
 
-- Checkout now shows last scanned product, scanned/total/remaining items, scanned subtotal and accept-payment readiness; payment reports final total. Existing atomic reservation/payment logic preserved.
-- Night 2/3 follow-up conversation differs for asked/denied Night 1 answers, through actual save/load and F input. Follow-up only opens once per night.
-- Night 3 distinct configuration: 7 customers, 9-second spawn interval, WC instead of waste task, main message plus later stockroom physical event.
-- Event prerequisites: time, sales, flag, task, previous event, occupied Area3D. Stockroom trigger binds relative to existing supply. Falling carton is a deterministic tween, not unstable rigid-body physics; remains displaced for that night, does not block movement.
-- WC floor mark/check point in existing room; E completes configured task and removes mark. Only available when required, cannot repeat after completion.
-- Master/SFX/Radio/Ambience routing, including three spatial ambient emitters. Legacy Music setting remains parent of Radio for compatibility. Custom music/streamer mode intentionally deferred as optional in business plan.
-- Menu title 03:17. Completion adds lost customers/tasks. Night 1/2 pre-shift text briefings introduce Josh's warning/denial; not an animated Josh scene.
-- HUD streamlined, touched notices English. `--dev-debug` enables NPC state/target/path/wait and stock diagnostics; default off.
-- README and VERTICAL_SLICE corrected; old instructions wrongly finished at checkout and lacked menus/customers.
+## Implemented story foundation
 
-## Tests and evidence
+- Night 1 physical Josh greeting, exact phone warning, departure and early guaranteed checkout mystery.
+- Night 2 physical Josh contradiction; saved answer changes later conversation.
+- Night 3 small loaded rack tips near Mike and stays tipped. Shift completion requires its presented flag. Later crack/new-road geometry; Night 3 route is closed. Required story is not dependent on successful sales, so lost customers cannot make it unreachable.
+- Night 4 work-related depot route, short travel transition, actual bounded collection yard/counter/clerk/ledger, and return interaction. No vehicle simulation.
+- Night 5 construction map/name contradiction, radio announcement, wrong address/company/product signage, routine Redwater mention.
+- Night 6 different surrounding road/building geometry and branding, familiar/other customer profiles, Redwater-Josh without phenomenon knowledge. Ending returns to familiar station with one Redwater sign.
+- Five optional physical documents introduced across nights. Completed readings count uniquely; interrupted readings do not. Four of five enable a short optional Josh call after the normal ending. No visible clue counter or explanation of the phenomenon.
+- Interrupted handovers, depot dialogue and story follow-ups remain available. Follow-ups become seen only after finishing the conversation.
 
-26 selected successful logs, **607 PASS assertions**, zero FAIL/SCRIPT ERROR/ERROR/WARNING matches. Manifest: `C:/Users/e558926/Documents/Codex/2026-09-10/du-arbeitest-direkt-an-meinem-lokalen/outputs/test-manifest.json`. This is a count across the selected regression runs, not a claim of 607 independent unit cases.
+These are compact functional story/world prototypes, not final cinematic presentation, final art, five hours of content or a finished commercial game.
 
-Key logs in that outputs directory:
-- `final-three-nights-cli.log`: 165 checks, complete translated-map Night 1→2→3, 21 customers/36 items/CHF 98.50, WC, stockroom event, tasks, saves, no customer/reservation leftovers. All headless. Later changes only English notices and text briefings; menu/story/smoke retested afterward.
-- `briefing-story_continuity.log`: 22 checks, both saved choices, F follow-up, true player-area entry, physical prop and WC E interaction.
-- `briefing-menu.log`: 29 checks; `regression-pause_gameplay.log`: 8 checks with active customer/dialogue and blocked inputs.
-- `process-night-1/2/3.log`: three separate processes verify boundary state/revenue/stock/flags/history and Night 3 dialogue selection (boundary fixtures; full gameplay separately covered by campaign).
-- `scene-lifecycle.log`: 14 checks, stable node count and single event signal/area/prop after teardown/reload.
-- `resume-cli-world_binding.log` 51, `resume-cli-product_route.log` 13, `hud-checkout.log` 13.
-- Audio/story/player/room/save/stock/navigation regressions listed in manifest.
+## Interaction depth pass
 
-Earlier failing development logs are preserved: story fixture initially omitted ACTIVE phase, then rebuilt navigation before physics synchronization; pause fixture supplied an untyped empty choice array. These test setup errors were fixed and rerun successfully. Do not treat their old logs as current failures.
+- Contextual E prompts distinguish checking stock, matching restock, next scan and accepting payment. Wrong carried goods do not promise restocking.
+- Supply failure feedback names the actual reason instead of listing three possible causes. Delivery prompt includes manifest.
+- Dialogue hides background E prompt. Small 0.12 m selection hysteresis avoids flicker, but never extends range or bypasses walls.
+- Hidden objects cannot remain selected. Open doors have a 0.25 m selection penalty when competing with a work surface; closed doors unchanged. This fixes an actual delivery interaction selecting StoreDoor instead of Supply.
+- Josh now meets Mike near the arrival position, away from water/supply/checkout/shift-note interaction zones.
 
-## Continue here, no whole-project reanalysis
+## Tests / evidence
 
-1. Read PROJECT_DIRECTION.md and this handoff. Verify the last manifest/log tails and local diff.
-2. Next meaningful player-facing work: improve Josh's preliminary warning/denial from persistent start text into a compact authored handover conversation, preserving the PDF direction and existing dialogue controls. Keep normal gameplay dominant.
-3. Strengthen Night 3 physical evidence presentation from normal camera when a non-focus-stealing render workflow is available; human visual/audio and native input test remain pending. Do not use Computer Use without new explicit permission.
-4. Separate optional story/debug panels if useful; extend save compatibility for added product definitions only with migration tests.
-5. Full six-night content, road/depot, cracks/Redwater world states, demo, polished sound/assets and release-length pacing remain unfinished. Night 4+ currently reuse following-night template; never call this a complete campaign.
+Logs are in `C:/Users/e558926/Documents/Codex/2026-09-10/du-arbeitest-direkt-an-meinem-lokalen/outputs/`, not inside the repository.
 
-Do not run the old `work/world/prepare.ps1`: it contains stale files and can overwrite improvements. Do not reset, commit or push without the appropriate task scope. Original player frames and colliders were preserved.
+- `six-final-campaign.log`: complete New Game → Nights 1–6 → saved ending, translated map, physical depot E interactions, all main presentations, exact CHF 189.10 / 39 customers / 69 items, no NPC/reservation leftovers. Later depth changes have a separate campaign run.
+- `six-process-1.log` through `six-process-7.log`: isolated boundary fixtures across seven processes; nights, stock, revenue, decisions, event history, clues, world states and ending eligibility preserved. Not a substitute for full gameplay.
+- `story-recovery-verified.log`: authored sequence, interrupted-reading guards, Night 3 required presentation/no-sale recovery, geometry and optional-call threshold.
+- `story-final-ending_save.log`: actual ending UI with 0/3/4 clues, safe save/load; ordinary ending works without clues.
+- `final-customer_profile.log`: data-driven known/alternate customers, greetings and story priority; interrupted consequence stays available.
+- `depot-movement.log`: all four directions blocked at yard bounds; clerk/counter and return remain reachable.
+- `interaction-quality-verified.log`: contextual prompts, flicker resistance, range/visibility, reproduced open-door/supply competition.
+- Final depth campaign and regression status must be taken from the latest manifest/logs, not assumed from this handoff or the older 607-check baseline.
+
+Old failing logs are retained. Fixed causes: optional reading points stole product/radio prompts; Josh stole board/water selection; open StoreDoor stole supply interaction; an old dialogue test used abort as completion. Only count the corresponding successful reruns.
+
+## Exact next work
+
+1. Check completion/status of `depth-six-campaign.log` and `depth-regression-*.log`; do not repeat a whole-project analysis.
+2. Finish validating interaction depth changes before altering shopping/queue behavior. Reproduce any remaining action-selection error rather than masking it with broader distance tolerances.
+3. Next quality target: shopping/queue transitions from a player's perspective (abrupt product pickup, readable waiting/serving state, avoiding hesitation/blocking), using the existing customer state machine. No new gameplay system required.
+4. Human review later: normal-camera legibility, rack/depot/Redwater geometry, dialogue pacing, radio/scare intensity. Do not attempt native input or focus-taking graphics tests.
+
+Do not run old `work/world/prepare.ps1`; it contains stale files. No Git reset, commit or push was done. Player art, movement dimensions and collision sizes remain intact.

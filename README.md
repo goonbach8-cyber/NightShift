@@ -2,7 +2,7 @@
 
 Godot 4.7.2 psychological-horror/mystery prototype: a 2D pixel character working in a 3D gas station. **03:17** is the planned public title; NightShift remains the internal project name.
 
-The user-designated business/story baseline is summarized in [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md). Current controls, menus, products, three prototype nights, story systems, save boundaries and test commands are documented in [VERTICAL_SLICE.md](VERTICAL_SLICE.md).
+The user-designated business/story baseline is summarized in [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md). Current controls, menus, products, six prototype nights, story systems, save boundaries and test commands are documented in [VERTICAL_SLICE.md](VERTICAL_SLICE.md).
 
 ## Start
 
@@ -20,10 +20,13 @@ Run headlessly without desktop input:
 godot --headless --path . --script res://tests/smoke_test.gd
 godot --headless --path . --script res://tests/menu_test.gd
 godot --headless --path . --script res://tests/story_continuity_test.gd
-godot --headless --path . --script res://tests/campaign_test.gd -- --three-nights --shift-layout
+godot --headless --path . --script res://tests/campaign_test.gd -- --six-nights --shift-layout
+godot --headless --path . --script res://tests/story_campaign_test.gd
+godot --headless --path . --script res://tests/ending_save_test.gd
+godot --headless --path . --script res://tests/depot_movement_test.gd
 ```
 
-Require zero failures and inspect logs for script errors/warnings. `-- --dev-debug` enables optional customer and inventory diagnostics. Native keyboard focus and visual presentation still require a later human test.
+Require zero failures and inspect logs for script errors/warnings. `-- --dev-debug` enables optional customer and inventory diagnostics. Controls have been manually verified by the user. The new story geometry, reading comfort and audio impact still require human evaluation; no desktop automation is needed or authorized.
 
 ## Player-Animation
 
@@ -35,13 +38,14 @@ Die Ursache lag in den alten Bildposen, nicht in einem ständig neu gestarteten 
 
 ## Sichtbare Aufgaben
 
-Beim Getränke-Auffüllen erscheinen acht zusätzliche Packungen in den oberen Regalreihen. Der Hinweis wechselt zu „Regal ansehen“. Ein Neustart stellt den Anfangszustand wieder her. Die Aufgabenanzeige hat einen dunklen Hintergrund, damit Weltbeschriftungen sie nicht überlagern.
+Water, Energy und Chips besitzen eigene Bestände, Verkaufsorte und sichtbare Produkt-Slots. Verkäufe entfernen passende Visuals, Nachfüllen stellt sie wieder her. Kühlung, Lieferung, Müll und WC sind konfigurierbare Aufgaben an eigenen Orten.
 
 ## Grenzen des Prototyps
 
 - Einrichtung, Zapfsäule und Beleuchtung sind einfache Platzhalter, keine fertige Tankstellenkulisse.
-- Aufgaben werden durch eine Interaktion bestätigt; es gibt noch keine Trage-, Kunden- oder Kassiersimulation.
-- Audio besteht aus einem leisen Gerätebrummen und einem kurzen Bestätigungston. Ein Hörtest und ausgearbeitetes Sounddesign stehen aus.
-- Kein Speichern/Laden, keine NPCs, kein fertiges Spiel oder Exportpaket.
+- Kunden, Reservierungen, einzelne Scans, Zahlung, Nachfüllen, Lieferung und sichere Spielstände zwischen Nächten funktionieren.
+- Audio besitzt getrennte Kategorien, räumliche Atmosphäre und ein Radio mit Mystery-Unterbrechungen. Finale Audioassets und Hörprüfung stehen aus.
+- Alle sechs Nächte sind kurze Story-/Gameplay-Prototypen mit einem erreichbaren Ende, keine fünf Stunden fertiger Story. Depot, Josh und Redwater-Geometrie sind bewusst einfache Platzhalter.
+- Kein fertiges Release-/Exportpaket. Der optionale Josh-Anruf erweitert das normale Ende und erklärt die Hintergrundgeschichte nicht.
 
-Stand: 11. September 2026. Technisch in Godot 4.7.2 getestet; gerenderte Spiel- und Sprite-Ansichten visuell geprüft. Ein menschlicher Spieltest für das subjektive Bewegungsgefühl bleibt sinnvoll.
+Stand: 16. September 2026. Aktuelle Storytests ausschließlich per Godot CLI, Headless und internen InputEvents; siehe SESSION_HANDOFF.md für genaue Testbelege und Grenzen.

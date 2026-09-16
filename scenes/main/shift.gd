@@ -16,6 +16,7 @@ var story_cooldown := 0.0
 var pending_events: Array[Resource] = []
 var dialogue_label: Label
 var checkout_label: Label
+var checkout_backdrop: Panel
 var story_world: Node3D
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
@@ -61,9 +62,21 @@ func _ready() -> void:
 	story_label.add_theme_constant_override("shadow_offset_x",2)
 	story_label.add_theme_constant_override("shadow_offset_y",2)
 	$HUD.add_child(story_label)
+	checkout_backdrop = Panel.new()
+	checkout_backdrop.position = Vector2(12,213)
+	checkout_backdrop.size = Vector2(454,174)
+	checkout_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	checkout_backdrop.hide()
+	var checkout_style := StyleBoxFlat.new()
+	checkout_style.bg_color = Color(0.025,0.04,0.05,0.94)
+	checkout_style.set_corner_radius_all(5)
+	checkout_backdrop.add_theme_stylebox_override("panel",checkout_style)
+	$HUD.add_child(checkout_backdrop)
 	checkout_label = Label.new()
+	checkout_label.hide()
 	checkout_label.position = Vector2(24,225)
-	checkout_label.size = Vector2(640,140)
+	checkout_label.size = Vector2(430,150)
+	checkout_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	checkout_label.add_theme_font_size_override("font_size",22)
 	checkout_label.add_theme_color_override("font_shadow_color",Color.BLACK)
 	checkout_label.add_theme_constant_override("shadow_offset_x",2)
@@ -116,6 +129,7 @@ func _process(delta: float) -> void:
 	var special: bool = content.has("seen_flag") or not content.choices.is_empty()
 	var customer_ready: bool = not gameplay.queue.is_empty() and not gameplay.queue[0].walking
 	checkout_label.visible = customer_ready and layout.at_operator(player) and not gameplay.dialogue.active
+	checkout_backdrop.visible = checkout_label.visible
 	checkout_label.text = gameplay.checkout_text() if checkout_label.visible else ""
 	story_cooldown = maxf(0,story_cooldown-delta)
 	var ready_event := -1
@@ -145,7 +159,7 @@ func _process(delta: float) -> void:
 	story_label.visible = story_time > 0 and not gameplay.dialogue.active
 	get_node("Station/ShiftBoard").prompt = "Finish shift" if phase == Phase.ACTIVE and gameplay.can_finish() else "Shift notes / Start night"
 	var target: Node3D = player.interaction_target
-	prompt.text = "[E]  " + target.prompt if is_instance_valid(target) else ""
+	prompt.text = "[E]  " + gameplay.interaction_prompt(target,player) if is_instance_valid(target) and not gameplay.dialogue.active else ""
 	if customer_ready and layout.at_operator(player) and not gameplay.dialogue.active:
 		prompt.text += "   [F] Talk" + (" — About the phone call" if special else "")
 	message_time = maxf(0,message_time-delta)

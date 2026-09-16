@@ -17,6 +17,10 @@ func _ready() -> void:
 func is_available() -> bool:
 	return not moving
 
+func interaction_bias() -> float:
+	# An already open passage should not steal E from nearby work surfaces.
+	return 0.25 if is_open else 0.0
+
 
 func interact(_player: Node3D) -> void:
 	if moving:

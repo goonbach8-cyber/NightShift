@@ -14,6 +14,9 @@ func _ready() -> void:
 func is_available() -> bool:
 	return available
 
+func interaction_bias() -> float:
+	return 0.0
+
 
 func interact(_player: Node3D) -> void:
 	used.emit(action_id)

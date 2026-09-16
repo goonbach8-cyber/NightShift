@@ -13,11 +13,11 @@ static func for_night(number: int) -> Resource:
 	if number == 1:
 		night.handover = PackedStringArray(["Josh: First shift, Mike? The till's ready. Stock is out back.","Josh: One more thing. If the phone rings at 03:17… don't answer it.","Josh: Anyway. See you tomorrow."])
 		night.title = "Night 1 — The warning"
-		night.briefing = "Josh, before leaving:\n‘If the phone rings at 03:17, don't answer it.’"
+		night.briefing = "Your first shift. Speak with Josh, then read the staff notes."
 	elif number == 2:
 		night.handover = PackedStringArray(["Mike: About what you said yesterday. The phone at 03:17.","Josh: What? I never said that.","Josh: Sorry, Mike. I really don't remember giving you a warning."])
 		night.title = "Night 2 — The contradiction"
-		night.briefing = "Josh: ‘I never gave you a warning about the phone.’"
+		night.briefing = "Josh is finishing up. Take over when you're ready."
 	night.customers = 6 if number == 1 else 8
 	night.spawn_seconds = 8 if number == 1 else 6
 	night.orders.assign([{&"water":1},{&"energy":1},{&"chips":1,&"water":1},{&"energy":1,&"chips":1},{&"water":2},{&"energy":1,&"water":1,&"chips":1}])
@@ -74,7 +74,7 @@ static func for_night(number: int) -> Resource:
 		main.text = "The delivery docket lists this same depot route. The oldest entry is years old."
 		main.effect = &"message"
 	if number == 5:
-		night.title = "Night 5 — Two realities"
+		night.title = "Night 5 — Road works"
 		night.briefing = "Road works beside the station. Deliveries are still scheduled as normal."
 		night.world_states.append(&"construction")
 		main.text = "Radio: ‘Road works begin today on the new Redwater access road.’"

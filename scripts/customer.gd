@@ -23,6 +23,12 @@ var abandoned: bool = false
 var profile_id: StringName = &"regular"
 var greeting: String = ""
 var clothing_color := Color("b0a079")
+var browse_seconds: float = 0.75
+var browse_remaining: float = 0.0
+var entrance: Node3D
+var arrival_origin: Marker3D
+var entry_wait_point: Marker3D
+var yielding_at_entry := false
 
 func _ready() -> void:
 	add_to_group("customer")
@@ -70,9 +76,20 @@ func plan(avoid_people: bool = false) -> void:
 		for person in get_tree().get_nodes_in_group("customer") + get_tree().get_nodes_in_group("player"):
 			if person != self:
 				obstacles.append(person.global_position)
-	route = navigation.path(global_position,target.global_position,obstacles)
-	destination_version = target.global_position
+	route = navigation.path(global_position,destination(),obstacles)
+	destination_version = destination()
 	retry_time = 0
+
+func destination() -> Vector3:
+	return entry_wait_point.global_position if yielding_at_entry else target.global_position
+
+func should_yield_at_entry() -> bool:
+	if state != &"shopping" or not is_instance_valid(entrance) or not is_instance_valid(entry_wait_point): return false
+	var outward := (arrival_origin.global_position-entrance.global_position).normalized()
+	if (global_position-entrance.global_position).dot(outward) < -0.8: return false
+	for person in get_tree().get_nodes_in_group("customer"):
+		if person != self and person.state == &"leaving": return true
+	return false
 
 func _physics_process(delta: float) -> void:
 	if $Status.visible:
@@ -81,11 +98,15 @@ func _physics_process(delta: float) -> void:
 	velocity.x = 0
 	velocity.z = 0
 	if walking and is_instance_valid(target):
+		var give_way := should_yield_at_entry()
+		if give_way != yielding_at_entry:
+			yielding_at_entry = give_way
+			plan(true)
 		replan_elapsed += delta
 		if replan_elapsed >= 1.2:
 			plan(true)
 			replan_elapsed = 0
-		if not destination_version.is_equal_approx(target.global_position):
+		if not destination_version.is_equal_approx(destination()):
 			plan()
 		for door in doors:
 			if global_position.distance_to(door.global_position) < 1.65 and not door.is_open and not door.moving:
@@ -98,9 +119,10 @@ func _physics_process(delta: float) -> void:
 			direction = direction.normalized()
 			velocity.x = direction.x*move_speed
 			velocity.z = direction.z*move_speed
-		elif Vector2(global_position.x-target.global_position.x,global_position.z-target.global_position.z).length() < 0.52:
-			walking = false
-			arrived.emit(self)
+		elif Vector2(global_position.x-destination().x,global_position.z-destination().z).length() < 0.52:
+			if not yielding_at_entry:
+				walking = false
+				arrived.emit(self)
 		else:
 			retry_time += delta
 			if retry_time > 1:
