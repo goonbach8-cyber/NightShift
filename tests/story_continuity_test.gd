@@ -66,7 +66,7 @@ func run() -> void:
 	loop.events.advance(100,0)
 	await create_timer(0.9).timeout
 	check(prop.changed_state and prop.position.y < before.y-0.7,"World event leaves carton visibly lowered")
-	check(world.story_label.visible and world.story_label.text.contains("rack"),"Physical event is presented at its room, not the checkout")
+	check(not world.story_label.visible and loop.story_flags.get(&"presented_night_3_store_parcel",false),"Physical event is presented in its room without an explanatory HUD caption")
 	check(absf(prop.rotation.z) > 0.9,"Loaded service rack remains visibly tipped")
 	var settled: Vector3 = prop.position
 	loop.events.advance(200,10)

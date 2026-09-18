@@ -15,10 +15,11 @@ var story_time := 0.0
 var story_cooldown := 0.0
 var pending_events: Array[Resource] = []
 var dialogue_label: Label
-var dialogue_backdrop: Panel
+var dialogue_backdrop: PanelContainer
 var checkout_label: Label
-var checkout_backdrop: Panel
+var checkout_backdrop: PanelContainer
 var story_world: Node3D
+var hud: Control
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -54,73 +55,26 @@ func _ready() -> void:
 	effects.set_script(preload("res://scripts/event_effects.gd"))
 	add_child(effects)
 	gameplay.events.triggered.connect(_on_event)
-	story_label = Label.new()
-	story_label.position = Vector2(24,390)
-	story_label.size = Vector2(900,110)
-	story_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	story_label.add_theme_font_size_override("font_size",24)
-	story_label.add_theme_color_override("font_shadow_color",Color.BLACK)
-	story_label.add_theme_constant_override("shadow_offset_x",2)
-	story_label.add_theme_constant_override("shadow_offset_y",2)
-	$HUD.add_child(story_label)
-	checkout_backdrop = Panel.new()
-	checkout_backdrop.position = Vector2(12,213)
-	checkout_backdrop.size = Vector2(454,174)
-	checkout_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	checkout_backdrop.hide()
-	var checkout_style := StyleBoxFlat.new()
-	checkout_style.bg_color = Color(0.025,0.04,0.05,0.94)
-	checkout_style.set_corner_radius_all(5)
-	checkout_backdrop.add_theme_stylebox_override("panel",checkout_style)
-	$HUD.add_child(checkout_backdrop)
-	checkout_label = Label.new()
-	checkout_label.hide()
-	checkout_label.position = Vector2(24,225)
-	checkout_label.size = Vector2(430,150)
-	checkout_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	checkout_label.add_theme_font_size_override("font_size",22)
-	checkout_label.add_theme_color_override("font_shadow_color",Color.BLACK)
-	checkout_label.add_theme_constant_override("shadow_offset_x",2)
-	checkout_label.add_theme_constant_override("shadow_offset_y",2)
-	$HUD.add_child(checkout_label)
-	dialogue_backdrop = Panel.new()
-	dialogue_backdrop.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	dialogue_backdrop.offset_left = 12
-	dialogue_backdrop.offset_right = -12
-	dialogue_backdrop.offset_top = -332
-	dialogue_backdrop.offset_bottom = -168
-	dialogue_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dialogue_backdrop.add_theme_stylebox_override("panel",checkout_style.duplicate())
-	dialogue_backdrop.hide()
-	$HUD.add_child(dialogue_backdrop)
-	dialogue_label = Label.new()
-	dialogue_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	dialogue_label.offset_left = 24
-	dialogue_label.offset_right = -24
-	dialogue_label.offset_top = -320
-	dialogue_label.offset_bottom = -180
-	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue_label.add_theme_font_size_override("font_size",20)
-	dialogue_label.add_theme_color_override("font_shadow_color",Color.BLACK)
-	dialogue_label.add_theme_constant_override("shadow_offset_x",2)
-	dialogue_label.add_theme_constant_override("shadow_offset_y",2)
-	dialogue_label.hide()
-	$HUD.add_child(dialogue_label)
+	hud = preload("res://scripts/ui/shift_hud.gd").new()
+	hud.world = self
+	$HUD.add_child(hud)
+	for old_name in ["ObjectiveBackdrop","Objective","Prompt","Message","Controls"]:
+		$HUD.get_node(old_name).hide()
+	objective = hud.objective
+	prompt = hud.prompt
+	message = hud.message
+	story_label = hud.story
+	dialogue_label = hud.conversation.body
+	dialogue_backdrop = hud.conversation.frame
+	checkout_label = hud.checkout_progress
+	checkout_backdrop = hud.checkout_panel
+	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
 	$Station/Door.blocked.connect(func(): _say("Keep the doorway clear."))
 	ambience.stream = _tone(true)
 	feedback.stream = _tone(false)
 	ambience.play()
-	$HUD/ObjectiveBackdrop.offset_right = 440
-	$HUD/ObjectiveBackdrop.offset_bottom = 180
-	objective.offset_right = 425
-	objective.offset_bottom = 172
-	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objective.add_theme_font_size_override("font_size",15)
-	layout.checkout.prompt = "Scan item / Take payment"
-	$HUD/Controls.text = "WASD Move  E Interact  F Talk  Space Continue  TAB Warehouse product  ESC Pause"
-	$HUD/Controls.add_theme_font_size_override("font_size",13)
 	if get_tree().has_meta("nightshift_checkpoint_path"):
 		checkpoint.path = get_tree().get_meta("nightshift_checkpoint_path")
 	if get_tree().get_meta("nightshift_continue",false):
@@ -138,12 +92,7 @@ func _on_event(event: Resource) -> void:
 	pending_events.append(event)
 
 func _process(delta: float) -> void:
-	var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(gameplay.event_history,gameplay.story_flags,gameplay.career_shifts+1)
-	var special: bool = content.has("seen_flag") or not content.choices.is_empty()
 	var customer_ready: bool = gameplay.checkout_ready()
-	checkout_label.visible = customer_ready and layout.at_operator(player) and not gameplay.dialogue.active
-	checkout_backdrop.visible = checkout_label.visible
-	checkout_label.text = gameplay.checkout_text() if checkout_label.visible else ""
 	story_cooldown = maxf(0,story_cooldown-delta)
 	var ready_event := -1
 	for i in pending_events.size():
@@ -155,7 +104,8 @@ func _process(delta: float) -> void:
 	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
-		story_label.text = "The customer pauses.\n“You answered the phone earlier, didn't you?”\n[F] Talk" if event.main_event and gameplay.career_shifts == 0 else event.text
+		story_label.text = "The customer hesitates." if event.main_event and gameplay.career_shifts == 0 else event.text
+		if not event.show_caption or event.effect in [&"world_state",&"light_dip"]: story_label.text = ""
 		story_time = 16
 		story_cooldown = gameplay.definition.event_spacing_seconds
 		if event.effect == &"light_dip": effects.light_dip()
@@ -171,15 +121,8 @@ func _process(delta: float) -> void:
 		story_time = maxf(0, story_time-delta)
 	story_label.visible = story_time > 0 and not gameplay.dialogue.active
 	get_node("Station/ShiftBoard").prompt = "Finish shift" if phase == Phase.ACTIVE and gameplay.can_finish() else "Shift notes / Start night"
-	var target: Node3D = player.interaction_target if is_instance_valid(player.interaction_target) else null
-	prompt.text = "[E]  " + gameplay.interaction_prompt(target,player) if is_instance_valid(target) and not gameplay.dialogue.active else ""
-	if customer_ready and layout.at_operator(player) and not gameplay.dialogue.active:
-		prompt.text += "   [F] Talk" + (" — About the phone call" if special else "")
 	message_time = maxf(0,message_time-delta)
-	message.visible = message_time > 0
-	dialogue_label.visible = gameplay.dialogue.active
-	dialogue_backdrop.visible = dialogue_label.visible
-	dialogue_label.text = gameplay.dialogue.display_text()
+	hud.update()
 	radio.globally_muted = muted
 
 func _exit_tree() -> void:
@@ -188,10 +131,20 @@ func _exit_tree() -> void:
 	ambience.stream = null
 	feedback.stream = null
 
+func _dialogue_changed() -> void:
+	player.controls_locked = gameplay.dialogue.active
+	player.velocity.x = 0
+	player.velocity.z = 0
+	for action in ["move_left","move_right","move_forward","move_backward"]:
+		Input.action_release(action)
+	hud.update()
+
 func _input(event: InputEvent) -> void:
-	if not is_instance_valid(gameplay) or not gameplay.dialogue.active: return
-	# Consume hidden work actions before interactables (including doors) see them.
-	var work_shortcut: bool = event is InputEventKey and event.pressed and event.physical_keycode in [KEY_TAB,KEY_T,KEY_Y,KEY_EQUAL,KEY_PLUS,KEY_KP_ADD,KEY_MINUS,KEY_KP_SUBTRACT]
+	if not is_instance_valid(gameplay) or not gameplay.dialogue.active or menu.page != "": return
+	if hud.conversation.handle(event):
+		get_viewport().set_input_as_handled()
+		return
+	var work_shortcut: bool = event is InputEventKey and event.pressed and event.physical_keycode in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_EQUAL,KEY_PLUS,KEY_KP_ADD,KEY_MINUS,KEY_KP_SUBTRACT]
 	if event.is_action_pressed("interact") or work_shortcut:
 		get_viewport().set_input_as_handled()
 
@@ -214,7 +167,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_MINUS, KEY_KP_SUBTRACT:
 				if player.interaction_target == layout.radio_point: radio.change_volume(-3)
 			KEY_F:
-				if phase == Phase.ACTIVE and layout.at_operator(player): gameplay.talk()
+				if player.interaction_target == get_node("Station/ShiftBoard"):
+					var no_choices: Array[Dictionary] = []
+					gameplay.dialogue.begin(-60,PackedStringArray([gameplay.definition.briefing]),no_choices,gameplay.story_flags,{"kind":&"document","title":gameplay.definition.title+" / Shift notes"})
+				elif phase == Phase.ACTIVE and layout.at_operator(player): gameplay.talk()
 			KEY_SPACE: gameplay.dialogue.advance()
 			KEY_1: gameplay.dialogue.choose(0)
 			KEY_2: gameplay.dialogue.choose(1)
@@ -273,16 +229,11 @@ func _on_used(action: StringName) -> void:
 	_update_objective()
 
 func _update_objective() -> void:
-	if phase == Phase.NOT_STARTED:
-		objective.text = "%s\n%s\nStart at the staff notes behind the counter.\nCompleted nights: %d | Total CHF %.2f" % [gameplay.definition.title,gameplay.definition.briefing,gameplay.career_shifts,float(gameplay.career_revenue)/100]
-	elif phase == Phase.ACTIVE:
-		objective.text = "Preparing customer routes …" if gameplay.preparing else gameplay.status_text()
-	else:
-		objective.text = "NIGHT COMPLETE\n%d customers | %d lost | %d items | CHF %.2f | %d tasks\n[N] Save & next night  [F5] Save  [R] Restart  [F9 at start] Load" % [gameplay.served,gameplay.lost_sales,gameplay.sold_units,float(gameplay.revenue_rappen)/100,gameplay.tasks.size()]
+	if is_instance_valid(hud) and is_instance_valid(story_world): hud.update()
 
 func _say(text: String, seconds: float = 4.5) -> void:
-	message.text = text
-	message_time = seconds
+	hud.show_notice(text)
+	message_time = 2.2 if text.begins_with("Wrong shelf") else seconds
 	feedback.play()
 
 func _tone(looping: bool) -> AudioStreamWAV:

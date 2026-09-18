@@ -90,6 +90,7 @@ static func for_night(number: int) -> Resource:
 		night.world_states.append(&"redwater")
 		night.handover = PackedStringArray(["Josh: Morning, Mike. Same routine as always?","Mike: Have you heard of Redwood? Or anything about 03:17?","Josh: Redwood? No. Is that another station? You've worked here longer than I have."])
 		main.text = "03:17\nFor a moment the station signs name two different places."
+		main.show_caption = false
 		main.effect = &"message"
 		main.after_sales = 2
 	return night

@@ -32,7 +32,7 @@ func run() -> void:
 	customer.patience = customer.wait_seconds+0.15
 	await until(func(): return loop.lost_sales == 1,3,"Patience expiry records exactly one unserved customer")
 	check(loop.queue.is_empty() and loop.inventory.reservations.is_empty(),"Unserved customer releases queue and reserved goods")
-	check(world.objective.text.contains("Customers 1/1 (1 unserved)"),"HUD counts departure as resolved, not an outstanding customer")
+	check(world.hud.progress.text.contains("1 left unserved") and loop.served+loop.lost_sales == loop.customer_count,"HUD counts departure as resolved, not an outstanding customer")
 	await walk(layout.warehouse.get_node("Supply").global_position+Vector3(0,0,1))
 	await until(func(): return loop.departed == 1,40,"Unserved customer physically exits and increments departed")
 	check(loop.customers.is_empty() and loop.lost_sales == 1,"Exit removes NPC without counting its loss twice")
@@ -42,7 +42,7 @@ func run() -> void:
 		return
 	await create_timer(1).timeout
 	check(absf(prop.rotation.z)>0.9,"Physical change remains visibly tipped")
-	check(not world.objective.text.contains("Check the stockroom before leaving") and world.objective.text.contains("Check WC"),"Objective removes completed story destination and retains normal task")
+	check(not world.objective.text.contains("Check the stockroom before leaving") and not world.objective.text.is_empty() and loop.required_tasks.has(&"wc") and not loop.tasks.has(&"wc"),"Objective removes completed story destination and retains normal task")
 	check(not loop.can_finish(),"Remaining normal tasks still prevent premature completion")
 	await use()
 	await walk(layout.product_points[&"water"].global_position)

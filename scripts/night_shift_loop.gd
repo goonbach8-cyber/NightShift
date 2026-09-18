@@ -366,7 +366,7 @@ func fill_shelf(id: StringName) -> void:
 	else:
 		var carried: StringName = inventory.carried_product()
 		if carried != &"" and carried != id:
-			notice.emit("You are carrying %s. This area needs %s." % [inventory.products[carried].display_name,inventory.products[id].display_name])
+			notice.emit("Wrong shelf · Carrying %s, needs %s." % [inventory.products[carried].display_name,inventory.products[id].display_name])
 		elif inventory.stocks[id].shelf_units >= inventory.stocks[id].capacity:
 			notice.emit("This display is already full.")
 		else:

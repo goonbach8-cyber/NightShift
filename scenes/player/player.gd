@@ -9,6 +9,7 @@ extends CharacterBody3D
 
 @onready var sprite: AnimatedSprite3D = $AnimatedSprite3D
 
+var controls_locked := false
 var facing: StringName = &"down"
 var interaction_target: Node3D
 
@@ -19,7 +20,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var input_vector := Vector2.ZERO if controls_locked else Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var move_direction := Vector3(input_vector.x, 0.0, input_vector.y)
 	var horizontal := Vector2(velocity.x, velocity.z)
 	var rate := acceleration if input_vector != Vector2.ZERO else deceleration
@@ -38,7 +39,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("interact") and not event.is_echo():
+	if not controls_locked and event.is_action_pressed("interact") and not event.is_echo():
 		_update_interaction()
 		if is_instance_valid(interaction_target):
 			interaction_target.interact(self)

@@ -27,7 +27,7 @@ func run() -> void:
 			loop.inventory.stocks[other].carried_units = 1
 			check(not loop.inventory.restock(id) and stock.shelf_units == 0,"Reject %s load at %s" % [other,id])
 			await use()
-			check(world.message.text.contains("carrying") and stock.shelf_units == 0,"Wrong-product interaction explains mismatch at %s" % id)
+			check(world.message.text.contains("Wrong shelf") and world.message.text.contains("Carrying") and stock.shelf_units == 0,"Wrong-product interaction explains mismatch at %s" % id)
 			loop.inventory.stocks[other].carried_units = 0
 		stock.carried_units = 1
 		check(loop.inventory.restock(id) and stock.shelf_units == 1,"Matching load accepted at %s" % id)

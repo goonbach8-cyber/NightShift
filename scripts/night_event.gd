@@ -6,6 +6,7 @@ extends Resource
 @export_range(0,1) var probability: float = 1
 @export var effect: StringName
 @export var text: String
+@export var show_caption: bool = true
 @export var required_flag: StringName
 @export var required_task: StringName
 @export var required_event: StringName

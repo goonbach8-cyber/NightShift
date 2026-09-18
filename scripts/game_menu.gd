@@ -57,15 +57,23 @@ func show_page(next: String) -> void:
 	panel = ColorRect.new()
 	panel.color = Color(0.018, 0.035, 0.043, 0.98)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.theme = preload("res://scripts/ui/station_theme.gd").make()
 	add_child(panel)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(center)
 	column = VBoxContainer.new()
 	column.custom_minimum_size.x = 460
-	column.add_theme_constant_override("separation", 16)
-	center.add_child(column)
-	label("0 3 : 1 7", 36)
+	column.add_theme_constant_override("separation", 12)
+	var surface := PanelContainer.new()
+	center.add_child(surface)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(520,minf(640,get_viewport().get_visible_rect().size.y-80))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	surface.add_child(scroll)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(column)
+	label("03:17", 36)
 	label("24 H / SERVICE STATION", 16)
 	match page:
 		"main":
@@ -99,11 +107,16 @@ func show_page(next: String) -> void:
 				slider.value = settings.values[bus]
 				column.add_child(slider)
 				slider.value_changed.connect(func(value: float): settings.values[bus] = value; settings.save())
-			var full := CheckButton.new()
-			full.text = "Fullscreen"
+			var full := Button.new()
+			full.toggle_mode = true
+			full.text = "Display: Fullscreen" if settings.values.fullscreen else "Display: Windowed"
+			full.custom_minimum_size.y = 46
 			full.button_pressed = settings.values.fullscreen
 			column.add_child(full)
-			full.toggled.connect(func(value: bool): settings.values.fullscreen = value; settings.save())
+			full.toggled.connect(func(value: bool):
+				full.text = "Display: Fullscreen" if value else "Display: Windowed"
+				settings.values.fullscreen = value
+				settings.save())
 			button("BACK", func(): show_page("pause" if is_instance_valid(world) else "main"))
 		"complete":
 			label("NIGHT %d COMPLETE" % (world.gameplay.career_shifts + 1), 26)
@@ -133,6 +146,7 @@ func show_page(next: String) -> void:
 func label(text: String, size: int) -> Label:
 	var item := Label.new()
 	item.text = text
+	item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	item.add_theme_font_size_override("font_size", size)
 	column.add_child(item)
 	return item

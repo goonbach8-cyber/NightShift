@@ -22,8 +22,8 @@ func run() -> void:
 	player.global_position = layout.operator_point.global_position
 	await create_timer(0.1).timeout
 	check(world.checkout_backdrop.visible and world.checkout_label.visible,"Staffed checkout shows its contextual panel")
-	check(world.checkout_backdrop.get_rect().encloses(world.checkout_label.get_rect()),"Text lies inside the contrasting background")
-	check(world.checkout_backdrop.get_rect().end.x < 500,"Checkout panel leaves the central player view clear")
+	check(world.checkout_backdrop.get_global_rect().encloses(world.checkout_label.get_global_rect()),"Text lies inside the contrasting background")
+	check(world.checkout_backdrop.get_global_rect().position.x > 800,"Checkout panel leaves the central player view clear")
 	check(world.checkout_label.get_minimum_size().y <= 150,"Three-product checkout text fits its reserved height")
 	check(not world.checkout_backdrop.get_global_rect().intersects(world.objective.get_global_rect()),"Checkout panel does not overlap shift objectives")
 	check(not world.checkout_backdrop.get_global_rect().intersects(world.story_label.get_global_rect()),"Checkout panel leaves the story caption area clear")
@@ -37,10 +37,10 @@ func run() -> void:
 	customer.global_position = layout.queue_points[0].global_position
 	await create_timer(0.1).timeout
 	await use()
-	check(world.checkout_label.text.contains("1 / 3") and world.checkout_label.text.contains("2 remaining") and world.checkout_label.text.contains("Subtotal: CHF 2.20"),"First actual E scan shows progress, remaining items and subtotal")
-	check(world.checkout_label.text.contains(loop.inventory.products[&"water"].display_name+" scanned"),"Scanned product is named")
+	check(world.checkout_label.text.contains("1 / 3") and world.checkout_label.text.contains("2 remaining") and world.hud.checkout_amount.text == "CHF 2.20","First actual E scan shows progress, remaining items and subtotal")
+	check(world.hud.checkout_title.text.contains(loop.inventory.products[&"water"].display_name+" scanned"),"Scanned product is named")
 	await use()
-	check(world.checkout_label.text.contains("2 / 3") and world.checkout_label.text.contains("1 remaining") and world.checkout_label.text.contains("Subtotal: CHF 5.70"),"Second actual scan updates subtotal without accepting payment")
+	check(world.checkout_label.text.contains("2 / 3") and world.checkout_label.text.contains("1 remaining") and world.hud.checkout_amount.text == "CHF 5.70","Second actual scan updates subtotal without accepting payment")
 	check(loop.revenue_rappen == 0,"Scanning has not yet charged the basket")
 	await use()
 	check(loop.checkout_text().contains("Total: CHF 8.60") and loop.checkout_text().contains("Accept payment"),"Fully scanned basket switches subtotal to final total")
@@ -67,13 +67,13 @@ func run() -> void:
 	loop.queue.append(next_customer)
 	loop.inventory.reserve(next_customer.get_instance_id(),&"water",1)
 	await create_timer(0.1).timeout
-	check(world.checkout_backdrop.visible and world.checkout_label.text.contains("0 / 1") and world.checkout_label.text.contains("Subtotal: CHF 0.00"),"Next customer starts with clean scan progress and subtotal")
-	check(not world.checkout_label.text.contains("8.60"),"Previous basket total does not leak into next customer's panel")
+	check(world.checkout_backdrop.visible and world.checkout_label.text.contains("0 / 1") and world.hud.checkout_amount.text == "CHF 0.00","Next customer starts with clean scan progress and subtotal")
+	check(not world.hud.checkout_amount.text.contains("8.60"),"Previous basket total does not leak into next customer's panel")
 	for night in range(1,7):
 		loop.configure_night(preload("res://scripts/night_catalog.gd").for_night(night))
 		world._update_objective()
 		await create_timer(0.1).timeout
-		check(world.objective.get_minimum_size().y <= world.objective.size.y and world.get_node("HUD/ObjectiveBackdrop").get_global_rect().encloses(world.objective.get_global_rect()),"Night %d actionable task list fits its existing background" % night)
+		check(world.objective.get_minimum_size().y <= world.objective.size.y and world.hud.objective_panel.get_global_rect().encloses(world.objective.get_global_rect()),"Night %d focused objective fits its background" % night)
 	loop.served = 1
 	loop.lost_sales = 2
 	check(loop.status_text().contains("Customers 3/6 (2 unserved)"),"Shift progress distinguishes unserved departures from customers still due")

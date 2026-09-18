@@ -7,9 +7,15 @@ var choices: Array[Dictionary] = []
 var index: int = 0
 var owner_id: int = 0
 var flags: Dictionary = {}
+var presentation: StringName = &"conversation"
+var speaker := "Customer"
+var document_title := ""
 
-func begin(speaker_id: int, text_lines: PackedStringArray, answers: Array[Dictionary], story_flags: Dictionary) -> bool:
+func begin(speaker_id: int, text_lines: PackedStringArray, answers: Array[Dictionary], story_flags: Dictionary, display: Dictionary = {}) -> bool:
 	if active or text_lines.is_empty(): return false
+	presentation = display.get("kind",&"conversation")
+	speaker = display.get("speaker","Customer")
+	document_title = display.get("title","")
 	owner_id = speaker_id
 	lines = text_lines
 	choices = answers

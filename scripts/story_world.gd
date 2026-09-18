@@ -180,20 +180,20 @@ func interact(id: StringName) -> void:
 		if configured_night < preload("res://scripts/clue_catalog.gd").FIRST_NIGHT[id]: return
 		var entry: Dictionary = preload("res://scripts/clue_catalog.gd").ENTRIES[id]
 		pending_read = id
-		loop.dialogue.begin(-20,PackedStringArray(entry.lines),choices,loop.story_flags)
+		loop.dialogue.begin(-20,PackedStringArray(entry.lines),choices,loop.story_flags,{"kind":&"document","title":entry.title})
 	elif id == &"josh":
 		if loop.story_flags.get(handover_flag(),false): return
 		pending_handover = true
-		loop.dialogue.begin(-10,loop.definition.handover,choices,loop.story_flags)
+		loop.dialogue.begin(-10,loop.definition.handover,choices,loop.story_flags,{"speaker":"Josh"})
 	elif id == &"construction" and construction.visible:
-		loop.dialogue.begin(-30,PackedStringArray(["Construction of new access road — works begin today.","The map says Redwater. Its road bends behind a building that isn't on Mike's map."]),choices,loop.story_flags)
+		loop.dialogue.begin(-30,PackedStringArray(["Construction of new access road — works begin today.","The map says Redwater. Its road bends behind a building that isn't on Mike's map."]),choices,loop.story_flags,{"kind":&"document","title":"Construction of new access road"})
 		loop.story_flags[&"construction_read"] = true
 	elif id == &"route":
 		if configured_night == 4: travel(true)
 		elif road.visible: world._say("The access is closed.")
 	elif id == &"depot_clerk" and in_depot:
 		pending_depot = true
-		loop.dialogue.begin(-40,PackedStringArray(["Depot clerk: The station collection? It's ready, same as every week.","Take the usual road back. Your delivery account has been here for years."]),choices,loop.story_flags)
+		loop.dialogue.begin(-40,PackedStringArray(["Depot clerk: The station collection? It's ready, same as every week.","Take the usual road back. Your delivery account has been here for years."]),choices,loop.story_flags,{"speaker":"Depot Worker"})
 	elif id == &"return" and in_depot:
 		if loop.tasks.has(&"depot"): travel(false)
 		else: world._say("Collect the delivery from the clerk first.")

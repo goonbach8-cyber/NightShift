@@ -11,7 +11,7 @@ func inspect_conversation(lines: PackedStringArray, choices: Array[Dictionary], 
 		if index+1 < lines.size(): loop.dialogue.advance()
 	check(fits,label+" fits without cropping its text or choices")
 	if not choices.is_empty():
-		check(world.dialogue_label.text.contains("[1]") and world.dialogue_label.text.contains("[2]") and not world.dialogue_label.text.contains("[Space]"),label+" shows answer keys instead of a misleading continue action")
+		check(world.hud.conversation.answers.get_child_count() == 2 and world.hud.conversation.indicator.text.contains("Confirm"),label+" shows two separate answers and a confirmation hint")
 	loop.dialogue.close()
 
 func run() -> void:

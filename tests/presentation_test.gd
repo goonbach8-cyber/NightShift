@@ -19,7 +19,7 @@ func run() -> void:
 		return
 	await create_timer(0.2).timeout
 	check(world.story_label.visible and world.story_time > 10,"Guaranteed main caption is clearly displayed for a long reading window")
-	check(world.prompt.text.contains("[F] Talk"),"Special talk control appears at checkout")
+	check(world.hud.secondary.text.contains("[F] Talk"),"Special talk control appears at checkout")
 	var story: String = world.story_label.text
 	world._say("Ordinary delivery notification")
 	await process_frame
