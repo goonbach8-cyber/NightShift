@@ -1,52 +1,33 @@
-# 03:17 — continuation, 16 September 2026
+# 03:17 — exact continuation, 17 September 2026
 
-## Current direction (latest user instruction)
+## Direction and constraints
 
-**Stop expanding breadth. Improve depth.** The six-night campaign is technically connected. Prioritize existing player-facing interactions/prompts, shopping/queue behavior, checkout, shelf stock, restocking/delivery, tasks, dialogue/event presentation and night differentiation. Do not implement old backlog items merely because they are absent. Preserve the full campaign after major changes.
+Depth over breadth. Preserve the existing six-night campaign. No Computer Use, native inputs, desktop automation, window focus changes or GUI editor operation. The user works on this PC. CLI/headless/internal Godot InputEvents only. Do not treat the old Windows helper as a gameplay defect.
 
-No Computer Use, native keyboard/mouse, window focus or GUI automation. The user works on this PC and has manually verified controls. Use files/CLI/headless/internal InputEvents. Human evaluation of new visual/audio presentation remains pending; an old Windows helper failure is not a gameplay bug.
+## Current block: applied and verified
 
-## Implemented story foundation
+- Previous quota rejection prevented the staged files from reaching the project. This session compared the files, then copied the existing prepared changes; nothing was rebuilt.
+- Energy: two columns across three cooler shelves, behind glass. Water: bottles inset onto boards, upper header and posts raised for clearance. Chips unchanged. Actual mesh-bound tests pass all 43 checks, including ordinary camera projection. Projection does not prove occlusion or artistic quality.
+- HUD progress counts served plus unserved customers, explicitly labels unserved departures. Night 3 no longer sends the player to the stockroom after its required physical event is presented.
+- `night3_departure_test.gd` runs one actual Night-3 shopper through patience expiry, reservation release, real exit, physical rack presentation, remaining real tasks and successful completion. This is a focused edge-case fixture, not a replacement for the seven-customer authored night.
+- Existing checkout readiness, contextual panels, restock quantities, separate cooler inspection and padded dialogue background were retained.
 
-- Night 1 physical Josh greeting, exact phone warning, departure and early guaranteed checkout mystery.
-- Night 2 physical Josh contradiction; saved answer changes later conversation.
-- Night 3 small loaded rack tips near Mike and stays tipped. Shift completion requires its presented flag. Later crack/new-road geometry; Night 3 route is closed. Required story is not dependent on successful sales, so lost customers cannot make it unreachable.
-- Night 4 work-related depot route, short travel transition, actual bounded collection yard/counter/clerk/ledger, and return interaction. No vehicle simulation.
-- Night 5 construction map/name contradiction, radio announcement, wrong address/company/product signage, routine Redwater mention.
-- Night 6 different surrounding road/building geometry and branding, familiar/other customer profiles, Redwater-Josh without phenomenon knowledge. Ending returns to familiar station with one Redwater sign.
-- Five optional physical documents introduced across nights. Completed readings count uniquely; interrupted readings do not. Four of five enable a short optional Josh call after the normal ending. No visible clue counter or explanation of the phenomenon.
-- Interrupted handovers, depot dialogue and story follow-ups remain available. Follow-ups become seen only after finishing the conversation.
+## Evidence
 
-These are compact functional story/world prototypes, not final cinematic presentation, final art, five hours of content or a finished commercial game.
+Logs live in `C:/Users/e558926/Documents/Codex/2026-09-10/du-arbeitest-direkt-an-meinem-lokalen/outputs/`.
 
-## Interaction depth pass
+- `resume-depth-{product_placement,checkout_presentation,world_binding,product_route,smoke}.log`: five completed suites, zero failures/errors/warnings.
+- `dialogue-guard-night3_departure.log`: strengthened test completed through staff-note finish with all customers unserved, checking actual `world.objective.text`, zero failures/errors/warnings.
+- `resume-regression-*.log`: 28-suite batch completed with 497 checks, zero failures/errors/warnings. Additional aisle/queue-passage/depot batch was then started; inspect its final logs.
+- `resume-six-campaign.log`: full translated-map six-night regression completed successfully: 341 checks, 39 customers, 69 items, CHF 189.10, saved ending and event/decision history.
 
-- Contextual E prompts distinguish checking stock, matching restock, next scan and accepting payment. Wrong carried goods do not promise restocking.
-- Supply failure feedback names the actual reason instead of listing three possible causes. Delivery prompt includes manifest.
-- Dialogue hides background E prompt. Small 0.12 m selection hysteresis avoids flicker, but never extends range or bypasses walls.
-- Hidden objects cannot remain selected. Open doors have a 0.25 m selection penalty when competing with a work surface; closed doors unchanged. This fixes an actual delivery interaction selecting StoreDoor instead of Supply.
-- Josh now meets Mike near the arrival position, away from water/supply/checkout/shift-note interaction zones.
+## Exact pending work
 
-## Tests / evidence
+1. `final-input-six-campaign.log` is **complete**, exit code zero, 341 passed checks and no errors/warnings. It covers all six nights on translated map after the final dialog/selection fixes, 39 customers, 69 items, CHF 189.10 and the saved ending. No test process remains pending from this block. Do not repeat this verification unless a new change warrants it.
+2. Dialog input guard is now **applied** in `scenes/main/shift.gd`. `dialogue_input_test.gd` passes all 11 checks: work/door/radio actions blocked while dialogue hides prompts; pause, answers, mute and subsequent work still function. `dialogue-input-before.log` is the retained failing reproduction, not a current regression.
+3. Additional depot regression exposed 130 `SCRIPT ERROR: Trying to assign invalid previously freed instance` lines despite exit code zero. Fixed in `shift.gd` and `scenes/player/player.gd`: validate old selected target before assigning it to a typed Node3D. The selected point can disappear as Josh leaves. Use `selection-lifetime-depot_movement.log` as the corrected rerun; do not count the older erroring depot log as successful.
+4. `selection-lifetime-*.log` and `dialogue-guard-*.log` are completed, exit zero and no Godot errors/warnings. The former includes 35 checkout/HUD checks, eight translated-map depot checks, 16 prompt checks and 11 dialog input checks. The latter includes the strengthened Night-3 test reading actual HUD text through successful completion.
+5. `outputs/resume-verification.json` records **1,101 passed checks in 39 deduplicated completed test runs**, including the final campaign. Workspace `work/world/audit_resume_logs.py` rebuilds the report. It rejects log errors/warnings independently of exit code and replaces the erroring older depot log with its verified rerun. `git diff --check` is clean. `VERTICAL_SLICE.md` is updated.
+6. Exact next quality focus: checkout/restocking feedback and normal-camera readability of the corrected product placements. Start from these implemented mechanics, not the old feature backlog. Only change a concrete player-facing weakness, then run its targeted test and appropriate campaign regression. Fresh normal-camera visual occlusion/audio judgment remains manual pending: this Godot build only supports the dummy renderer under its headless display driver. Do not launch a focus-taking graphical process to force that review.
 
-Logs are in `C:/Users/e558926/Documents/Codex/2026-09-10/du-arbeitest-direkt-an-meinem-lokalen/outputs/`, not inside the repository.
-
-- `six-final-campaign.log`: complete New Game → Nights 1–6 → saved ending, translated map, physical depot E interactions, all main presentations, exact CHF 189.10 / 39 customers / 69 items, no NPC/reservation leftovers. Later depth changes have a separate campaign run.
-- `six-process-1.log` through `six-process-7.log`: isolated boundary fixtures across seven processes; nights, stock, revenue, decisions, event history, clues, world states and ending eligibility preserved. Not a substitute for full gameplay.
-- `story-recovery-verified.log`: authored sequence, interrupted-reading guards, Night 3 required presentation/no-sale recovery, geometry and optional-call threshold.
-- `story-final-ending_save.log`: actual ending UI with 0/3/4 clues, safe save/load; ordinary ending works without clues.
-- `final-customer_profile.log`: data-driven known/alternate customers, greetings and story priority; interrupted consequence stays available.
-- `depot-movement.log`: all four directions blocked at yard bounds; clerk/counter and return remain reachable.
-- `interaction-quality-verified.log`: contextual prompts, flicker resistance, range/visibility, reproduced open-door/supply competition.
-- Final depth campaign and regression status must be taken from the latest manifest/logs, not assumed from this handoff or the older 607-check baseline.
-
-Old failing logs are retained. Fixed causes: optional reading points stole product/radio prompts; Josh stole board/water selection; open StoreDoor stole supply interaction; an old dialogue test used abort as completion. Only count the corresponding successful reruns.
-
-## Exact next work
-
-1. Check completion/status of `depth-six-campaign.log` and `depth-regression-*.log`; do not repeat a whole-project analysis.
-2. Finish validating interaction depth changes before altering shopping/queue behavior. Reproduce any remaining action-selection error rather than masking it with broader distance tolerances.
-3. Next quality target: shopping/queue transitions from a player's perspective (abrupt product pickup, readable waiting/serving state, avoiding hesitation/blocking), using the existing customer state machine. No new gameplay system required.
-4. Human review later: normal-camera legibility, rack/depot/Redwater geometry, dialogue pacing, radio/scare intensity. Do not attempt native input or focus-taking graphics tests.
-
-Do not run old `work/world/prepare.ps1`; it contains stale files. No Git reset, commit or push was done. Player art, movement dimensions and collision sizes remain intact.
+Do not run `work/world/prepare.ps1` or older preparation scripts. No commits, resets or pushes were made. No player/NPC collision shapes or navigation tolerances were reduced.

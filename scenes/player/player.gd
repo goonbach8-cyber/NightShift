@@ -70,7 +70,7 @@ func _update_animation(actual_velocity: Vector3) -> void:
 
 
 func _update_interaction() -> void:
-	var previous_target := interaction_target
+	var previous_target: Node3D = interaction_target if is_instance_valid(interaction_target) else null
 	interaction_target = null
 	var nearest := INF
 	for candidate in get_tree().get_nodes_in_group("interactable"):

@@ -38,8 +38,18 @@ func run() -> void:
 			if id == &"water" and mesh.mesh.size.is_equal_approx(Vector3(1.8,0.19,0.66)): header = box
 		check(not boards.is_empty(),String(id)+" has measurable physical shelf boards")
 		var slots: Array = world.get_node("Station").restock_items if id == &"water" else layout.displays[id].slots
+		player.global_position = layout.product_points[id].global_position
+		await create_timer(0.1).timeout
+		var camera: Camera3D = player.get_node("CameraRig/Camera3D")
+		var framed := true
+		var minimum_width := INF
 		for i in slots.size():
 			var product := bounds(slots[i],parent)
+			var center := parent.to_global(product.get_center())
+			framed = framed and not camera.is_position_behind(center) and root.get_visible_rect().has_point(camera.unproject_position(center))
+			var left := camera.unproject_position(parent.to_global(product.get_center()-Vector3(product.size.x/2,0,0)))
+			var right := camera.unproject_position(parent.to_global(product.get_center()+Vector3(product.size.x/2,0,0)))
+			minimum_width = minf(minimum_width,left.distance_to(right))
 			var supported := false
 			for board in boards:
 				var gap: float = product.position.y-board.end.y
@@ -48,4 +58,6 @@ func run() -> void:
 			check(supported,"%s slot %d sits on its shelf without floating over the edge" % [id,i])
 			if id == &"water": check(not product.intersects(header),"Water slot %d clears its header" % i)
 			if id == &"energy": check(product.end.z < 0.501,"Energy slot %d remains behind the glass" % i)
+		check(framed,String(id)+" product centers are inside the normal camera frame at their interaction point")
+		check(minimum_width >= 6,"%s products project to at least six pixels across (%.1f px); occlusion still needs visual review" % [id,minimum_width])
 	await finish()

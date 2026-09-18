@@ -91,11 +91,11 @@ func _ready() -> void:
 	snacks.action_id = &"stock_chips"
 	bind_product(&"chips",snacks,Vector3(0,0,1.5))
 	# Dynamic inventory geometry is created after static map batching.
-	for config in [{"id": &"energy", "kind": "can", "origin": Vector3(-0.44,0.54,0.44), "spacing": Vector3(0.43,0.4,0)}, {"id": &"chips", "kind": "bag", "origin": Vector3(-0.42,0.5,0.5), "spacing": Vector3(0.42,0.45,0)}]:
+	for config in [{"id": &"energy", "kind": "can", "origin": Vector3(-0.335,0.549,0.29), "spacing": Vector3(0.67,0.4,0), "columns":2}, {"id": &"chips", "kind": "bag", "origin": Vector3(-0.42,0.5,0.5), "spacing": Vector3(0.42,0.45,0), "columns":3}]:
 		var display = preload("res://scripts/product_display.gd").new()
 		display.name = "ProductStock"
 		product_nodes[config.id].add_child(display)
-		display.bind(inventory.stocks[config.id],config.kind,inventory.stocks[config.id].capacity,config.origin,config.spacing)
+		display.bind(inventory.stocks[config.id],config.kind,inventory.stocks[config.id].capacity,config.origin,config.spacing,config.columns)
 		displays[config.id] = display
 	radio_point = Node3D.new()
 	radio_point.name = "Radio"

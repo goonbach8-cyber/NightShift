@@ -171,7 +171,7 @@ func _process(delta: float) -> void:
 		story_time = maxf(0, story_time-delta)
 	story_label.visible = story_time > 0 and not gameplay.dialogue.active
 	get_node("Station/ShiftBoard").prompt = "Finish shift" if phase == Phase.ACTIVE and gameplay.can_finish() else "Shift notes / Start night"
-	var target: Node3D = player.interaction_target
+	var target: Node3D = player.interaction_target if is_instance_valid(player.interaction_target) else null
 	prompt.text = "[E]  " + gameplay.interaction_prompt(target,player) if is_instance_valid(target) and not gameplay.dialogue.active else ""
 	if customer_ready and layout.at_operator(player) and not gameplay.dialogue.active:
 		prompt.text += "   [F] Talk" + (" — About the phone call" if special else "")
@@ -187,6 +187,13 @@ func _exit_tree() -> void:
 	feedback.stop()
 	ambience.stream = null
 	feedback.stream = null
+
+func _input(event: InputEvent) -> void:
+	if not is_instance_valid(gameplay) or not gameplay.dialogue.active: return
+	# Consume hidden work actions before interactables (including doors) see them.
+	var work_shortcut: bool = event is InputEventKey and event.pressed and event.physical_keycode in [KEY_TAB,KEY_T,KEY_Y,KEY_EQUAL,KEY_PLUS,KEY_KP_ADD,KEY_MINUS,KEY_KP_SUBTRACT]
+	if event.is_action_pressed("interact") or work_shortcut:
+		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if menu.page != "": return

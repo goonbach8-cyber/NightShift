@@ -3,12 +3,13 @@ extends Node3D
 var stock: Resource
 var slots: Array[Node3D] = []
 
-func bind(item: Resource, kind: String, count: int, origin: Vector3, spacing: Vector3) -> void:
+func bind(item: Resource, kind: String, count: int, origin: Vector3, spacing: Vector3, columns: int = 3) -> void:
 	stock = item
+	var row_width := maxi(1,columns)
 	for i in count:
 		var slot := Node3D.new()
 		add_child(slot)
-		slot.position = origin + Vector3((i % 3) * spacing.x, floori(float(i) / 3.0) * spacing.y, 0)
+		slot.position = origin + Vector3((i % row_width) * spacing.x, floori(float(i) / row_width) * spacing.y, 0)
 		slots.append(slot)
 		match kind:
 			"can":

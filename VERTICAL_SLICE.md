@@ -1,17 +1,19 @@
 # NightShift / 03:17 — playable prototype
 
-Updated 16 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. Six connected prototype nights reach the ending; these short test shifts are not five hours of finished story.
+Updated 17 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. Six connected prototype nights reach the ending; these short test shifts are not five hours of finished story.
 
 ## Playing
 
 - Startup opens **New Game / Continue / Settings / Quit**. Existing progress requires confirmation before New Game. Continue accepts a valid checkpoint or backup.
 - **WASD** moves. **E** uses the nearest visible interaction. Start and finish at the staff shift notes behind the counter.
 - E prompts describe the current action: check stock with empty hands, restock with matching goods, scan the next item, then accept payment. Supply reports a specific blocked-action reason. Delivery prompts list their contents. Small selection hysteresis prevents flicker; already-open doors yield to nearby work surfaces. Hidden objects cannot retain selection. Dialogue hides the background E prompt.
-- At the operator side of checkout, **E** scans one item, then accepts payment. The contextual panel names the scanned item, shows scanned/remaining quantities and the scanned subtotal. Stock and revenue change only on payment.
-- **F** talks to the waiting customer. **Space** advances; **1/2** select offered answers. Special conversations receive a contextual hint. Earlier answers alter later dialogue after loading.
+- At the operator side of checkout, **E** scans one item, then accepts payment. The contextual panel names the scanned item, shows scanned/remaining quantities and the scanned subtotal, then switches to the final total. Its background appears only for an actual customer at the service position. Payment confirms the full amount; the next basket starts from zero. Stock and revenue change only on payment.
+- **F** talks to the customer at the service position. **Space** advances; **1/2** select offered answers. Special conversations receive a contextual hint. A temporary dialogue background protects text contrast; competing checkout prompts disappear during conversation. Earlier answers alter later dialogue after loading.
+- While dialogue is open, hidden E work/door actions and warehouse/radio shortcuts are blocked. Space, answer keys, ESC pause and global mute remain available. Ordinary interactions resume after the last line.
 - Water: rear-right bottle shelf. Energy: rear-left cooler. Chips: snack island. Customers visit each matching product location. Stock controls separate visual slots; empty displays are actually empty.
-- At the warehouse supply point, **TAB** selects a product and **E** collects it. Carry one product type; refill only its matching display. Collect mixed delivery in the yard and deposit it at supply.
-- **E** checks refrigeration. Night 2 adds waste-bin service. Night 3 instead adds a WC check/cleaning point with a visible floor mark.
+- Water bottles sit within their boards with clearance below the header. Energy occupies two cooler bays over three shelves, behind the glass. Chips retain their existing placement. These placements have mesh-bound and camera-framing checks; final visual occlusion still requires human review.
+- At the warehouse supply point, **TAB** selects a product and **E** collects it. Carry one product type; refill only its matching display. Feedback reports transferred quantity and resulting display stock. Collect mixed delivery in the yard and deposit it at supply; full hands are explained before pickup.
+- At the cooler, **E** with empty hands checks refrigeration. Restocking Energy and temperature inspection are separate actions; carrying the wrong goods cannot complete the inspection. Night 2 adds waste-bin service. Night 3 instead adds a WC check/cleaning point with a visible floor mark. Task text names the actual action.
 - Radio controls work only at the physical radio: **E/T** power, **Y** next track, **+/-** local volume. **M** mutes audio globally.
 - **ESC** pauses; Resume, Settings and Main Menu are available. Pause freezes gameplay, customer patience and dialogue input. Resume clears held movement actions.
 - At completion, the transition shows customers, items, revenue, lost customers and tasks. Continue writes the safe boundary checkpoint and loads the next night. Returning mid-shift does not save active customers.
@@ -46,6 +48,12 @@ Run with Godot 4.7.2 CLI, e.g. `godot --headless --path . --script res://tests/c
 - `story_campaign_test.gd`, `ending_save_test.gd`: authored sequence, interrupted-reading guards, required Night 3 presentation, low/high clue ending branches and save/load.
 - `depot_movement_test.gd`: internal directional inputs verify yard boundaries, solid counter and physical return interaction.
 - `customer_profile_test.gd`: familiar/alternate visitors, configured greetings and story priority.
+- `checkout_presentation_test.gd`: actual internal E scans/payment, next-basket reset, service-position readiness, contextual panel visibility, dialogue padding and all six task lists.
+- `cooler_action_test.gd`: wrong-load rejection, exact restock feedback and explicit refrigeration inspection.
+- `product_placement_test.gd`: actual mesh bounds against shelf boards/header/glass, plus projection inside the normal camera frame.
+- `night3_departure_test.gd`: patience expiry, actual unserved exit, released reservations, physically presented Night 3 event, remaining tasks and successful staff-note completion.
+- `dialogue_readability_test.gd`: authored handovers and customer branches across six nights fit the dialogue area and expose the correct answer controls.
+- `dialogue_input_test.gd`: no hidden pickup/restock/door/radio actions during dialogue; normal controls return after closing it.
 - `menu_test.gd`, `pause_gameplay_test.gd`: new/continue/backup/settings and frozen gameplay/input while paused.
 - `world_binding_test.gd`, `product_route_test.gd`: independent physical product displays, correct routes and wrong-product rejection.
 - `event_spacing_test.gd`, `presentation_test.gd`, `narrative_test.gd`: trigger prerequisites, cooldowns, reading time, dialogue and radio restoration.

@@ -74,4 +74,20 @@ func run() -> void:
 		world._update_objective()
 		await create_timer(0.1).timeout
 		check(world.objective.get_minimum_size().y <= world.objective.size.y and world.get_node("HUD/ObjectiveBackdrop").get_global_rect().encloses(world.objective.get_global_rect()),"Night %d actionable task list fits its existing background" % night)
+	loop.served = 1
+	loop.lost_sales = 2
+	check(loop.status_text().contains("Customers 3/6 (2 unserved)"),"Shift progress distinguishes unserved departures from customers still due")
+	loop.configure_night(preload("res://scripts/night_catalog.gd").for_night(3))
+	loop.served = loop.customer_count
+	loop.lost_sales = 0
+	check(loop.status_text().contains("Check the stockroom before leaving"),"Unpresented required story supplies the relevant departure hint")
+	for id in loop.definition.required_story: loop.story_flags[StringName("presented_"+String(id))] = true
+	check(not loop.status_text().contains("Check the stockroom before leaving") and loop.status_text().contains("Check WC"),"Presented story stops sending player back to stockroom while another task remains")
+	var removed := Node3D.new()
+	world.add_child(removed)
+	player.interaction_target = removed
+	removed.free()
+	world._process(0.0)
+	player._update_interaction()
+	check(is_instance_valid(player.interaction_target) or player.interaction_target == null,"Removed selected object does not leave a freed reference in HUD or selection")
 	await finish()

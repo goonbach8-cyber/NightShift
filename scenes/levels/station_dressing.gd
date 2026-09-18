@@ -170,19 +170,20 @@ func shop_fittings() -> void:
 	sign_text("ENERGY / 4 °C",Vector3(0,1.67,0.51),1.15,cooler)
 	var shelf := station.get_node("Shelf")
 	for x in [-0.86,0.86]:
-		box(Vector3(x,0.72,0),Vector3(0.055,1.42,0.65),"a3aaa0",shelf)
+		box(Vector3(x,0.79,0),Vector3(0.055,1.58,0.65),"a3aaa0",shelf)
 	for item in shelf.get_children():
 		if item is StaticBody3D and item.get_child_count() > 0:
 			var visual := item.get_child(0) as MeshInstance3D
 			if visual and visual.mesh is BoxMesh and visual.mesh.size.is_equal_approx(Vector3(0.16,0.27,0.2)):
 				visual.hide()
+				item.position.z = 0.24
 				bottle(Vector3.ZERO,"7d9670",item)
 	for y in [0.15,0.65,1.15]:
 		box(Vector3(0,y,0.34),Vector3(1.78,0.075,0.03),"344b4b",shelf)
 		for x in [-0.6,0.0,0.6]:
 			box(Vector3(x,y,0.36),Vector3(0.22,0.045,0.015),"ddd4b3",shelf)
-	box(Vector3(0,1.5,0),Vector3(1.8,0.19,0.66),"286663",shelf)
-	sign_text("WATER",Vector3(0,1.5,0.34),1.4,shelf)
+	box(Vector3(0,1.62,0),Vector3(1.8,0.19,0.66),"286663",shelf)
+	sign_text("WATER",Vector3(0,1.62,0.34),1.4,shelf)
 	var till := station.get_node("Register")
 	till.get_node("Terminal").get_child(0).hide()
 	bevel(Vector3(0,1.02,0),Vector3(1.94,0.09,1.04),"7e8981",till)

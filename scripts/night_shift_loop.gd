@@ -441,7 +441,9 @@ func _dialogue_progress_changed() -> void:
 	pending_dialogue_seen = &""
 
 func status_text() -> String:
-	var lines := PackedStringArray(["%s | Customers %d/%d | CHF %.2f" % [definition.title,served,customer_count,float(revenue_rappen)/100]])
+	var progress := "Customers %d/%d" % [served+lost_sales,customer_count]
+	if lost_sales > 0: progress += " (%d unserved)" % lost_sales
+	var lines := PackedStringArray(["%s | %s | CHF %.2f" % [definition.title,progress,float(revenue_rappen)/100]])
 	var pending := PackedStringArray()
 	for task in required_tasks:
 		if not tasks.has(task): pending.append(TASK_LABELS.get(task,String(task).capitalize()))
@@ -451,7 +453,7 @@ func status_text() -> String:
 	elif carried != &"": lines.append("Carrying %s ×%d → matching display" % [inventory.products[carried].display_name,inventory.stocks[carried].carried_units])
 	elif delivery_ready: lines.append("Delivery waiting in the yard")
 	if can_finish(): lines.append("Finish at the staff shift notes")
-	elif not definition.required_story.is_empty() and served+lost_sales == customer_count: lines.append("Check the stockroom before leaving")
+	elif served+lost_sales == customer_count and definition.required_story.any(func(id): return not story_flags.get(StringName("presented_"+String(id)),false)): lines.append("Check the stockroom before leaving")
 	if "--dev-debug" in OS.get_cmdline_user_args():
 		for id in inventory.stocks:
 			var item: Resource = inventory.stocks[id]
