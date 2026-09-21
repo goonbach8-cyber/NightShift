@@ -104,7 +104,7 @@ func _process(delta: float) -> void:
 	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
-		story_label.text = "The customer hesitates." if event.main_event and gameplay.career_shifts == 0 else event.text
+		story_label.text = event.text
 		if not event.show_caption or event.effect in [&"world_state",&"light_dip"]: story_label.text = ""
 		story_time = 16
 		story_cooldown = gameplay.definition.event_spacing_seconds
