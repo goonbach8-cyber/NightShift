@@ -115,34 +115,36 @@ func add_basket_item(id: StringName, amount: int = 1) -> void:
 		if basket_items >= 4:
 			return
 		var item := MeshInstance3D.new()
+		var item_mesh: Mesh
 		var material := StandardMaterial3D.new()
 		match id:
 			&"water":
-				var mesh := CylinderMesh.new()
-				mesh.top_radius = 0.035
-				mesh.bottom_radius = 0.045
-				mesh.height = 0.18
-				mesh.radial_segments = 8
-				item.mesh = mesh
+				var bottle := CylinderMesh.new()
+				bottle.top_radius = 0.035
+				bottle.bottom_radius = 0.045
+				bottle.height = 0.18
+				bottle.radial_segments = 8
+				item_mesh = bottle
 				material.albedo_color = Color("7d9670")
 			&"energy":
-				var mesh := CylinderMesh.new()
-				mesh.top_radius = 0.04
-				mesh.bottom_radius = 0.04
-				mesh.height = 0.15
-				mesh.radial_segments = 8
-				item.mesh = mesh
+				var can := CylinderMesh.new()
+				can.top_radius = 0.04
+				can.bottom_radius = 0.04
+				can.height = 0.15
+				can.radial_segments = 8
+				item_mesh = can
 				material.albedo_color = Color("439d8d")
 			&"chips":
-				var mesh := BoxMesh.new()
-				mesh.size = Vector3(0.09,0.17,0.06)
-				item.mesh = mesh
+				var bag := BoxMesh.new()
+				bag.size = Vector3(0.09,0.17,0.06)
+				item_mesh = bag
 				material.albedo_color = Color("c97435")
 			_:
-				var mesh := BoxMesh.new()
-				mesh.size = Vector3(0.09,0.12,0.07)
-				item.mesh = mesh
+				var fallback := BoxMesh.new()
+				fallback.size = Vector3(0.09,0.12,0.07)
+				item_mesh = fallback
 				material.albedo_color = Color("8b8878")
+		item.mesh = item_mesh
 		material.roughness = 0.8
 		item.material_override = material
 		item.position = Vector3(-0.10+(basket_items%3)*0.10,0.13+0.04*int(basket_items/3),0)
