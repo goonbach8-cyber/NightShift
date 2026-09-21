@@ -44,8 +44,19 @@ func setup(owner_world: Node3D) -> void:
 	crack.name = "AsphaltCrack"
 	crack.position = to_local(layout.entrance.global_position)+Vector3(1.8,0,1.2)
 	add_child(crack)
-	for i in 5:
-		model.box(crack,Vector3(i*0.17,0.013,sin(i)*0.13),Vector3(0.24,0.018,0.055),Color("111b1c"))
+	var crack_points := PackedVector3Array([
+		Vector3(-0.55,0.013,-0.10),
+		Vector3(-0.31,0.013,0.04),
+		Vector3(-0.08,0.013,-0.07),
+		Vector3(0.17,0.013,0.08),
+		Vector3(0.42,0.013,-0.03),
+		Vector3(0.68,0.013,0.12)
+	])
+	for i in range(crack_points.size()-1):
+		var a := crack_points[i]
+		var b := crack_points[i+1]
+		var segment := model.box(crack,(a+b)/2,Vector3(0.045,0.018,a.distance_to(b)),Color("101617"))
+		segment.rotation.y = atan2((b-a).x,(b-a).z)
 
 	# A freestanding checkout display becomes the first undeniable Night-3 incident.
 	# It has no collision, so its fallen state cannot soft-lock the queue.
