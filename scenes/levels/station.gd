@@ -71,9 +71,9 @@ func _ready() -> void:
 
 
 func _fuel_pump(node_name: String, display_name: String, at: Vector3, number: String) -> void:
-	var island := _box(self, node_name+"Island", at+Vector3(0,-0.04,0), Vector3(1.7,0.08,1.18), Color("747b73"), true)
-	var pump := _box(self, node_name, at+Vector3(0,0.78,0), Vector3(0.9,1.56,0.72), Color("afada1"))
-	var display := _box(self, display_name, at+Vector3(0,1.08,0.385), Vector3(0.64,0.34,0.045), Color("172d2d"), false)
+	_box(self, node_name+"Island", at+Vector3(0,-0.04,0), Vector3(1.7,0.08,1.18), Color("747b73"), true)
+	_box(self, node_name, at+Vector3(0,0.78,0), Vector3(0.9,1.56,0.72), Color("afada1"))
+	_box(self, display_name, at+Vector3(0,1.08,0.385), Vector3(0.64,0.34,0.045), Color("172d2d"), false)
 	_label(self, number+" / MULTI", at+Vector3(0,1.53,0.42), 18, Color("9edbcf"))
 	# Slim bollards protect the dispenser without closing the drive lane.
 	for x in [-0.68,0.68]:
