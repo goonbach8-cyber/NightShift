@@ -33,6 +33,10 @@ var product_labels: Dictionary = {}
 var story_areas: Array[Area3D] = []
 var wc_point: Node3D
 var wc_mark: MeshInstance3D
+var carried_visual: Node3D
+var carried_crate: MeshInstance3D
+var carried_material: StandardMaterial3D
+var service_waste: MeshInstance3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -74,6 +78,7 @@ func _ready() -> void:
 	stock_label.pixel_size = 0.004
 	stock_label.font_size = 32
 	stock_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	stock_label.visible = false
 	shelf.add_child(stock_label)
 	warehouse.stock.changed.connect(sync_stock)
 	sync_stock()
@@ -81,6 +86,7 @@ func _ready() -> void:
 	inventory.add_product(preload("res://data/products/water.tres"),warehouse.stock)
 	inventory.add_product(preload("res://data/products/energy.tres"))
 	inventory.add_product(preload("res://data/products/chips.tres"))
+	setup_carried_visual()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -122,6 +128,11 @@ func _ready() -> void:
 	shelf.get_parent().add_child(service)
 	service.position = Vector3(-6.05,0,3.95)
 	marker(service,"Approach",Vector3(0.7,0,0))
+	var service_model = preload("res://scripts/product_display.gd").new()
+	service.add_child(service_model)
+	service_model.box(service,Vector3(0,0.42,0),Vector3(0.52,0.84,0.48),Color("344447"))
+	service_model.box(service,Vector3(0,0.87,0),Vector3(0.58,0.08,0.54),Color("78817b"))
+	service_waste = service_model.box(service,Vector3(0,0.78,0),Vector3(0.38,0.24,0.34),Color("171d1e"))
 	register_event_lights(shelf.get_parent())
 	var area = preload("res://scripts/story_area.gd").new()
 	area.name = "StockroomStoryArea"
@@ -169,6 +180,50 @@ func _ready() -> void:
 	wc_mark.material_override = damp
 	wc_point.add_child(wc_mark)
 	wc_mark.hide()
+
+func setup_carried_visual() -> void:
+	carried_visual = Node3D.new()
+	carried_visual.name = "CarriedWorkItem"
+	get_node("../Player").add_child(carried_visual)
+	carried_visual.position = Vector3(0.34,0.72,0.10)
+	carried_visual.rotation = Vector3(0.08,-0.28,0.06)
+	carried_crate = MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.44,0.34,0.32)
+	carried_crate.mesh = mesh
+	carried_material = StandardMaterial3D.new()
+	carried_material.albedo_color = Color("b18c5c")
+	carried_material.roughness = 0.9
+	carried_crate.material_override = carried_material
+	carried_visual.add_child(carried_crate)
+	var band := MeshInstance3D.new()
+	var band_mesh := BoxMesh.new()
+	band_mesh.size = Vector3(0.07,0.345,0.325)
+	band.mesh = band_mesh
+	var band_material := StandardMaterial3D.new()
+	band_material.albedo_color = Color("d0bc91")
+	band.material_override = band_material
+	carried_visual.add_child(band)
+	carried_visual.hide()
+
+func set_carry_state(delivery: bool, product: StringName) -> void:
+	if not is_instance_valid(carried_visual):
+		return
+	carried_visual.visible = delivery or product != &""
+	if not carried_visual.visible:
+		return
+	if delivery:
+		carried_material.albedo_color = Color("b18c5c")
+	else:
+		match product:
+			&"water": carried_material.albedo_color = Color("6e918a")
+			&"energy": carried_material.albedo_color = Color("3f8f80")
+			&"chips": carried_material.albedo_color = Color("b96e36")
+			_: carried_material.albedo_color = Color("8b8878")
+
+func set_service_done(done: bool) -> void:
+	if is_instance_valid(service_waste):
+		service_waste.visible = not done
 
 func register_event_lights(node: Node) -> void:
 	if node is Light3D and (node.global_position.distance_to(product_nodes[&"energy"].global_position) < 4 or node.global_position.distance_to(checkout.global_position) < 2.5):
