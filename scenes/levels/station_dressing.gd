@@ -148,7 +148,7 @@ func build_gondola(node_name: String, at: Vector3, title: String, variant_offset
 			var side_x := float(side)*0.48
 			for i in 9:
 				var z := -1.18 + i*0.30
-				var variant := (i+variant_offset+y*10 as int)%6
+				var variant := (i + variant_offset + int(y * 10.0)) % 6
 				var color := ["a97344","beaa70","557b69","965647","5f7895","b86e55"][variant]
 				if (i+variant_offset)%3 == 0:
 					cylinder(Vector3(side_x,y+0.17,z),0.065,0.24,color,body)
@@ -174,6 +174,48 @@ func build_endcap(at: Vector3, variant_offset: int) -> void:
 			var x := -0.44+i*0.22
 			bevel(Vector3(x,y+0.14,0.02),Vector3(0.16,0.22,0.18),["a97344","beaa70","557b69","965647","5f7895"][(i+variant_offset)%5],root)
 	box(Vector3(0,1.20,0),Vector3(1.18,0.12,0.18),"246463",root)
+
+
+func build_cooler_module(at: Vector3, title: String, palette_offset: int) -> void:
+	# Visual-only assortment lives inside a solid wall cooler footprint.
+	solid(at+Vector3(0,0.82,0),Vector3(1.42,1.64,0.86))
+	box(at+Vector3(0,0.82,-0.38),Vector3(1.42,1.64,0.10),"172b2c")
+	for y in [0.30,0.67,1.04,1.41]:
+		box(at+Vector3(0,y,0.02),Vector3(1.30,0.035,0.68),"bcc7be")
+		for i in 6:
+			var x := -0.50+i*0.20
+			var color := ["557b69","5f7895","a97344","965647","beaa70","3f8f80"][(i+palette_offset+int(y*10.0))%6]
+			cylinder(at+Vector3(x,y+0.13,0.18),0.055,0.23,color)
+	for x in [-0.70,0.0,0.70]:
+		box(at+Vector3(x,0.88,0.44),Vector3(0.035,1.35,0.055),"9caaa5")
+	var pane := box(at+Vector3(0,0.90,0.46),Vector3(1.28,1.30,0.012),"7eaaa8")
+	var glass := StandardMaterial3D.new()
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.albedo_color = Color(0.45,0.72,0.72,0.07)
+	glass.roughness = 0.12
+	pane.material_override = glass
+	pane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	box(at+Vector3(0,1.73,0.02),Vector3(1.42,0.18,0.78),"1a4b50")
+	sign_text(title,at+Vector3(0,1.73,0.43),1.02)
+
+func build_wall_shelf(at: Vector3, title: String) -> void:
+	solid(at+Vector3(0,0.78,0),Vector3(2.05,1.56,0.58))
+	box(at+Vector3(0,0.78,-0.24),Vector3(2.05,1.56,0.10),"424e50")
+	for x in [-0.98,0.98]:
+		box(at+Vector3(x,0.78,0),Vector3(0.055,1.56,0.58),"a3aaa0")
+	for row in range(4):
+		var y := 0.18+row*0.38
+		box(at+Vector3(0,y,0.16),Vector3(1.98,0.06,0.50),"b4b3a0")
+		for col in range(9):
+			var x := -0.82+col*0.205
+			var color := ["c8bda1","708b85","967956","a97344","5f7895","b86e55"][(row+col)%6]
+			if (row+col)%3 == 0:
+				cylinder(at+Vector3(x,y+0.13,0.28),0.052,0.22,color)
+			else:
+				bevel(at+Vector3(x,y+0.13,0.28),Vector3(0.15,0.22,0.14),color)
+		box(at+Vector3(0,y+0.025,0.43),Vector3(1.96,0.05,0.025),"344b4b")
+	box(at+Vector3(0,1.66,0.10),Vector3(2.05,0.16,0.56),"286663")
+	sign_text(title,at+Vector3(0,1.66,0.40),1.55)
 
 
 func shop_fittings() -> void:
@@ -205,6 +247,9 @@ func shop_fittings() -> void:
 		box(Vector3(x,0.95,0.54),Vector3(0.022,1.03,0.025),"b6efea",cooler,true)
 	box(Vector3(0,1.67,0.1),Vector3(1.5,0.18,0.78),"1a4b50",cooler)
 	sign_text("ENERGY / 4 °C",Vector3(0,1.67,0.51),1.15,cooler)
+	# A three-door cold wall reads like a real petrol-shop cooler bank. The first bay remains gameplay-controlled.
+	build_cooler_module(Vector3(-3.20,0,-4.15),"SOFTDRINKS",1)
+	build_cooler_module(Vector3(-1.65,0,-4.15),"WASSER / SAFT",3)
 	var shelf := station.get_node("Shelf")
 	for x in [-0.86,0.86]:
 		box(Vector3(x,0.79,0),Vector3(0.055,1.58,0.65),"a3aaa0",shelf)
@@ -221,6 +266,8 @@ func shop_fittings() -> void:
 			box(Vector3(x,y,0.36),Vector3(0.22,0.045,0.015),"ddd4b3",shelf)
 	box(Vector3(0,1.62,0),Vector3(1.8,0.19,0.66),"286663",shelf)
 	sign_text("WATER",Vector3(0,1.62,0.34),1.4,shelf)
+	# Adjacent grocery wall makes the right rear zone a coherent stocked section instead of an isolated rack.
+	build_wall_shelf(Vector3(2.75,0,-4.15),"FRÜHSTÜCK / ALLTAG")
 	var till := station.get_node("Register")
 	till.get_node("Terminal").get_child(0).hide()
 	bevel(Vector3(0,1.02,0),Vector3(1.94,0.09,1.04),"7e8981",till)
