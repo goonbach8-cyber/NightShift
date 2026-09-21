@@ -62,7 +62,8 @@ func _ready() -> void:
 	var parcel := BoxMesh.new()
 	parcel.size = Vector3(0.6,0.5,0.5)
 	delivery_visual.mesh = parcel
-	delivery_visual.position.y = 0.55
+	# The removable parcel sits on the existing pallet stack, not inside it.
+	delivery_visual.position = Vector3(0.15,0.98,-0.35)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color("c6a46d")
 	delivery_visual.material_override = material

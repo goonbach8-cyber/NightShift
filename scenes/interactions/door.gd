@@ -10,6 +10,18 @@ var moving: bool = false
 
 func _ready() -> void:
 	super._ready()
+	# Surface-mounted sliding leaf: clear the wall instead of vanishing into it.
+	panel.position.z = 0.30
+	var rail := MeshInstance3D.new()
+	var rail_mesh := BoxMesh.new()
+	rail_mesh.size = Vector3(4.6,0.08,0.10)
+	rail.mesh = rail_mesh
+	rail.position = Vector3(1.15,1.58,0.30)
+	var rail_material := StandardMaterial3D.new()
+	rail_material.albedo_color = Color("74817c")
+	rail_material.metallic = 0.5
+	rail.material_override = rail_material
+	add_child(rail)
 	clearance.set_collision_mask_value(3, true)
 	_update_prompt()
 
@@ -57,4 +69,4 @@ func _occupied() -> bool:
 
 
 func _update_prompt() -> void:
-	prompt = "Schiebetür schliessen" if is_open else "Schiebetür öffnen"
+	prompt = "Close sliding door" if is_open else "Open sliding door"

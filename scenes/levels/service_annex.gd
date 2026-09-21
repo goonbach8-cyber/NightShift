@@ -159,9 +159,9 @@ func forecourt() -> void:
 		box(Vector3(x,3.25,8.275),Vector3(0.15,0.24,2.9),"286663")
 	d.box(Vector3(-3.8,3.15,7.4),Vector3(1.8,0.05,0.14),"dce9d3",self,true)
 	light(Vector3(-3.8,2.9,8.2),Color("dce9d3"),1.0,4)
-	box(Vector3(0,-0.08,13.2),Vector3(22,0.12,4),"20272d")
+	box(Vector3(0,-0.08,14.2),Vector3(22,0.12,6),"20272d",true)
 	for x in range(-10,11,3):
-		box(Vector3(x,0.001,13.2),Vector3(1.6,0.01,0.065),"b4b2a0")
+		box(Vector3(x,-0.008,14.2),Vector3(1.6,0.01,0.065),"b4b2a0")
 	box(Vector3(5.6,1.05,9.9),Vector3(0.95,2.1,0.18),"173d40",true)
 	d.sign_text("NIGHTSHIFT",Vector3(5.6,1.8,10.0),0.78,self)
 	d.sign_text("DIESEL",Vector3(5.6,1.35,10.0),0.68,self)

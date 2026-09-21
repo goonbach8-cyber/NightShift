@@ -28,15 +28,13 @@ func setup(owner_world: Node3D) -> void:
 	loop = world.gameplay
 	layout = world.layout
 	add_child(model)
-	road = Node3D.new()
+	road = preload("res://scripts/access_road.gd").new()
 	road.name = "AccessRoad"
-	add_child(road)
-	var forecourt: Vector3 = to_local(layout.entrance.global_position)+Vector3(4,0,3)
+	# The established road spans z=11.2..17.2, relative to the entrance at z=5.
+	var forecourt: Vector3 = to_local(layout.entrance.global_position)+Vector3(4.5,0,12.2)
 	road.position = forecourt
-	model.box(road,Vector3(3,-0.06,0),Vector3(7,0.1,2.6),Color("333e40"))
-	for x in 6: model.box(road,Vector3(x,0.002,0),Vector3(0.5,0.012,0.06),Color("dedac1"))
-	label(road,"DEPOT →",Vector3(0,1.1,-1),24)
-	point(self,"route",forecourt-Vector3(0.6,0,0),"Navigation / Depot route")
+	add_child(road)
+	point(self,"route",forecourt+Vector3(3.5,0,5.0),"Navigation / Depot collection")
 	crack = Node3D.new()
 	crack.name = "AsphaltCrack"
 	crack.position = to_local(layout.entrance.global_position)+Vector3(1.8,0,1.2)
@@ -45,7 +43,7 @@ func setup(owner_world: Node3D) -> void:
 		model.box(crack,Vector3(i*0.17,0.013,sin(i)*0.13),Vector3(0.24,0.018,0.055),Color("111b1c"))
 	construction = Node3D.new()
 	construction.name = "ConstructionNotice"
-	construction.position = forecourt+Vector3(-0.8,0,0.9)
+	construction.position = forecourt+Vector3(-3.5,0,-0.7)
 	add_child(construction)
 	model.box(construction,Vector3(0,0.65,0),Vector3(0.1,1.3,0.1),Color("747c7a"))
 	model.box(construction,Vector3(0,1.35,0),Vector3(1.3,0.75,0.07),Color("dbc995"))
@@ -75,7 +73,11 @@ func setup(owner_world: Node3D) -> void:
 	var offsets := [Vector3(-1.4,0,0.4),Vector3(-0.9,0,-1.2),Vector3(1.2,0,0.2),Vector3(-1.4,0,0.4)]
 	for i in ids.size():
 		var reader := point(self,ids[i],to_local(sites[i].global_position)+offsets[i],"Read "+preload("res://scripts/clue_catalog.gd").ENTRIES[ids[i]].title)
-		model.box(reader,Vector3(0,0.9,0),Vector3(0.32,0.015,0.25),Color("d0c9ad"))
+		# Narrow standing reading shelf gives every clipping a physical support.
+		model.box(reader,Vector3(0,0.85,0),Vector3(0.44,0.06,0.34),Color("67736b"))
+		model.box(reader,Vector3(0,0.415,0),Vector3(0.08,0.83,0.08),Color("53615c"))
+		model.box(reader,Vector3(0,0.025,0),Vector3(0.36,0.05,0.30),Color("47554f"))
+		model.box(reader,Vector3(0,0.889,0),Vector3(0.32,0.015,0.25),Color("d0c9ad"))
 	depot = Node3D.new()
 	depot.name = "Depot"
 	depot.position = Vector3(24,0,0)
@@ -90,7 +92,9 @@ func setup(owner_world: Node3D) -> void:
 	person(depot,Vector3(1,0,-2.3))
 	point(depot,"depot_clerk",Vector3(1,0,-1),"Talk to depot clerk")
 	point(depot,"depot_ledger",Vector3(-1,0,-1.8),"Read depot ledger")
-	model.box(depot,Vector3(-1,0.85,-1.8),Vector3(0.5,0.05,0.35),Color("cfbea0"))
+	model.box(depot,Vector3(-1,0.83,-1.8),Vector3(0.7,0.05,0.5),Color("67736b"))
+	for x in [-1.25,-0.75]: model.box(depot,Vector3(x,0.4,-1.8),Vector3(0.06,0.8,0.35),Color("53615c"))
+	model.box(depot,Vector3(-1,0.865,-1.8),Vector3(0.5,0.02,0.35),Color("cfbea0"))
 	point(depot,"return",Vector3(0,0,1.8),"Return to station")
 	var light := OmniLight3D.new()
 	light.position = Vector3(0,3,0)
@@ -230,6 +234,7 @@ func _process(_delta: float) -> void:
 		loop.story_flags[&"road_exists"] = true
 		loop.story_flags[&"crack_exists"] = true
 	road.visible = loop.story_flags.get(&"road_exists",false) or loop.definition.world_states.has(&"road")
+	road.set_open(configured_night >= 4)
 	crack.visible = loop.story_flags.get(&"crack_exists",false) or loop.definition.world_states.has(&"crack")
 	construction.visible = loop.definition.world_states.has(&"construction")
 	var redwater: bool = loop.definition.reality == &"redwater" and not ending_started
