@@ -32,6 +32,7 @@ static func for_night(number: int) -> Resource:
 	main.text = "The counter phone rings. Its display reads 03:17."
 	if number == 2:
 		main.text = "Radio: ‘...local time, 03:17.’ The station clock is nowhere near it."
+		main.at_checkout = false
 	night.events.append(main)
 	var variable := EVENT.new()
 	variable.event_id = StringName("night_%d_light" % number)
@@ -86,6 +87,7 @@ static func for_night(number: int) -> Resource:
 		night.world_states.append(&"construction")
 		main.text = "Radio: ‘Road works begin today on the new Redwater access road.’"
 		main.effect = &"radio_interrupt"
+		main.at_checkout = false
 	if number == 6:
 		night.customer_profiles.assign([
 			{"id":&"regular_driver","color":Color("b0a079"),"greeting":"Evening, Mike. You saved me a trip again."},
@@ -100,4 +102,5 @@ static func for_night(number: int) -> Resource:
 		main.show_caption = false
 		main.effect = &"reality_overlap"
 		main.after_sales = 2
+		main.at_checkout = false
 	return night
