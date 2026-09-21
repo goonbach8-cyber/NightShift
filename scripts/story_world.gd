@@ -63,7 +63,7 @@ func setup(owner_world: Node3D) -> void:
 	checkout_display = preload("res://scripts/story_prop.gd").new()
 	checkout_display.name = "CheckoutDisplay"
 	checkout_display.target_id = &"checkout_display"
-	checkout_display.settled_offset = Vector3(-0.34,-0.10,0.12)
+	checkout_display.settled_offset = Vector3(0.36,-0.06,0.12)
 	checkout_display.settled_roll = -1.18
 	checkout_display.position = to_local(layout.checkout.global_position)+Vector3(1.08,0.02,-0.62)
 	add_child(checkout_display)
