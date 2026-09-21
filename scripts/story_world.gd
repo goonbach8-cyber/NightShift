@@ -350,7 +350,7 @@ func _process(delta: float) -> void:
 		overlap_echo.visible = overlap_remaining > 0 and not ending_started
 	if overlap_remaining > 0 and not ending_started:
 		branding.text = "REDWOOD / REDWATER\n03:17"
-	get_node("route").available = road.visible and not in_depot
+	get_node("route").available = road.visible and not in_depot and configured_night >= 3 and configured_night <= 5
 	for child in depot.get_children():
 		if child.has_method("is_available"): child.available = in_depot
 	for child in construction.get_children():
