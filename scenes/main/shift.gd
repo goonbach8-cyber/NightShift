@@ -110,10 +110,18 @@ func _process(delta: float) -> void:
 		story_cooldown = gameplay.definition.event_spacing_seconds
 		if event.effect == &"light_dip": effects.light_dip()
 		if event.effect == &"radio_interrupt": radio.interrupt_briefly()
+		if event.effect == &"phone_ring":
+			effects.phone_ring()
+			if is_instance_valid(story_world): story_world.signal_phone()
+		if event.effect == &"navigation_chime": effects.navigation_chime()
+		if event.effect == &"reality_overlap":
+			effects.reality_overlap()
+			if is_instance_valid(story_world): story_world.start_overlap()
 		if event.effect == &"world_state":
 			for prop in get_tree().get_nodes_in_group("story_prop"):
 				if prop.target_id == event.effect_target: prop.apply_state()
-		gameplay.story_flags[&"noticed_call"] = true
+		if event.event_id == &"night_1_main":
+			gameplay.story_flags[&"noticed_call"] = true
 		gameplay.story_flags[StringName("presented_"+String(event.event_id))] = true
 		gameplay.changed.emit()
 	# A conversation hides this caption; keep its remaining reading time intact.
