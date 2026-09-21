@@ -261,7 +261,7 @@ func entrance() -> void:
 
 func forecourt() -> void:
 	# Visual ground beyond the retained collision boundary closes the black void.
-	box(Vector3(0,-0.22,5),Vector3(35,0.08,32),"101b22")
+	box(Vector3(0,-0.22,5),Vector3(35,0.08,34),"101b22")
 	box(Vector3(-3.8,0.035,8.3),Vector3(1.7,0.07,1.6),"747b73")
 	for x in [-4.45,-3.15]:
 		cylinder(Vector3(x,0.4,8.95),0.065,0.8,"b7a15b")
