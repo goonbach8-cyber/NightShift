@@ -29,6 +29,7 @@ var entrance: Node3D
 var arrival_origin: Marker3D
 var entry_wait_point: Marker3D
 var yielding_at_entry := false
+var visual_root: Node3D
 
 func _ready() -> void:
 	add_to_group("customer")
@@ -41,19 +42,19 @@ func _ready() -> void:
 	collision.shape = capsule
 	collision.position.y = 0.65
 	add_child(collision)
-	# A deliberately simple customer placeholder, visibly distinct from the pixel player.
-	var visual := MeshInstance3D.new()
-	var mesh := CapsuleMesh.new()
-	mesh.radius = 0.23
-	mesh.height = 1.1
-	mesh.radial_segments = 8
-	mesh.rings = 4
-	visual.mesh = mesh
-	visual.position.y = 0.6
-	var material := StandardMaterial3D.new()
-	material.albedo_color = clothing_color
-	visual.material_override = material
-	add_child(visual)
+	# Low-poly but human-readable customer silhouette. It stays deliberately simple,
+	# yet no longer looks like a physics capsule/debug placeholder.
+	visual_root = Node3D.new()
+	visual_root.name = "CustomerVisual"
+	add_child(visual_root)
+	visual_box(visual_root,Vector3(0,0.72,0),Vector3(0.42,0.62,0.26),clothing_color)
+	visual_box(visual_root,Vector3(-0.12,0.28,0),Vector3(0.15,0.45,0.17),clothing_color.darkened(0.18))
+	visual_box(visual_root,Vector3(0.12,0.28,0),Vector3(0.15,0.45,0.17),clothing_color.darkened(0.18))
+	visual_box(visual_root,Vector3(-0.28,0.72,0),Vector3(0.11,0.55,0.13),clothing_color.darkened(0.08))
+	visual_box(visual_root,Vector3(0.28,0.72,0),Vector3(0.11,0.55,0.13),clothing_color.darkened(0.08))
+	visual_sphere(visual_root,Vector3(0,1.22,0),0.18,Color("c9aa8c"))
+	# Small front badge gives the simple silhouette a readable facing direction.
+	visual_box(visual_root,Vector3(0,0.78,0.145),Vector3(0.17,0.12,0.018),Color("d5d0b1"))
 	var label := Label3D.new()
 	label.name = "Status"
 	label.position.y = 1.35
@@ -62,6 +63,35 @@ func _ready() -> void:
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.visible = "--dev-debug" in OS.get_cmdline_user_args()
 	add_child(label)
+
+func visual_box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var visual := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	visual.mesh = mesh
+	visual.position = at
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.82
+	visual.material_override = material
+	parent.add_child(visual)
+	return visual
+
+func visual_sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> MeshInstance3D:
+	var visual := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius*2.0
+	mesh.radial_segments = 10
+	mesh.rings = 5
+	visual.mesh = mesh
+	visual.position = at
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.9
+	visual.material_override = material
+	parent.add_child(visual)
+	return visual
 
 func go_to(marker: Marker3D) -> void:
 	target = marker
@@ -127,6 +157,9 @@ func _physics_process(delta: float) -> void:
 			retry_time += delta
 			if retry_time > 1:
 				plan(true)
+	var horizontal := Vector2(velocity.x,velocity.z)
+	if is_instance_valid(visual_root) and horizontal.length() > 0.05:
+		visual_root.rotation.y = lerp_angle(visual_root.rotation.y,atan2(horizontal.x,horizontal.y),clampf(delta*8.0,0.0,1.0))
 	var before := global_position
 	move_and_slide()
 	if walking and Vector2(global_position.x-before.x,global_position.z-before.z).length() < 0.002:
