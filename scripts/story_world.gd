@@ -286,9 +286,11 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(loop): return
 	overlap_remaining = maxf(0.0,overlap_remaining-delta)
 	if configured_night != loop.career_shifts+1: apply_night()
-	if configured_night == 3 and loop.served+loop.lost_sales >= 5 and loop.story_flags.get(&"presented_night_3_store_parcel",false):
-		loop.story_flags[&"road_exists"] = true
+	if configured_night == 3 and loop.story_flags.get(&"presented_night_3_store_parcel",false):
+		# The crack appears first; the road follows only after more of the shift has passed.
 		loop.story_flags[&"crack_exists"] = true
+		if loop.served+loop.lost_sales >= 5:
+			loop.story_flags[&"road_exists"] = true
 	road.visible = loop.story_flags.get(&"road_exists",false) or loop.definition.world_states.has(&"road")
 	road.set_open(configured_night >= 4)
 	crack.visible = loop.story_flags.get(&"crack_exists",false) or loop.definition.world_states.has(&"crack")
