@@ -28,8 +28,8 @@ static func for_night(number: int) -> Resource:
 	main.event_id = StringName("night_%d_main" % number)
 	main.main_event = true
 	main.after_seconds = 22
-	main.effect = &"message" if number == 1 else &"radio_interrupt"
-	main.text = "The maintenance log mentions a call at 03:17. The clock has not reached 03:17 yet."
+	main.effect = &"phone_ring" if number == 1 else &"radio_interrupt"
+	main.text = "The counter phone rings. Its display reads 03:17."
 	night.events.append(main)
 	var variable := EVENT.new()
 	variable.event_id = StringName("night_%d_light" % number)
@@ -49,8 +49,11 @@ static func for_night(number: int) -> Resource:
 		night.briefing = "Shift notes: check the WC and put away the delivery."
 		# Required physical story must remain reachable even if customers leave unpaid.
 		main.after_sales = 0
-		main.effect = &"message"
-		main.text = "The customer places a blank receipt on the counter.\n‘I was told you would remember the number.’\n[F] Talk"
+		# The first undeniable event now happens physically beside the staffed checkout.
+		main.effect = &"world_state"
+		main.effect_target = &"checkout_display"
+		main.show_caption = false
+		main.text = ""
 		var parcel := EVENT.new()
 		parcel.event_id = &"night_3_store_parcel"
 		parcel.main_event = true
@@ -71,8 +74,10 @@ static func for_night(number: int) -> Resource:
 		night.title = "Night 4 — The route"
 		night.briefing = "Manager: Collect the replacement stock from the depot. The route is on the navigation unit."
 		night.required_tasks.append(&"depot")
-		main.text = "The delivery docket lists this same depot route. The oldest entry is years old."
-		main.effect = &"message"
+		main.text = "Navigation: route history found — station collections logged here for years."
+		main.effect = &"navigation_chime"
+		main.required_task = &"depot"
+		main.at_checkout = false
 	if number == 5:
 		night.title = "Night 5 — Road works"
 		night.briefing = "Road works beside the station. Deliveries are still scheduled as normal."
@@ -89,8 +94,8 @@ static func for_night(number: int) -> Resource:
 		night.reality = &"redwater"
 		night.world_states.append(&"redwater")
 		night.handover = PackedStringArray(["Josh: Morning, Mike. Same routine as always?","Mike: Have you heard of Redwood? Or anything about 03:17?","Josh: Redwood? No. Is that another station? You've worked here longer than I have."])
-		main.text = "03:17\nFor a moment the station signs name two different places."
+		main.text = ""
 		main.show_caption = false
-		main.effect = &"message"
+		main.effect = &"reality_overlap"
 		main.after_sales = 2
 	return night
