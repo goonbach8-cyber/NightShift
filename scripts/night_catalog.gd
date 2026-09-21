@@ -30,6 +30,8 @@ static func for_night(number: int) -> Resource:
 	main.after_seconds = 22
 	main.effect = &"phone_ring" if number == 1 else &"radio_interrupt"
 	main.text = "The counter phone rings. Its display reads 03:17."
+	if number == 2:
+		main.text = "Radio: ‘...local time, 03:17.’ The station clock is nowhere near it."
 	night.events.append(main)
 	var variable := EVENT.new()
 	variable.event_id = StringName("night_%d_light" % number)
