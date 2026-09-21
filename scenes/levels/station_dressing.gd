@@ -169,9 +169,15 @@ func build_gondola(node_name: String, at: Vector3, title: String, variant_offset
 	sign_text(title,Vector3(0,1.19,1.36),1.05,body)
 
 func build_endcap(at: Vector3, variant_offset: int) -> void:
-	var root := Node3D.new()
+	var root := StaticBody3D.new()
 	root.position = at
 	add_child(root)
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(1.18,1.18,0.42)
+	collision.shape = shape
+	collision.position.y = 0.59
+	root.add_child(collision)
 	box(Vector3(0,0.10,0),Vector3(1.18,0.20,0.42),"253b3d",root)
 	for y in [0.32,0.68,1.02]:
 		box(Vector3(0,y,0),Vector3(1.14,0.06,0.40),"b4b3a0",root)
