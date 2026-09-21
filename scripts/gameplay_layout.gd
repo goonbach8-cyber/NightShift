@@ -37,6 +37,8 @@ var carried_visual: Node3D
 var carried_crate: MeshInstance3D
 var carried_material: StandardMaterial3D
 var service_waste: MeshInstance3D
+var checkout_item: MeshInstance3D
+var checkout_item_material: StandardMaterial3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -87,6 +89,7 @@ func _ready() -> void:
 	inventory.add_product(preload("res://data/products/energy.tres"))
 	inventory.add_product(preload("res://data/products/chips.tres"))
 	setup_carried_visual()
+	setup_checkout_visual()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -224,6 +227,50 @@ func set_carry_state(delivery: bool, product: StringName) -> void:
 func set_service_done(done: bool) -> void:
 	if is_instance_valid(service_waste):
 		service_waste.visible = not done
+
+func setup_checkout_visual() -> void:
+	checkout_item = MeshInstance3D.new()
+	checkout_item.name = "ScannedProduct"
+	checkout_item.position = Vector3(0.34,1.23,-0.04)
+	checkout_item_material = StandardMaterial3D.new()
+	checkout_item_material.roughness = 0.72
+	checkout_item.material_override = checkout_item_material
+	checkout.add_child(checkout_item)
+	checkout_item.hide()
+
+func set_checkout_product(id: StringName, visible: bool = true) -> void:
+	if not is_instance_valid(checkout_item):
+		return
+	checkout_item.visible = visible
+	if not visible:
+		return
+	match id:
+		&"water":
+			var bottle_mesh := CylinderMesh.new()
+			bottle_mesh.top_radius = 0.065
+			bottle_mesh.bottom_radius = 0.08
+			bottle_mesh.height = 0.36
+			bottle_mesh.radial_segments = 10
+			checkout_item.mesh = bottle_mesh
+			checkout_item_material.albedo_color = Color("7d9670")
+		&"energy":
+			var can_mesh := CylinderMesh.new()
+			can_mesh.top_radius = 0.075
+			can_mesh.bottom_radius = 0.075
+			can_mesh.height = 0.25
+			can_mesh.radial_segments = 12
+			checkout_item.mesh = can_mesh
+			checkout_item_material.albedo_color = Color("439d8d")
+		&"chips":
+			var bag_mesh := PrismMesh.new()
+			bag_mesh.size = Vector3(0.26,0.31,0.18)
+			checkout_item.mesh = bag_mesh
+			checkout_item_material.albedo_color = Color("c97435")
+		_:
+			var fallback := BoxMesh.new()
+			fallback.size = Vector3(0.2,0.2,0.2)
+			checkout_item.mesh = fallback
+			checkout_item_material.albedo_color = Color("8b8878")
 
 func register_event_lights(node: Node) -> void:
 	if node is Light3D and (node.global_position.distance_to(product_nodes[&"energy"].global_position) < 4 or node.global_position.distance_to(checkout.global_position) < 2.5):
