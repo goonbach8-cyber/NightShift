@@ -166,7 +166,7 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(visual_root) and horizontal.length() > 0.05:
 		visual_root.rotation.y = lerp_angle(visual_root.rotation.y,atan2(horizontal.x,horizontal.y),clampf(delta*8.0,0.0,1.0))
 		walk_phase += delta*8.5
-		var swing := sin(walk_phase)*0.38
+		var swing := sin(walk_phase)*0.20
 		left_leg.rotation.x = swing
 		right_leg.rotation.x = -swing
 		left_arm.rotation.x = -swing*0.65
