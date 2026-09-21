@@ -72,6 +72,8 @@ func configure_night(config: Resource) -> void:
 	required_tasks.assign(config.required_tasks)
 	layout.wc_point.available = required_tasks.has(&"wc")
 	layout.wc_mark.visible = required_tasks.has(&"wc") and not tasks.has(&"wc")
+	if is_instance_valid(layout.service_point):
+		layout.service_point.available = required_tasks.has(&"service") and not tasks.has(&"service")
 	if layout.has_method("set_service_done"):
 		layout.set_service_done(not required_tasks.has(&"service") or tasks.has(&"service"))
 
@@ -399,7 +401,11 @@ func interact(action: StringName, player: Node3D) -> void:
 					layout.wc_point.available = false
 					notice.emit("WC checked. Floor cleaned.")
 			&"service":
+				if not required_tasks.has(&"service") or tasks.has(&"service"):
+					return
 				tasks[&"service"] = true
+				if is_instance_valid(layout.service_point):
+					layout.service_point.available = false
 				if layout.has_method("set_service_done"):
 					layout.set_service_done(true)
 				notice.emit("Waste bin emptied. Service check complete.")
