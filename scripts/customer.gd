@@ -30,6 +30,11 @@ var arrival_origin: Marker3D
 var entry_wait_point: Marker3D
 var yielding_at_entry := false
 var visual_root: Node3D
+var left_leg: MeshInstance3D
+var right_leg: MeshInstance3D
+var left_arm: MeshInstance3D
+var right_arm: MeshInstance3D
+var walk_phase := 0.0
 
 func _ready() -> void:
 	add_to_group("customer")
@@ -48,10 +53,10 @@ func _ready() -> void:
 	visual_root.name = "CustomerVisual"
 	add_child(visual_root)
 	visual_box(visual_root,Vector3(0,0.72,0),Vector3(0.42,0.62,0.26),clothing_color)
-	visual_box(visual_root,Vector3(-0.12,0.28,0),Vector3(0.15,0.45,0.17),clothing_color.darkened(0.18))
-	visual_box(visual_root,Vector3(0.12,0.28,0),Vector3(0.15,0.45,0.17),clothing_color.darkened(0.18))
-	visual_box(visual_root,Vector3(-0.28,0.72,0),Vector3(0.11,0.55,0.13),clothing_color.darkened(0.08))
-	visual_box(visual_root,Vector3(0.28,0.72,0),Vector3(0.11,0.55,0.13),clothing_color.darkened(0.08))
+	left_leg = visual_box(visual_root,Vector3(-0.12,0.28,0),Vector3(0.15,0.45,0.17),clothing_color.darkened(0.18))
+	right_leg = visual_box(visual_root,Vector3(0.12,0.28,0),Vector3(0.15,0.45,0.17),clothing_color.darkened(0.18))
+	left_arm = visual_box(visual_root,Vector3(-0.28,0.72,0),Vector3(0.11,0.55,0.13),clothing_color.darkened(0.08))
+	right_arm = visual_box(visual_root,Vector3(0.28,0.72,0),Vector3(0.11,0.55,0.13),clothing_color.darkened(0.08))
 	visual_sphere(visual_root,Vector3(0,1.22,0),0.18,Color("c9aa8c"))
 	# Small front badge gives the simple silhouette a readable facing direction.
 	visual_box(visual_root,Vector3(0,0.78,0.145),Vector3(0.17,0.12,0.018),Color("d5d0b1"))
@@ -160,6 +165,17 @@ func _physics_process(delta: float) -> void:
 	var horizontal := Vector2(velocity.x,velocity.z)
 	if is_instance_valid(visual_root) and horizontal.length() > 0.05:
 		visual_root.rotation.y = lerp_angle(visual_root.rotation.y,atan2(horizontal.x,horizontal.y),clampf(delta*8.0,0.0,1.0))
+		walk_phase += delta*8.5
+		var swing := sin(walk_phase)*0.38
+		left_leg.rotation.x = swing
+		right_leg.rotation.x = -swing
+		left_arm.rotation.x = -swing*0.65
+		right_arm.rotation.x = swing*0.65
+	else:
+		left_leg.rotation.x = lerpf(left_leg.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
+		right_leg.rotation.x = lerpf(right_leg.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
+		left_arm.rotation.x = lerpf(left_arm.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
+		right_arm.rotation.x = lerpf(right_arm.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
 	var before := global_position
 	move_and_slide()
 	if walking and Vector2(global_position.x-before.x,global_position.z-before.z).length() < 0.002:
