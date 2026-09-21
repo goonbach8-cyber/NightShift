@@ -148,6 +148,10 @@ func build_gondola(node_name: String, at: Vector3, title: String, variant_offset
 			var side_x := float(side)*0.48
 			for i in 9:
 				var z := -1.18 + i*0.30
+				# Leave one obvious bay empty on the functional chips gondola.
+				# The dynamic stock system fills this bay, so shelves visibly empty and refill during play.
+				if functional_snacks and z > 0.15 and z < 0.85:
+					continue
 				var variant := (i + variant_offset + int(y * 10.0)) % 6
 				var color := ["a97344","beaa70","557b69","965647","5f7895","b86e55"][variant]
 				if (i+variant_offset)%3 == 0:
