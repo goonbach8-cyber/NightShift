@@ -38,7 +38,7 @@ func bind(item: Resource, kind: String, count: int, origin: Vector3, spacing: Ve
 func sync() -> void:
 	for i in slots.size(): slots[i].visible = i < stock.shelf_units
 
-func part(parent: Node3D, mesh: Mesh, at: Vector3, color: Color) -> void:
+func part(parent: Node3D, mesh: Mesh, at: Vector3, color: Color) -> MeshInstance3D:
 	var visual := MeshInstance3D.new()
 	visual.mesh = mesh
 	visual.position = at
@@ -47,8 +47,9 @@ func part(parent: Node3D, mesh: Mesh, at: Vector3, color: Color) -> void:
 	material.roughness = 0.65
 	visual.material_override = material
 	parent.add_child(visual)
+	return visual
 
-func box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> void:
+func box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := BoxMesh.new()
 	mesh.size = size
-	part(parent,mesh,at,color)
+	return part(parent,mesh,at,color)
