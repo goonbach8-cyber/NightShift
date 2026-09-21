@@ -136,8 +136,9 @@ func build_gondola(node_name: String, at: Vector3, title: String, variant_offset
 	# Plinth/backbone.
 	box(Vector3(0,0.11,-0.15),Vector3(1.28,0.22,2.95),"253b3d",body)
 	box(Vector3(0,0.62,-0.15),Vector3(0.10,1.02,2.82),"556862",body)
-	for y in [0.30,0.64,0.98]:
-		# Keep one exact 1.55 m board on SnackIsland so dynamic chips remain physically supported.
+	var shelf_levels := [0.30,0.75,1.18] if functional_snacks else [0.30,0.64,0.98]
+	for y in shelf_levels:
+		# Keep exact support heights on SnackIsland so both dynamic chip rows sit on real boards.
 		if functional_snacks:
 			box(Vector3(0,y,0.38),Vector3(1.30,0.07,1.55),"b4b3a0",body)
 			box(Vector3(0,y,-1.02),Vector3(1.30,0.07,1.23),"b4b3a0",body)
@@ -253,7 +254,7 @@ func shop_fittings() -> void:
 	sign_text("ENERGY / 4 °C",Vector3(0,1.67,0.51),1.15,cooler)
 	# A three-door cold wall reads like a real petrol-shop cooler bank. The first bay remains gameplay-controlled.
 	build_cooler_module(Vector3(-3.20,0,-4.15),"SOFTDRINKS",1)
-	build_cooler_module(Vector3(-1.65,0,-4.15),"WASSER / SAFT",3)
+	build_cooler_module(Vector3(-1.70,0,-4.15),"WASSER / SAFT",3)
 	var shelf := station.get_node("Shelf")
 	for x in [-0.86,0.86]:
 		box(Vector3(x,0.79,0),Vector3(0.055,1.58,0.65),"a3aaa0",shelf)
