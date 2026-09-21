@@ -10,6 +10,7 @@ var construction: Node3D
 var branding: Label3D
 var alternate: Node3D
 var intrusions: Node3D
+var overlap_echo: Node3D
 var depot: Node3D
 var josh: Node3D
 var configured_night := 0
@@ -98,13 +99,42 @@ func setup(owner_world: Node3D) -> void:
 	intrusions = Node3D.new()
 	intrusions.name = "RedwaterIntrusions"
 	add_child(intrusions)
+	overlap_echo = Node3D.new()
+	overlap_echo.name = "RealityOverlapEcho"
+	add_child(overlap_echo)
+	overlap_echo.hide()
 	var sign_at := to_local(layout.radio_point.global_position)
 	label(intrusions,"REDWATER\n14 SERVICE ROAD",sign_at+Vector3(-0.8,1.6,0),28)
 	model.box(intrusions,sign_at+Vector3(-0.8,1.3,0),Vector3(0.8,0.12,0.25),Color("547c85"))
-	# The alternative keeps the station's footprint but changes the surroundings.
-	model.box(alternate,forecourt+Vector3(-2,-0.03,3),Vector3(8,0.04,1.8),Color("455658"))
+	# Redwater is a normal alternate town, not an "evil" filter: recognizable footprint,
+	# but different civic furniture, road geometry and nearby structures.
+	model.box(alternate,forecourt+Vector3(-2,-0.03,3.6),Vector3(8,0.04,1.8),Color("455658"))
 	for i in 3:
-		model.box(alternate,forecourt+Vector3(-5+i*3,1.1,5),Vector3(1.8,2.2,1.5),Color("60777c"))
+		var building := forecourt+Vector3(-5+i*3.1,1.1,5.4)
+		model.box(alternate,building,Vector3(1.8,2.2,1.5),Color("60777c" if i != 1 else "56696c"))
+		model.box(alternate,building+Vector3(0,0.15,-0.76),Vector3(0.65,0.42,0.04),Color("b6c8b6"))
+	# A bus shelter exists in Redwater where Redwood has only verge.
+	var shelter_at := to_local(layout.entrance.global_position)+Vector3(-5.4,0,-5.5)
+	model.box(alternate,shelter_at+Vector3(0,0.06,0),Vector3(2.2,0.12,1.0),Color("4b5755"))
+	for x in [-0.95,0.95]:
+		model.box(alternate,shelter_at+Vector3(x,1.0,0.35),Vector3(0.08,2.0,0.08),Color("82908a"))
+	model.box(alternate,shelter_at+Vector3(0,2.0,0.35),Vector3(2.2,0.12,1.0),Color("536461"))
+	model.box(alternate,shelter_at+Vector3(0,0.55,0.30),Vector3(1.45,0.12,0.42),Color("82755e"))
+	label(alternate,"REDWATER BUS",shelter_at+Vector3(0,1.55,0.39),22)
+	# Different roadside utility cabinet and municipal sign are visible from the forecourt.
+	model.box(alternate,forecourt+Vector3(-5.6,0.65,4.2),Vector3(0.9,1.3,0.65),Color("52635f"))
+	label(alternate,"R-14",forecourt+Vector3(-5.6,1.15,3.86),20)
+	model.box(alternate,forecourt+Vector3(5.3,0.85,4.5),Vector3(0.10,1.7,0.10),Color("78837c"))
+	model.box(alternate,forecourt+Vector3(5.3,1.65,4.5),Vector3(1.25,0.52,0.07),Color("557983"))
+	label(alternate,"REDWATER",forecourt+Vector3(5.3,1.67,4.44),20)
+
+	# At 03:17 a few Redwood objects coexist briefly with the Redwater set.
+	var echo_at := to_local(layout.entrance.global_position)+Vector3(-2.8,0,6.4)
+	model.box(overlap_echo,echo_at+Vector3(0,0.8,0),Vector3(0.09,1.6,0.09),Color("6d7772"))
+	model.box(overlap_echo,echo_at+Vector3(0,1.55,0),Vector3(1.5,0.55,0.08),Color("334d4d"))
+	label(overlap_echo,"REDWOOD\nSERVICE ROAD",echo_at+Vector3(0,1.58,-0.05),22)
+	for x in [-1.4,1.4]:
+		model.box(overlap_echo,echo_at+Vector3(x,0.12,1.25),Vector3(1.9,0.16,0.22),Color("73786d"))
 	label(intrusions,"RIVERLINE DRINKS",to_local(layout.product_nodes[&"energy"].global_position)+Vector3(0,1.8,0.3),28)
 	label(intrusions,"REDWATER DISTRIBUTION",to_local(layout.warehouse.global_position)+Vector3(9,1.7,-4),28)
 	var sites = [layout.checkout,layout.product_nodes[&"chips"],layout.warehouse.get_node("Supply"),layout.radio_point]
@@ -299,6 +329,8 @@ func _process(delta: float) -> void:
 	alternate.visible = redwater
 	intrusions.visible = configured_night >= 5 and not ending_started
 	branding.text = "REDWATER SERVICE" if redwater or ending_started else "REDWOOD SERVICE"
+	if is_instance_valid(overlap_echo):
+		overlap_echo.visible = overlap_remaining > 0 and not ending_started
 	if overlap_remaining > 0 and not ending_started:
 		branding.text = "REDWOOD / REDWATER\n03:17"
 	get_node("route").available = road.visible and not in_depot
