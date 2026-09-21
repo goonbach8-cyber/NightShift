@@ -338,7 +338,8 @@ func _process(delta: float) -> void:
 		if loop.served+loop.lost_sales >= 5:
 			loop.story_flags[&"road_exists"] = true
 	road.visible = loop.story_flags.get(&"road_exists",false) or loop.definition.world_states.has(&"road")
-	road.set_open(configured_night >= 4)
+	# Night 4 uses the route; Night 5 construction closes it again; Redwater treats it as normal.
+	road.set_open(configured_night == 4 or configured_night == 6)
 	crack.visible = loop.story_flags.get(&"crack_exists",false) or loop.definition.world_states.has(&"crack")
 	construction.visible = loop.definition.world_states.has(&"construction")
 	var redwater: bool = loop.definition.reality == &"redwater" and not ending_started
