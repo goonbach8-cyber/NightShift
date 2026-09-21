@@ -17,18 +17,23 @@ func _ready() -> void:
 	door.name = "Door"
 	door.position = Vector3(0, 0, 5)
 	add_child(door)
-	_box(self, "Forecourt", Vector3(0, -0.15, 8), Vector3(14, 0.3, 6), Color("20272d"))
-	_box(self, "SouthBoundary", Vector3(-2.75, 0.3, 11), Vector3(8.5, 0.6, 0.3), Color("394148"))
-	_box(self, "SouthBoundaryRight", Vector3(6.25,0.3,11),Vector3(1.5,0.6,0.3),Color("394148"))
-	_box(self, "ExitApron",Vector3(3.5,-0.10,11.1),Vector3(4,0.2,0.4),Color("20272d"))
-	_box(self, "WestBoundary", Vector3(-7, 0.3, 8), Vector3(0.3, 0.6, 6), Color("394148"))
-	_box(self, "EastBoundary", Vector3(7, 0.3, 8), Vector3(0.3, 0.6, 6), Color("394148"))
-	_box(self, "Pump", Vector3(-3.8, 0.8, 8.3), Vector3(1.0, 1.6, 0.8), Color("afada1"))
-	_box(self, "PumpDisplay", Vector3(-3.8, 1.1, 8.72), Vector3(0.7, 0.36, 0.05), Color("172d2d"), false)
-	_label(self, "01  /  DIESEL", Vector3(-3.8, 1.55, 8.8), 20, Color("9edbcf"))
-	for x in [-5.5, 5.5]:
-		_box(self, "LightPost", Vector3(x, 1.7, 8.5), Vector3(0.12, 3.4, 0.12), Color("526064"))
-		_light(Vector3(x, 3.0, 8.5), Color("81c8cb"), 2.0, 6.5)
+	# Small but believable forecourt: two traffic openings and four dispenser cabinets.
+	_box(self, "Forecourt", Vector3(0, -0.15, 8.1), Vector3(14, 0.3, 6.2), Color("20272d"))
+	# Kerb is split into three pieces so entry and exit read as separate vehicle routes.
+	_box(self, "SouthBoundaryLeft", Vector3(-5.85, 0.3, 11.2), Vector3(2.3, 0.6, 0.3), Color("394148"))
+	_box(self, "SouthBoundaryMiddle", Vector3(0, 0.3, 11.2), Vector3(2.8, 0.6, 0.3), Color("394148"))
+	_box(self, "SouthBoundaryRight", Vector3(5.85, 0.3, 11.2), Vector3(2.3, 0.6, 0.3), Color("394148"))
+	_box(self, "EntryApron", Vector3(-3.05,-0.10,11.25),Vector3(3.3,0.2,0.5),Color("20272d"))
+	_box(self, "ExitApron",Vector3(3.05,-0.10,11.25),Vector3(3.3,0.2,0.5),Color("20272d"))
+	_box(self, "WestBoundary", Vector3(-7, 0.3, 8.1), Vector3(0.3, 0.6, 6.2), Color("394148"))
+	_box(self, "EastBoundary", Vector3(7, 0.3, 8.1), Vector3(0.3, 0.6, 6.2), Color("394148"))
+	_fuel_pump("Pump", "PumpDisplay", Vector3(-2.9,0,7.25), "01")
+	_fuel_pump("Pump02", "PumpDisplay02", Vector3(-2.9,0,9.15), "02")
+	_fuel_pump("Pump03", "PumpDisplay03", Vector3(2.9,0,7.25), "03")
+	_fuel_pump("Pump04", "PumpDisplay04", Vector3(2.9,0,9.15), "04")
+	for x in [-5.7, 5.7]:
+		_box(self, "LightPost", Vector3(x, 1.7, 8.3), Vector3(0.12, 3.4, 0.12), Color("526064"))
+		_light(Vector3(x, 3.0, 8.3), Color("81c8cb"), 2.0, 6.5)
 	_light(Vector3(-2, 3, -1), Color("ffdbac"), 2.2, 8)
 	_light(Vector3(3, 2.7, 2), Color("ffdbac"), 1.8, 6)
 	_label(self, "NIGHTSHIFT  /  24 H", Vector3(0, 1.9, -4.7), 40, Color("94d8d1"))
@@ -63,6 +68,16 @@ func _ready() -> void:
 	annex.set_script(preload("res://scenes/levels/service_annex.gd"))
 	add_child(annex)
 	preload("res://scripts/static_prop_batch.gd").build(self)
+
+
+func _fuel_pump(node_name: String, display_name: String, at: Vector3, number: String) -> void:
+	var island := _box(self, node_name+"Island", at+Vector3(0,-0.04,0), Vector3(1.7,0.08,1.18), Color("747b73"), true)
+	var pump := _box(self, node_name, at+Vector3(0,0.78,0), Vector3(0.9,1.56,0.72), Color("afada1"))
+	var display := _box(self, display_name, at+Vector3(0,1.08,0.385), Vector3(0.64,0.34,0.045), Color("172d2d"), false)
+	_label(self, number+" / MULTI", at+Vector3(0,1.53,0.42), 18, Color("9edbcf"))
+	# Slim bollards protect the dispenser without closing the drive lane.
+	for x in [-0.68,0.68]:
+		_box(self, node_name+"Bollard", at+Vector3(x,0.34,0.48), Vector3(0.10,0.68,0.10), Color("b7a15b"))
 
 
 func _object(node_name: String, id: StringName, text: String, at: Vector3) -> Node3D:
