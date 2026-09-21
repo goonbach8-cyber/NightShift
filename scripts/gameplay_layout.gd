@@ -100,7 +100,7 @@ func _ready() -> void:
 	snacks.set_script(preload("res://scenes/interactions/interactable.gd"))
 	snacks.add_to_group("interactable")
 	snacks.action_id = &"stock_chips"
-	bind_product(&"chips",snacks,Vector3(0,0,1.9))
+	bind_product(&"chips",snacks,Vector3(0,0,2.25))
 	# Dynamic inventory geometry is created after static map batching.
 	for config in [{"id": &"energy", "kind": "can", "origin": Vector3(-0.335,0.549,0.29), "spacing": Vector3(0.67,0.4,0), "columns":2}, {"id": &"chips", "kind": "bag", "origin": Vector3(-0.42,0.5,0.5), "spacing": Vector3(0.42,0.45,0), "columns":3}]:
 		var display = preload("res://scripts/product_display.gd").new()
