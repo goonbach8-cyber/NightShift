@@ -298,13 +298,18 @@ func travel(outbound: bool) -> void:
 	canvas.layer = 30
 	add_child(canvas)
 	var fade := ColorRect.new()
-	fade.color = Color.BLACK
+	fade.color = Color(0,0,0,0)
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	canvas.add_child(fade)
-	await get_tree().create_timer(0.6).timeout
+	var fade_out := create_tween()
+	fade_out.tween_property(fade,"color:a",1.0,0.35)
+	await fade_out.finished
 	world.player.global_position = depot.global_position+Vector3(0,0.05,1) if outbound else travel_return+Vector3.UP*0.05
 	in_depot = outbound
-	await get_tree().create_timer(0.4).timeout
+	await get_tree().create_timer(0.18).timeout
+	var fade_in := create_tween()
+	fade_in.tween_property(fade,"color:a",0.0,0.38)
+	await fade_in.finished
 	canvas.queue_free()
 	world.player.set_physics_process(true)
 	if not outbound: loop.active = resume_shift
