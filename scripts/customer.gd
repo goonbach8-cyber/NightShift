@@ -35,6 +35,8 @@ var right_leg: MeshInstance3D
 var left_arm: MeshInstance3D
 var right_arm: MeshInstance3D
 var walk_phase := 0.0
+var basket_visual: Node3D
+var basket_items := 0
 
 func _ready() -> void:
 	add_to_group("customer")
@@ -60,6 +62,13 @@ func _ready() -> void:
 	visual_sphere(visual_root,Vector3(0,1.22,0),0.18,Color("c9aa8c"))
 	# Small front badge gives the simple silhouette a readable facing direction.
 	visual_box(visual_root,Vector3(0,0.78,0.145),Vector3(0.17,0.12,0.018),Color("d5d0b1"))
+	basket_visual = Node3D.new()
+	basket_visual.name = "ShoppingBasket"
+	basket_visual.position = Vector3(0.34,0.50,0.05)
+	visual_root.add_child(basket_visual)
+	visual_box(basket_visual,Vector3(0,0,0),Vector3(0.34,0.12,0.26),Color("374744"))
+	visual_box(basket_visual,Vector3(-0.15,0.15,0),Vector3(0.035,0.30,0.22),Color("68756f"))
+	basket_visual.hide()
 	var label := Label3D.new()
 	label.name = "Status"
 	label.position.y = 1.35
@@ -97,6 +106,58 @@ func visual_sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> 
 	visual.material_override = material
 	parent.add_child(visual)
 	return visual
+
+func add_basket_item(id: StringName, amount: int = 1) -> void:
+	if not is_instance_valid(basket_visual):
+		return
+	basket_visual.show()
+	for unit in amount:
+		if basket_items >= 4:
+			return
+		var item := MeshInstance3D.new()
+		var material := StandardMaterial3D.new()
+		match id:
+			&"water":
+				var mesh := CylinderMesh.new()
+				mesh.top_radius = 0.035
+				mesh.bottom_radius = 0.045
+				mesh.height = 0.18
+				mesh.radial_segments = 8
+				item.mesh = mesh
+				material.albedo_color = Color("7d9670")
+			&"energy":
+				var mesh := CylinderMesh.new()
+				mesh.top_radius = 0.04
+				mesh.bottom_radius = 0.04
+				mesh.height = 0.15
+				mesh.radial_segments = 8
+				item.mesh = mesh
+				material.albedo_color = Color("439d8d")
+			&"chips":
+				var mesh := BoxMesh.new()
+				mesh.size = Vector3(0.09,0.17,0.06)
+				item.mesh = mesh
+				material.albedo_color = Color("c97435")
+			_:
+				var mesh := BoxMesh.new()
+				mesh.size = Vector3(0.09,0.12,0.07)
+				item.mesh = mesh
+				material.albedo_color = Color("8b8878")
+		material.roughness = 0.8
+		item.material_override = material
+		item.position = Vector3(-0.10+(basket_items%3)*0.10,0.13+0.04*int(basket_items/3),0)
+		basket_visual.add_child(item)
+		basket_items += 1
+
+func clear_basket() -> void:
+	if not is_instance_valid(basket_visual):
+		return
+	for child in basket_visual.get_children():
+		# Keep the physical basket itself; merchandise is added after the two frame pieces.
+		if child.get_index() >= 2:
+			child.queue_free()
+	basket_items = 0
+	basket_visual.hide()
 
 func go_to(marker: Marker3D) -> void:
 	target = marker
