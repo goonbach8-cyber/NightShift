@@ -90,7 +90,7 @@ func _ready() -> void:
 	line(edge(centers.size()-1,-1),edge(centers.size()-1,1),0.18,Color("73786d"))
 
 func center3(index: int) -> Vector3:
-	return Vector3(centers[index].x,-0.02,centers[index].y)
+	return Vector3(centers[index].x,-0.012,centers[index].y)
 
 func tangent_at(index: int) -> Vector2:
 	var previous := centers[maxi(index-1,0)]
@@ -107,7 +107,7 @@ func edge(index: int, side: int) -> Vector3:
 	# A flared mouth overlaps the existing carriageway and then narrows to a normal lane.
 	var half_width := 3.4 if index == 0 else (3.0 if index == 1 else (2.55 if index == 2 else 2.2))
 	var p := centers[index]+normal*half_width*side
-	return Vector3(p.x,-0.02,p.y)
+	return Vector3(p.x,-0.012,p.y)
 
 func line(a: Vector3, b: Vector3, width: float, color: Color) -> void:
 	var item := model.box(self,(a+b)/2,Vector3(width,0.012,a.distance_to(b)),color)
