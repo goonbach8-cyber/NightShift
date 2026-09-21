@@ -346,21 +346,33 @@ func entrance() -> void:
 func forecourt() -> void:
 	# Visual ground beyond the retained collision boundary closes the black void.
 	box(Vector3(0,-0.22,5),Vector3(35,0.08,34),"101b22")
-	box(Vector3(-3.8,0.035,8.3),Vector3(1.7,0.07,1.6),"747b73")
-	for x in [-4.45,-3.15]:
-		cylinder(Vector3(x,0.4,8.95),0.065,0.8,"b7a15b")
-	box(Vector3(-3.8,0.45,8.72),Vector3(0.9,0.36,0.035),"296f70")
-	box(Vector3(-3.8,1.68,8.3),Vector3(1.06,0.17,0.88),"296f70")
-	sign_text("01 / DIESEL",Vector3(-3.8,1.67,8.76),0.86)
-	for i in 9:
-		var angle := PI * i / 8.0
-		cylinder(Vector3(-3.2+sin(angle)*0.19,1.24-i*0.085,8.65),0.035,0.12,"172529")
-	for x in [1.8,4.8]:
-		box(Vector3(x,0.009,8.4),Vector3(0.07,0.018,3.4),"b4b2a0")
-	box(Vector3(3.3,0.009,9.95),Vector3(3.0,0.018,0.07),"b4b2a0")
-	for x in [-5.5,5.5]:
-		box(Vector3(x,3.3,8.5),Vector3(0.7,0.10,0.4),"33484d")
-		box(Vector3(x,3.23,8.5),Vector3(0.62,0.035,0.32),"c4efeb",self,true)
+	# Four dispenser islands align in two lanes instead of one isolated pump.
+	for x in [-2.9,2.9]:
+		for z in [7.25,9.15]:
+			box(Vector3(x,0.018,z),Vector3(1.72,0.036,1.20),"747b73")
+			for bx in [-0.70,0.70]:
+				cylinder(Vector3(x+bx,0.37,z+0.48),0.055,0.72,"b7a15b")
+	# Lane separators guide cars through the canopy.
+	for x in [-5.25,0.0,5.25]:
+		for z in [6.25,7.45,8.65,9.85]:
+			box(Vector3(x,0.010,z),Vector3(0.055,0.018,0.62),"b4b2a0")
+	# Entry/exit mouths get simple directional chevrons.
+	for x in [-3.05,3.05]:
+		var direction := 1.0 if x < 0 else -1.0
+		box(Vector3(x,0.012,10.45),Vector3(0.08,0.018,0.72),"d8d3b7")
+		var left := box(Vector3(x-0.16*direction,0.013,10.12),Vector3(0.07,0.018,0.40),"d8d3b7")
+		left.rotation.y = deg_to_rad(35.0*direction)
+		var right := box(Vector3(x+0.16*direction,0.013,10.12),Vector3(0.07,0.018,0.40),"d8d3b7")
+		right.rotation.y = deg_to_rad(-35.0*direction)
+	# Short-stay bays sit against the shop frontage, clear of the pump lanes.
+	for x in [-5.35,5.35]:
+		for side in [-0.65,0.65]:
+			box(Vector3(x+side,0.010,5.65),Vector3(0.045,0.018,1.05),"8f927f")
+		box(Vector3(x,0.010,6.15),Vector3(1.30,0.018,0.045),"8f927f")
+	# Existing forecourt posts become canopy supports/light points.
+	for x in [-5.7,5.7]:
+		box(Vector3(x,3.28,8.3),Vector3(0.70,0.10,0.40),"33484d")
+		box(Vector3(x,3.22,8.3),Vector3(0.62,0.035,0.32),"c4efeb",self,true)
 
 func solid(at: Vector3, size: Vector3) -> void:
 	var body := StaticBody3D.new()
@@ -426,6 +438,26 @@ func triangle(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	surface.add_vertex(c)
 	surface.add_vertex(b)
 
+func pump_detail(at: Vector3, number: String) -> void:
+	bevel(at+Vector3(0,0.78,0),Vector3(0.90,1.56,0.72),"9caaa5")
+	# Customer-facing display on both sides.
+	for side in [-1,1]:
+		var z := at.z+float(side)*0.385
+		bevel(Vector3(at.x,1.12,z),Vector3(0.70,0.46,0.07),"263739")
+		box(Vector3(at.x,1.18,z+float(side)*0.04),Vector3(0.52,0.16,0.012),"173d40",self,true)
+		sign_text(number+" / 1.829",Vector3(at.x,1.18,z+float(side)*0.048),0.46,self,"acdfbc")
+		for col in range(3):
+			box(Vector3(at.x-0.19+col*0.19,0.98,z+float(side)*0.04),Vector3(0.10,0.05,0.015),"9caaa5")
+	# Two hoses/nozzles make the cabinet immediately read as a fuel dispenser.
+	for xoff in [-0.52,0.52]:
+		bevel(at+Vector3(xoff,1.18,0.10),Vector3(0.10,0.30,0.09),"263739")
+		box(at+Vector3(xoff,1.36,0.04),Vector3(0.055,0.055,0.20),"8e9b94")
+		for i in range(6):
+			cylinder(at+Vector3(xoff,1.04-i*0.12,0.30+sin(float(i)/5.0*PI)*0.17),0.025,0.12,"172529")
+	box(at+Vector3(0,1.60,0),Vector3(0.98,0.14,0.78),"296f70")
+	sign_text(number,at+Vector3(0,1.60,0.41),0.46)
+
+
 func object_details() -> void:
 	var desk := station.get_node("ShiftBoard")
 	desk.get_node("Desk").get_child(0).hide()
@@ -448,20 +480,17 @@ func object_details() -> void:
 	for x in [-0.53,0.53]:
 		box(Vector3(x,0.44,-3.716),Vector3(0.96,0.48,0.025),"65746a")
 		box(Vector3(x,0.61,-3.69),Vector3(0.26,0.035,0.04),"8e9b94")
-	# Pump panels and recessed controls fit the original collision footprint.
-	station.get_node("Pump").get_child(0).hide()
-	station.get_node("PumpDisplay").get_child(0).hide()
-	bevel(Vector3(-3.8,0.8,8.3),Vector3(1,1.6,0.8),"9caaa5")
-	bevel(Vector3(-3.8,1.15,8.73),Vector3(0.78,0.53,0.08),"263739")
-	box(Vector3(-3.8,1.23,8.78),Vector3(0.59,0.19,0.012),"173d40",self,true)
-	sign_text("1.829 / L",Vector3(-3.8,1.23,8.80),0.49,self,"acdfbc")
-	for i in 3:
-		box(Vector3(-4.02+i*0.21,1.04,8.78),Vector3(0.09,0.05,0.015),"9caaa5")
-	box(Vector3(-3.8,0.31,8.713),Vector3(0.72,0.20,0.025),"263739")
-	for i in 4:
-		box(Vector3(-3.8,0.25+i*0.04,8.73),Vector3(0.64,0.012,0.012),"8e9b94")
-	bevel(Vector3(-3.21,1.24,8.63),Vector3(0.11,0.27,0.09),"263739")
-	box(Vector3(-3.21,1.39,8.58),Vector3(0.05,0.05,0.18),"8e9b94")
+	# All four dispensers use the same coherent detailed design.
+	var pump_nodes := [
+		["Pump","PumpDisplay",Vector3(-2.9,0,7.25),"01"],
+		["Pump02","PumpDisplay02",Vector3(-2.9,0,9.15),"02"],
+		["Pump03","PumpDisplay03",Vector3(2.9,0,7.25),"03"],
+		["Pump04","PumpDisplay04",Vector3(2.9,0,9.15),"04"]
+	]
+	for entry in pump_nodes:
+		station.get_node(entry[0]).get_child(0).hide()
+		station.get_node(entry[1]).get_child(0).hide()
+		pump_detail(entry[2],entry[3])
 
 func window_material() -> StandardMaterial3D:
 	if not materials.has("window"):
