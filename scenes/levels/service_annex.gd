@@ -150,23 +150,31 @@ func delivery_yard() -> void:
 	light(Vector3(9.4,2.4,-5.35),Color("ffd7a6"),1.0,4)
 
 func forecourt() -> void:
-	# Cutaway canopy: structural fascia and light strips, open for the game camera.
-	for x in [-5.0,-2.6]:
-		box(Vector3(x,1.6,7.25),Vector3(0.14,3.2,0.14),"8e9b94",true)
-	for z in [6.9,9.65]:
-		box(Vector3(-3.8,3.25,z),Vector3(3.6,0.24,0.15),"286663")
-	for x in [-5.6,-2.0]:
-		box(Vector3(x,3.25,8.275),Vector3(0.15,0.24,2.9),"286663")
-	d.box(Vector3(-3.8,3.15,7.4),Vector3(1.8,0.05,0.14),"dce9d3",self,true)
-	light(Vector3(-3.8,2.9,8.2),Color("dce9d3"),1.0,4)
+	# Full cutaway canopy footprint for both pump lanes. The roof plane stays open for the game camera,
+	# while fascia, columns and light bars make the structure read as a real petrol station.
+	for x in [-5.55,5.55]:
+		for z in [6.45,10.05]:
+			box(Vector3(x,1.62,z),Vector3(0.16,3.24,0.16),"8e9b94",true)
+	for z in [6.25,10.25]:
+		box(Vector3(0,3.25,z),Vector3(11.4,0.26,0.16),"286663")
+	for x in [-5.75,5.75]:
+		box(Vector3(x,3.25,8.25),Vector3(0.16,0.26,4.15),"286663")
+	# Two long illuminated strips cover both dispenser rows without a camera-blocking ceiling.
+	for z in [7.20,9.10]:
+		d.box(Vector3(0,3.14,z),Vector3(8.8,0.05,0.16),"dce9d3",self,true)
+		for x in [-3.0,0.0,3.0]:
+			light(Vector3(x,2.94,z),Color("dce9d3"),0.9,4.6)
+
+	# Main public road and markings.
 	box(Vector3(0,-0.08,14.2),Vector3(22,0.12,6),"20272d",true)
 	for x in range(-10,11,3):
 		box(Vector3(x,-0.008,14.2),Vector3(1.6,0.01,0.065),"b4b2a0")
-	box(Vector3(5.6,1.05,9.9),Vector3(0.95,2.1,0.18),"173d40",true)
-	d.sign_text("NIGHTSHIFT",Vector3(5.6,1.8,10.0),0.78,self)
-	d.sign_text("DIESEL",Vector3(5.6,1.35,10.0),0.68,self)
-	d.sign_text("1.829",Vector3(5.6,0.98,10.0),0.72,self)
-	d.sign_text("CHF / L",Vector3(5.6,0.63,10.0),0.50,self)
+	# Roadside price pylon sits outside the forecourt traffic lanes.
+	box(Vector3(6.15,1.35,12.15),Vector3(0.95,2.7,0.18),"173d40",true)
+	d.sign_text("NIGHTSHIFT",Vector3(6.15,2.30,12.25),0.84,self)
+	d.sign_text("BENZIN  1.879",Vector3(6.15,1.78,12.25),0.72,self)
+	d.sign_text("DIESEL  1.829",Vector3(6.15,1.40,12.25),0.72,self)
+	d.sign_text("SHOP / 24 H",Vector3(6.15,0.92,12.25),0.64,self)
 
 func light(at: Vector3, color: Color, energy: float, distance: float) -> void:
 	d.box(at,Vector3(0.6,0.07,0.16),"dce9d3",self,true)

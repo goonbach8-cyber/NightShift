@@ -148,16 +148,19 @@ func setup(owner_world: Node3D) -> void:
 		model.box(overlap_echo,echo_at+Vector3(x,0.12,1.25),Vector3(1.9,0.16,0.22),Color("73786d"))
 	label(intrusions,"RIVERLINE DRINKS",to_local(layout.product_nodes[&"energy"].global_position)+Vector3(0,1.8,0.3),28)
 	label(intrusions,"REDWATER DISTRIBUTION",to_local(layout.warehouse.global_position)+Vector3(9,1.7,-4),28)
+	# Optional clues now live on surfaces that already belong in the shop instead of four random freestanding stands.
 	var sites = [layout.checkout,layout.product_nodes[&"chips"],layout.warehouse.get_node("Supply"),layout.radio_point]
 	var ids: Array[StringName] = [&"accident",&"map",&"missing",&"redwater"]
-	var offsets := [Vector3(-1.4,0,0.4),Vector3(-0.9,0,-1.2),Vector3(1.2,0,0.2),Vector3(-1.4,0,0.4)]
+	var offsets := [
+		Vector3(-0.72,1.10,-0.08), # local paper at the till
+		Vector3(0.05,1.20,1.15),   # local paper on the snack end
+		Vector3(1.05,0.82,0.18),   # stockroom delivery paperwork
+		Vector3(-0.52,0.90,0.02)   # clipping beside the radio
+	]
 	for i in ids.size():
 		var reader := point(self,ids[i],to_local(sites[i].global_position)+offsets[i],"Read "+preload("res://scripts/clue_catalog.gd").ENTRIES[ids[i]].title)
-		# Narrow standing reading shelf gives every clipping a physical support.
-		model.box(reader,Vector3(0,0.85,0),Vector3(0.44,0.06,0.34),Color("67736b"))
-		model.box(reader,Vector3(0,0.415,0),Vector3(0.08,0.83,0.08),Color("53615c"))
-		model.box(reader,Vector3(0,0.025,0),Vector3(0.36,0.05,0.30),Color("47554f"))
-		model.box(reader,Vector3(0,0.889,0),Vector3(0.32,0.015,0.25),Color("d0c9ad"))
+		model.box(reader,Vector3.ZERO,Vector3(0.32,0.018,0.24),Color("d0c9ad"))
+		model.box(reader,Vector3(0,0.012,-0.07),Vector3(0.24,0.006,0.018),Color("66706a"))
 	depot = Node3D.new()
 	depot.name = "Depot"
 	depot.position = Vector3(24,0,0)
