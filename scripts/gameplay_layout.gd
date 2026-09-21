@@ -133,11 +133,11 @@ func _ready() -> void:
 	shelf.get_parent().add_child(service)
 	service.position = Vector3(-6.05,0,3.95)
 	marker(service,"Approach",Vector3(0.7,0,0))
+	# The station dressing already provides the physical open bin at z=3.7.
+	# Only add removable waste inside it; duplicating a second bin here caused clipping.
 	var service_model = preload("res://scripts/product_display.gd").new()
 	service.add_child(service_model)
-	service_model.box(service,Vector3(0,0.42,0),Vector3(0.52,0.84,0.48),Color("344447"))
-	service_model.box(service,Vector3(0,0.87,0),Vector3(0.58,0.08,0.54),Color("78817b"))
-	service_waste = service_model.box(service,Vector3(0,0.78,0),Vector3(0.38,0.24,0.34),Color("171d1e"))
+	service_waste = service_model.box(service,Vector3(0,0.52,-0.25),Vector3(0.20,0.18,0.18),Color("171d1e"))
 	register_event_lights(shelf.get_parent())
 	var area = preload("res://scripts/story_area.gd").new()
 	area.name = "StockroomStoryArea"
