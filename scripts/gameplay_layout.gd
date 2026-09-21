@@ -37,6 +37,7 @@ var carried_visual: Node3D
 var carried_crate: MeshInstance3D
 var carried_material: StandardMaterial3D
 var service_waste: MeshInstance3D
+var service_point: Node3D
 var checkout_item: MeshInstance3D
 var checkout_item_material: StandardMaterial3D
 
@@ -124,6 +125,7 @@ func _ready() -> void:
 	inventory.changed.connect(sync_products)
 	sync_products()
 	var service := Node3D.new()
+	service_point = service
 	service.name = "ServicePoint"
 	service.set_script(preload("res://scenes/interactions/interactable.gd"))
 	service.action_id = &"service"
