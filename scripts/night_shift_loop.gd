@@ -72,6 +72,8 @@ func configure_night(config: Resource) -> void:
 	required_tasks.assign(config.required_tasks)
 	layout.wc_point.available = required_tasks.has(&"wc")
 	layout.wc_mark.visible = required_tasks.has(&"wc") and not tasks.has(&"wc")
+	if layout.has_method("set_service_done"):
+		layout.set_service_done(not required_tasks.has(&"service") or tasks.has(&"service"))
 
 func _inventory_changed() -> void:
 	update_supply_prompt()
@@ -151,6 +153,8 @@ func spawn_customer() -> void:
 		customer.profile_id = profile.get("id",&"regular")
 		customer.greeting = profile.get("greeting","")
 		customer.clothing_color = profile.get("color",Color("b0a079"))
+	# Browsing needs to read as choosing a product, not as a navigation hiccup.
+	customer.browse_seconds = 1.65 + float(spawned % 4)*0.45
 	get_parent().add_child(customer)
 	customer.global_position = layout.spawn_point.global_position + Vector3.UP*0.05
 	customer.arrived.connect(customer_arrived)
@@ -356,6 +360,8 @@ func interaction_prompt(target: Node3D, player: Node3D) -> String:
 func update_supply_prompt() -> void:
 	var id := selected_product()
 	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else "Collect %s (warehouse %d) — TAB select" % [inventory.products[id].display_name,inventory.stocks[id].warehouse_units]
+	if layout.has_method("set_carry_state"):
+		layout.set_carry_state(delivery_carried,inventory.carried_product())
 
 func fill_shelf(id: StringName) -> void:
 	var before: int = inventory.stocks[id].shelf_units
@@ -385,6 +391,8 @@ func interact(action: StringName, player: Node3D) -> void:
 					notice.emit("WC checked. Floor cleaned.")
 			&"service":
 				tasks[&"service"] = true
+				if layout.has_method("set_service_done"):
+					layout.set_service_done(true)
 				notice.emit("Waste bin emptied. Service check complete.")
 			&"cooler":
 				if inventory.carried_product() != &"":
