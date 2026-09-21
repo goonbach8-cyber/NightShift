@@ -125,7 +125,7 @@ func setup(owner_world: Node3D) -> void:
 		model.box(alternate,building,Vector3(1.8,2.2,1.5),Color("60777c" if i != 1 else "56696c"))
 		model.box(alternate,building+Vector3(0,0.15,-0.76),Vector3(0.65,0.42,0.04),Color("b6c8b6"))
 	# A bus shelter exists in Redwater where Redwood has only verge.
-	var shelter_at := to_local(layout.entrance.global_position)+Vector3(-5.4,0,-5.5)
+	var shelter_at := to_local(layout.entrance.global_position)+Vector3(-5.4,0,-11.5)
 	model.box(alternate,shelter_at+Vector3(0,0.06,0),Vector3(2.2,0.12,1.0),Color("4b5755"))
 	for x in [-0.95,0.95]:
 		model.box(alternate,shelter_at+Vector3(x,1.0,0.35),Vector3(0.08,2.0,0.08),Color("82908a"))
