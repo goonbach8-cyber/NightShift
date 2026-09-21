@@ -113,31 +113,68 @@ func architecture() -> void:
 		lamp(Vector3(x,2.35,-4.40),x >= 0,x == 0)
 	lamp(Vector3(4.6,2.5,1.35),true,true)
 	lamp(Vector3(-4.8,2.35,1.6))
-	# Narrow display islands leave the centre and perimeter routes open.
-	for x in [-2.6,2.6]:
-		var body := StaticBody3D.new()
-		body.name = "SnackIsland" if x < 0 else "TravelIsland"
-		body.position = Vector3(x,0,-1.8)
-		add_child(body)
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(1.3,0.95,1.55)
-		var collision := CollisionShape3D.new()
-		collision.shape = shape
-		collision.position.y = 0.475
-		body.add_child(collision)
-		box(Vector3(0,0.13,0),Vector3(1.3,0.26,1.55),"253b3d",body)
-		box(Vector3(0,0.56,0),Vector3(1.2,0.85,0.12),"556862",body)
-		for y in [0.3,0.75]:
-			box(Vector3(0,y,0),Vector3(1.3,0.07,1.55),"b4b3a0",body)
-			for side in [-0.5,0.5]:
-				for i in 4:
-					var px := -0.46 + i * 0.30
-					if x > 0: package(Vector3(px,y+0.17,side),i,body)
-				box(Vector3(0,y+0.025,side*1.5),Vector3(1.28,0.085,0.025),"344b4b",body)
-				for px in [-0.45,0.0,0.45]:
-					box(Vector3(px,y+0.025,side*1.53),Vector3(0.18,0.045,0.012),"ddd4b3",body)
-		box(Vector3(0,1.0,0),Vector3(1.3,0.11,0.18),"246463",body)
-		sign_text("CHIPS" if x < 0 else "UNTERWEGS",Vector3(0,1.02,0.10),1.0,body)
+	# Three aligned gondolas create a real convenience-store aisle plan.
+	# The front half of SnackIsland keeps the exact board dimensions used by the gameplay stock tests.
+	build_gondola("SnackIsland",Vector3(-3.25,0,-1.35),"CHIPS / NÜSSE",0,true)
+	build_gondola("TravelIsland",Vector3(-0.85,0,-1.35),"SÜSS / SNACKS",1,false)
+	build_gondola("DailyIsland",Vector3(1.55,0,-1.35),"TO GO / ALLTAG",2,false)
+	# Low endcaps give the aisles the dense impulse-stock look typical of petrol shops.
+	for aisle_x in [-3.25,-0.85,1.55]:
+		build_endcap(Vector3(aisle_x,0,0.22),int(round((aisle_x+3.25)/2.4)))
+
+func build_gondola(node_name: String, at: Vector3, title: String, variant_offset: int, functional_snacks: bool) -> void:
+	var body := StaticBody3D.new()
+	body.name = node_name
+	body.position = at
+	add_child(body)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(1.28,1.12,2.95)
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	collision.position.y = 0.56
+	body.add_child(collision)
+	# Plinth/backbone.
+	box(Vector3(0,0.11,-0.15),Vector3(1.28,0.22,2.95),"253b3d",body)
+	box(Vector3(0,0.62,-0.15),Vector3(0.10,1.02,2.82),"556862",body)
+	for y in [0.30,0.64,0.98]:
+		# Keep one exact 1.55 m board on SnackIsland so dynamic chips remain physically supported.
+		if functional_snacks:
+			box(Vector3(0,y,0.38),Vector3(1.30,0.07,1.55),"b4b3a0",body)
+			box(Vector3(0,y,-1.02),Vector3(1.30,0.07,1.23),"b4b3a0",body)
+		else:
+			box(Vector3(0,y,-0.15),Vector3(1.30,0.07,2.78),"b4b3a0",body)
+		# Both sides are densely faced. Products are decorative except the dynamic chips stock.
+		for side in [-1,1]:
+			var side_x := float(side)*0.48
+			for i in 9:
+				var z := -1.18 + i*0.30
+				var variant := (i+variant_offset+y*10 as int)%6
+				var color := ["a97344","beaa70","557b69","965647","5f7895","b86e55"][variant]
+				if (i+variant_offset)%3 == 0:
+					cylinder(Vector3(side_x,y+0.17,z),0.065,0.24,color,body)
+				else:
+					bevel(Vector3(side_x,y+0.16,z),Vector3(0.18,0.25,0.16),color,body)
+		# Price rail along both long edges.
+		box(Vector3(-0.64,y+0.025,-0.15),Vector3(0.035,0.07,2.76),"344b4b",body)
+		box(Vector3(0.64,y+0.025,-0.15),Vector3(0.035,0.07,2.76),"344b4b",body)
+		for z in [-1.05,-0.35,0.35,1.05]:
+			box(Vector3(-0.665,y+0.03,z),Vector3(0.012,0.045,0.28),"ddd4b3",body)
+			box(Vector3(0.665,y+0.03,z),Vector3(0.012,0.045,0.28),"ddd4b3",body)
+	box(Vector3(0,1.18,-0.15),Vector3(1.30,0.13,0.22),"246463",body)
+	sign_text(title,Vector3(0,1.19,1.36),1.05,body)
+
+func build_endcap(at: Vector3, variant_offset: int) -> void:
+	var root := Node3D.new()
+	root.position = at
+	add_child(root)
+	box(Vector3(0,0.10,0),Vector3(1.18,0.20,0.42),"253b3d",root)
+	for y in [0.32,0.68,1.02]:
+		box(Vector3(0,y,0),Vector3(1.14,0.06,0.40),"b4b3a0",root)
+		for i in 5:
+			var x := -0.44+i*0.22
+			bevel(Vector3(x,y+0.14,0.02),Vector3(0.16,0.22,0.18),["a97344","beaa70","557b69","965647","5f7895"][(i+variant_offset)%5],root)
+	box(Vector3(0,1.20,0),Vector3(1.18,0.12,0.18),"246463",root)
+
 
 func shop_fittings() -> void:
 	var cooler := station.get_node("Cooler")
