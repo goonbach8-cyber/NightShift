@@ -220,6 +220,8 @@ func abandon_customer(customer: CharacterBody3D) -> void:
 	if scanned_owner == customer.get_instance_id():
 		scanned_owner = 0
 		scanned_units = 0
+		if layout.has_method("set_checkout_product"):
+			layout.set_checkout_product(&"",false)
 	if dialogue.owner_id == customer.get_instance_id(): dialogue.close()
 	queue.erase(customer)
 	customer.abandoned = true
@@ -237,6 +239,8 @@ func customer_removed(owner_id: int) -> void:
 	if scanned_owner == owner_id:
 		scanned_owner = 0
 		scanned_units = 0
+		if layout.has_method("set_checkout_product"):
+			layout.set_checkout_product(&"",false)
 	if dialogue.owner_id == owner_id: dialogue.close()
 	if not is_inside_tree() or get_parent().is_queued_for_deletion():
 		return
@@ -269,7 +273,7 @@ func checkout_details() -> Dictionary:
 		var price: int = inventory.products[items[i]].line_total(1)
 		total += price
 		if i < count: subtotal += price
-	return {"scanned":count,"count":items.size(),"remaining":items.size()-count,"subtotal":subtotal,"total":total,"last":inventory.products[items[count-1]].display_name if count > 0 else "","next":inventory.products[items[count]].display_name if count < items.size() else ""}
+	return {"scanned":count,"count":items.size(),"remaining":items.size()-count,"subtotal":subtotal,"total":total,"last":inventory.products[items[count-1]].display_name if count > 0 else "","next":inventory.products[items[count]].display_name if count < items.size() else "","last_id":items[count-1] if count > 0 else &"","next_id":items[count] if count < items.size() else &""}
 
 func checkout_text() -> String:
 	var detail := checkout_details()
@@ -296,7 +300,10 @@ func checkout() -> bool:
 	var total_units: int = checkout_details().count
 	if not quick_checkout and scanned_units < total_units:
 		scanned_units += 1
-		notice.emit("%s scanned · CHF %.2f" % [checkout_details().last,float(checkout_details().subtotal)/100])
+		var scanned := checkout_details()
+		if layout.has_method("set_checkout_product"):
+			layout.set_checkout_product(scanned.last_id,true)
+		notice.emit("%s scanned · CHF %.2f" % [scanned.last,float(scanned.subtotal)/100])
 		changed.emit()
 		return true
 	var receipt: Dictionary = inventory.commit(customer.get_instance_id())
@@ -312,6 +319,8 @@ func checkout() -> bool:
 	completed_orders.append(receipt)
 	scanned_owner = 0
 	scanned_units = 0
+	if layout.has_method("set_checkout_product"):
+		layout.set_checkout_product(&"",false)
 	customer.go_to(layout.spawn_point)
 	update_queue()
 	notice.emit("Payment accepted · %d items · CHF %.2f" % [receipt.units,float(receipt.total)/100])
