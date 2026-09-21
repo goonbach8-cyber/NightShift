@@ -22,6 +22,9 @@ var ending_started := false
 var travel_return := Vector3.ZERO
 var resume_shift := false
 var overlay: ColorRect
+var checkout_display: Node3D
+var phone_display: Label3D
+var overlap_remaining := 0.0
 
 func setup(owner_world: Node3D) -> void:
 	world = owner_world
@@ -30,28 +33,64 @@ func setup(owner_world: Node3D) -> void:
 	add_child(model)
 	road = preload("res://scripts/access_road.gd").new()
 	road.name = "AccessRoad"
-	# The established road spans z=11.2..17.2, relative to the entrance at z=5.
-	var forecourt: Vector3 = to_local(layout.entrance.global_position)+Vector3(4.5,0,12.2)
+	# Start inside the established carriageway (its centre is ~z 14.2), not beside it.
+	# The branch then curves away, so it reads as a newly appeared junction.
+	var forecourt: Vector3 = to_local(layout.entrance.global_position)+Vector3(4.0,0,9.2)
 	road.position = forecourt
 	add_child(road)
-	point(self,"route",forecourt+Vector3(3.5,0,5.0),"Navigation / Depot collection")
+	point(self,"route",forecourt+Vector3(4.8,0,6.1),"Navigation / Depot collection")
 	crack = Node3D.new()
 	crack.name = "AsphaltCrack"
 	crack.position = to_local(layout.entrance.global_position)+Vector3(1.8,0,1.2)
 	add_child(crack)
 	for i in 5:
 		model.box(crack,Vector3(i*0.17,0.013,sin(i)*0.13),Vector3(0.24,0.018,0.055),Color("111b1c"))
+
+	# A freestanding checkout display becomes the first undeniable Night-3 incident.
+	# It has no collision, so its fallen state cannot soft-lock the queue.
+	checkout_display = preload("res://scripts/story_prop.gd").new()
+	checkout_display.name = "CheckoutDisplay"
+	checkout_display.target_id = &"checkout_display"
+	checkout_display.settled_offset = Vector3(-0.34,-0.10,0.12)
+	checkout_display.settled_roll = -1.18
+	checkout_display.position = to_local(layout.checkout.global_position)+Vector3(1.08,0.02,-0.62)
+	add_child(checkout_display)
+	model.box(checkout_display,Vector3(0,0.46,0),Vector3(0.56,0.06,0.42),Color("777f78"))
+	model.box(checkout_display,Vector3(-0.23,0.24,0),Vector3(0.06,0.48,0.36),Color("5f6965"))
+	model.box(checkout_display,Vector3(0.23,0.24,0),Vector3(0.06,0.48,0.36),Color("5f6965"))
+	for x in [-0.16,0.0,0.16]:
+		model.box(checkout_display,Vector3(x,0.58,0),Vector3(0.12,0.18,0.18),Color("a16e42"))
+
+	# The Night-1 warning now has a physical source on the counter.
+	var phone := Node3D.new()
+	phone.name = "CounterPhone"
+	phone.position = to_local(layout.checkout.global_position)+Vector3(-0.58,1.10,-0.18)
+	add_child(phone)
+	model.box(phone,Vector3.ZERO,Vector3(0.42,0.14,0.24),Color("27383a"))
+	model.box(phone,Vector3(0,0.09,-0.01),Vector3(0.30,0.05,0.12),Color("53615d"))
+	phone_display = label(phone,"",Vector3(0,0.09,0.13),16)
+	phone_display.modulate = Color("cbe3a7")
+	phone_display.visible = false
+
 	construction = Node3D.new()
 	construction.name = "ConstructionNotice"
-	construction.position = forecourt+Vector3(-3.5,0,-0.7)
+	construction.position = forecourt+Vector3(0,0,1.9)
 	add_child(construction)
-	model.box(construction,Vector3(0,0.65,0),Vector3(0.1,1.3,0.1),Color("747c7a"))
-	model.box(construction,Vector3(0,1.35,0),Vector3(1.3,0.75,0.07),Color("dbc995"))
-	label(construction,"REDWATER\nNEW ACCESS ROAD",Vector3(0,1.45,0.06),25)
-	# A small alternate plan with an offset road and extra building footprint.
-	for x in 3: model.box(construction,Vector3(-0.35+x*0.3,1.14,0.06),Vector3(0.18,0.13,0.02),Color("667879"))
-	model.box(construction,Vector3(0,1.0,0.06),Vector3(0.95,0.04,0.02),Color("526760"))
-	point(construction,"construction",Vector3(0,0,-0.5),"Read construction notice")
+	# Sign sits on the shoulder; barriers and disturbed ground occupy the branch itself.
+	model.box(construction,Vector3(-2.75,0.65,-0.15),Vector3(0.1,1.3,0.1),Color("747c7a"))
+	model.box(construction,Vector3(-2.75,1.35,-0.15),Vector3(1.3,0.75,0.07),Color("dbc995"))
+	label(construction,"REDWATER\nNEW ACCESS ROAD",Vector3(-2.75,1.45,-0.09),25)
+	for x in 3:
+		model.box(construction,Vector3(-3.10+x*0.3,1.14,-0.09),Vector3(0.18,0.13,0.02),Color("667879"))
+	model.box(construction,Vector3(-2.75,1.0,-0.09),Vector3(0.95,0.04,0.02),Color("526760"))
+	model.box(construction,Vector3(0,-0.005,0.7),Vector3(4.6,0.018,1.35),Color("4f4a40"))
+	for x in [-1.8,-0.6,0.6,1.8]:
+		model.box(construction,Vector3(x,0.34,1.15),Vector3(0.10,0.68,0.10),Color("d27a35"))
+		model.box(construction,Vector3(x,0.68,1.15),Vector3(0.34,0.08,0.08),Color("e4d7b3"))
+	for x in [-1.2,1.2]:
+		model.box(construction,Vector3(x,0.56,0.55),Vector3(1.55,0.12,0.10),Color("d7c9aa"))
+		model.box(construction,Vector3(x,0.56,0.61),Vector3(0.34,0.12,0.11),Color("c66c32"))
+	point(construction,"construction",Vector3(-2.75,0,-0.75),"Read construction notice")
 	branding = label(self,"REDWOOD SERVICE",to_local(layout.entrance.global_position)+Vector3(2,1.1,-0.15),30)
 	alternate = Node3D.new()
 	alternate.name = "RedwaterDetails"
@@ -198,6 +237,9 @@ func interact(id: StringName) -> void:
 	elif id == &"depot_clerk" and in_depot:
 		pending_depot = true
 		loop.dialogue.begin(-40,PackedStringArray(["Depot clerk: The station collection? It's ready, same as every week.","Take the usual road back. Your delivery account has been here for years."]),choices,loop.story_flags,{"speaker":"Depot Worker"})
+	elif id == &"depot_ledger" and in_depot:
+		loop.dialogue.begin(-41,PackedStringArray(["Station 14 — weekly collection route.","The first dated entry is eleven years old. The road name is the same one the navigation unit used tonight."]),choices,loop.story_flags,{"kind":&"document","title":"Depot route ledger"})
+		loop.story_flags[&"depot_ledger_read"] = true
 	elif id == &"return" and in_depot:
 		if loop.tasks.has(&"depot"): travel(false)
 		else: world._say("Collect the delivery from the clerk first.")
@@ -227,8 +269,22 @@ func travel(outbound: bool) -> void:
 	if not outbound: loop.active = resume_shift
 	trip_busy = false
 
-func _process(_delta: float) -> void:
+func signal_phone() -> void:
+	if not is_instance_valid(phone_display):
+		return
+	phone_display.text = "03:17"
+	phone_display.visible = true
+	var timer := get_tree().create_timer(4.0)
+	timer.timeout.connect(func():
+		if is_instance_valid(phone_display):
+			phone_display.visible = false)
+
+func start_overlap() -> void:
+	overlap_remaining = 3.17
+
+func _process(delta: float) -> void:
 	if not is_instance_valid(loop): return
+	overlap_remaining = maxf(0.0,overlap_remaining-delta)
 	if configured_night != loop.career_shifts+1: apply_night()
 	if configured_night == 3 and loop.served+loop.lost_sales >= 5 and loop.story_flags.get(&"presented_night_3_store_parcel",false):
 		loop.story_flags[&"road_exists"] = true
@@ -241,7 +297,7 @@ func _process(_delta: float) -> void:
 	alternate.visible = redwater
 	intrusions.visible = configured_night >= 5 and not ending_started
 	branding.text = "REDWATER SERVICE" if redwater or ending_started else "REDWOOD SERVICE"
-	if configured_night == 6 and loop.event_history.has(&"night_6_main") and not ending_started:
+	if overlap_remaining > 0 and not ending_started:
 		branding.text = "REDWOOD / REDWATER\n03:17"
 	get_node("route").available = road.visible and not in_depot
 	for child in depot.get_children():
