@@ -206,6 +206,8 @@ func select_product(customer: CharacterBody3D) -> void:
 		return
 	var id: StringName = customer.current_product
 	if inventory.reserve(customer.get_instance_id(),id,customer.order[id]):
+		if customer.has_method("add_basket_item"):
+			customer.add_basket_item(id,int(customer.order[id]))
 		customer.remaining_products.pop_front()
 		customer.wait_seconds = 0
 		visit_next_product(customer)
@@ -219,6 +221,8 @@ func abandon_customer(customer: CharacterBody3D) -> void:
 	if customer.paid or customer.abandoned:
 		return
 	inventory.release(customer.get_instance_id())
+	if customer.has_method("clear_basket"):
+		customer.clear_basket()
 	if scanned_owner == customer.get_instance_id():
 		scanned_owner = 0
 		scanned_units = 0
