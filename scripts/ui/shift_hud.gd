@@ -113,7 +113,8 @@ func update() -> void:
 	var pump_focus: bool = is_instance_valid(world.pump_service) and world.pump_service.active
 	var cctv_focus: bool = is_instance_valid(world.cctv_system) and world.cctv_system.active
 	var power_focus: bool = is_instance_valid(world.power_service) and world.power_service.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus
+	var delivery_focus: bool = is_instance_valid(world.delivery_check) and world.delivery_check.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -208,7 +209,7 @@ func compact_prompt(target: Node3D) -> String:
 		if loop.inventory.stocks[loop.selected_product()].warehouse_units == 0: return "Check stock · Warehouse empty"
 		if loop.inventory.stocks[loop.selected_product()].shelf_units == loop.inventory.stocks[loop.selected_product()].capacity: return "Check stock · Display full"
 		return "Collect "+String(loop.inventory.products[loop.selected_product()].display_name)
-	if target == world.layout.delivery: return "Pick up delivery" if carried == &"" else "Restock your display first"
+	if target == world.layout.delivery: return "Inspect delivery" if carried == &"" else "Restock your display first"
 	if target == world.layout.pump_terminal:
 		if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Pump fault · Reset outside"
 		return "Open pump control" if is_instance_valid(world.pump_service) and world.pump_service.request_pending else "Pump control · No requests"
