@@ -44,6 +44,9 @@ var pump_terminal: Node3D
 var pump_reset_points: Dictionary = {}
 var cctv_terminal: Node3D
 var breaker_panel: Node3D
+var phone_point: Node3D
+var phone_display: Label3D
+var phone_handset: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -99,6 +102,7 @@ func _ready() -> void:
 	setup_pump_reset_points()
 	setup_cctv_terminal()
 	setup_breaker_panel()
+	setup_phone()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -270,6 +274,34 @@ func setup_cctv_terminal() -> void:
 	model.box(model,Vector3(0,1.36,0.10),Vector3(0.42,0.27,0.02),Color("101b20"))
 	model.box(model,Vector3(0,1.08,0),Vector3(0.12,0.22,0.10),Color("4e5b5b"))
 	model.box(model,Vector3(0,0.98,0),Vector3(0.42,0.06,0.26),Color("5d665f"))
+
+func setup_phone() -> void:
+	phone_point = Node3D.new()
+	phone_point.name = "CounterPhone"
+	phone_point.set_script(preload("res://scenes/interactions/interactable.gd"))
+	phone_point.action_id = &"phone"
+	phone_point.prompt = "Counter phone"
+	checkout.add_child(phone_point)
+	phone_point.position = Vector3(-0.72,0,0.30)
+	marker(phone_point,"Approach",Vector3(0.16,0,-0.82))
+	var model := preload("res://scripts/product_display.gd").new()
+	phone_point.add_child(model)
+	model.box(model,Vector3(0,1.04,0),Vector3(0.34,0.11,0.22),Color("27383a"))
+	phone_handset = Node3D.new()
+	phone_handset.name = "Handset"
+	phone_point.add_child(phone_handset)
+	model.box(phone_handset,Vector3(0,1.13,-0.01),Vector3(0.28,0.07,0.10),Color("53615d"))
+	model.box(phone_handset,Vector3(-0.13,1.13,-0.01),Vector3(0.06,0.10,0.12),Color("53615d"))
+	model.box(phone_handset,Vector3(0.13,1.13,-0.01),Vector3(0.06,0.10,0.12),Color("53615d"))
+	phone_display = Label3D.new()
+	phone_display.name = "PhoneDisplay"
+	phone_display.position = Vector3(0,1.04,0.12)
+	phone_display.font_size = 14
+	phone_display.pixel_size = 0.0025
+	phone_display.modulate = Color("cbe3a7")
+	phone_display.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	phone_display.text = "READY"
+	phone_point.add_child(phone_display)
 
 func setup_breaker_panel() -> void:
 	breaker_panel = Node3D.new()
