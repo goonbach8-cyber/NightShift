@@ -7,15 +7,16 @@ var track_index: int = 0
 var interrupted: float = 0
 var globally_muted: bool = false
 var tracks: Array[AudioStream] = []
-var station_frequencies: Array[float] = [91.7,96.3,103.1]
-var station_names: Array[String] = ["LOCAL FM","NIGHTLINE","ROAD / WEATHER"]
+var station_frequencies: Array[float] = [91.7,96.3,103.1,101.7]
+var station_names: Array[String] = ["LOCAL FM","NIGHTLINE","ROAD / WEATHER","UNLISTED"]
+var hidden_station_enabled := false
 var tuned_frequency := 91.7
 var signal_strength := 1.0
 var static_player: AudioStreamPlayer
 var burst_player: AudioStreamPlayer
 
 func _ready() -> void:
-	for base in [110.0,146.83,123.47]:
+	for base in [110.0,146.83,123.47,174.20]:
 		tracks.append(make_track(base))
 	stream = tracks[0]
 	volume_db = level_db
@@ -84,9 +85,14 @@ func toggle() -> void:
 		stop()
 
 func next_track() -> void:
-	var index := nearest_station_index()
-	index = (index+1)%station_frequencies.size()
-	set_frequency(station_frequencies[index])
+	var available := _available_indices()
+	var current := nearest_station_index()
+	var position := available.find(current)
+	if position < 0:
+		position = 0
+	else:
+		position = (position+1)%available.size()
+	set_frequency(station_frequencies[available[position]])
 
 func set_frequency(value: float) -> void:
 	tuned_frequency = clampf(snappedf(value,0.1),88.0,108.0)
@@ -103,14 +109,27 @@ func set_frequency(value: float) -> void:
 		play()
 
 func nearest_station_index() -> int:
-	var best := 0
+	var available := _available_indices()
+	var best := available[0]
 	var best_distance := INF
-	for i in station_frequencies.size():
+	for i in available:
 		var distance := absf(tuned_frequency-station_frequencies[i])
 		if distance < best_distance:
 			best_distance = distance
 			best = i
 	return best
+
+func _available_indices() -> Array[int]:
+	var result: Array[int] = [0,1,2]
+	if hidden_station_enabled:
+		result.append(3)
+	return result
+
+func set_hidden_station_enabled(value: bool) -> void:
+	if hidden_station_enabled == value:
+		return
+	hidden_station_enabled = value
+	set_frequency(tuned_frequency)
 
 func station_name() -> String:
 	var index := nearest_station_index()
