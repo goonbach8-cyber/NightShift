@@ -27,6 +27,7 @@ var power_service: Node
 var delivery_check: Node
 var phone_system: Node
 var customer_assistance: Node
+var spill_service: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -103,6 +104,10 @@ func _ready() -> void:
 	customer_assistance.name = "CustomerAssistance"
 	customer_assistance.world = self
 	add_child(customer_assistance)
+	spill_service = preload("res://scripts/spill_service.gd").new()
+	spill_service.name = "SpillService"
+	spill_service.world = self
+	add_child(spill_service)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -142,7 +147,8 @@ func _process(delta: float) -> void:
 	var power_busy: bool = is_instance_valid(power_service) and power_service.active
 	var delivery_busy: bool = is_instance_valid(delivery_check) and delivery_check.active
 	var phone_busy: bool = is_instance_valid(phone_system) and phone_system.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy and not phone_busy:
+	var spill_busy: bool = is_instance_valid(spill_service) and spill_service.active
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy and not phone_busy and not spill_busy:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
@@ -181,7 +187,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active) or (is_instance_valid(phone_system) and phone_system.active)
+	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active) or (is_instance_valid(phone_system) and phone_system.active) or (is_instance_valid(spill_service) and spill_service.active)
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -205,6 +211,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(power_service) and power_service.active: return
 	if is_instance_valid(delivery_check) and delivery_check.active: return
 	if is_instance_valid(phone_system) and phone_system.active: return
+	if is_instance_valid(spill_service) and spill_service.active: return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed:
@@ -255,6 +262,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action in [&"cleaning_kit",&"spill_cleanup"]:
+		spill_service.handle_action(action)
+		return
 	if action == &"phone":
 		phone_system.begin()
 		return
