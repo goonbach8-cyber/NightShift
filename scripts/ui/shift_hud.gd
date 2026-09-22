@@ -94,6 +94,8 @@ func objective_text() -> String:
 	if loop.preparing: return "Preparing the shop…"
 	if loop.can_finish(): return "Finish at the staff notes"
 	if loop.delivery_carried: return "Store the delivery in the warehouse"
+	if is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active:
+		return world.customer_assistance.objective_text()
 	if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Reset pump %02d outside" % world.pump_service.fault_pump
 	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
 	if is_instance_valid(world.power_service) and world.power_service.fault_pending: return "Reset the tripped electrical circuit"
@@ -122,7 +124,8 @@ func update() -> void:
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
 	progress.visible = world.phase == world.Phase.ACTIVE
 	objective_panel.visible = not modal
-	checkout_panel.visible = loop.checkout_ready() and world.layout.at_operator(world.player) and not modal
+	var assistance_blocking: bool = is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active and loop.checkout_ready() and not loop.queue.is_empty() and loop.queue[0] == world.customer_assistance.request_customer
+	checkout_panel.visible = loop.checkout_ready() and world.layout.at_operator(world.player) and not modal and not assistance_blocking
 	if checkout_panel.visible:
 		var detail: Dictionary = loop.checkout_details()
 		checkout_title.text = "TOTAL" if detail.remaining == 0 else (String(detail.last)+" scanned" if detail.scanned else "Ready to scan")
@@ -199,6 +202,8 @@ func compact_prompt(target: Node3D) -> String:
 	if target == world.layout.checkout:
 		if not world.layout.at_operator(world.player): return "Use the staff side"
 		if not loop.checkout_ready(): return "Checkout · Waiting for customer"
+		if is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active and not loop.queue.is_empty() and loop.queue[0] == world.customer_assistance.request_customer:
+			return "Return "+world.customer_assistance.item_label if world.customer_assistance.item_found else "Customer needs help"
 		return "Accept payment" if loop.checkout_details().remaining == 0 else "Scan item"
 	for id in world.layout.product_nodes:
 		if target != world.layout.product_nodes[id]: continue
