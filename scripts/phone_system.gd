@@ -77,7 +77,7 @@ func _build_ui() -> void:
 func _process(delta: float) -> void:
 	if gameplay == null:
 		return
-	if gameplay.active and gameplay.career_shifts >= 1 and not work_call_done and not ringing and not active and gameplay.elapsed >= next_work_call_at:
+	if gameplay.active and gameplay.career_shifts >= 1 and not work_call_done and not ringing and not active and gameplay.elapsed >= next_work_call_at and world.can_start_interrupt(self):
 		_queue_work_call()
 	if ringing:
 		ring_elapsed += delta
