@@ -54,6 +54,10 @@ var cash_given := 0
 var cash_history: Array[int] = []
 var card_attempts := 0
 var card_decline_pending := false
+var printer_jam_pending := false
+var printer_alignment := 0.0
+var pending_receipt_total := 0
+var pending_receipt_method := ""
 const CASH_VALUES: Array[int] = [200,100,50,20,10,5]
 
 var panel: PanelContainer
@@ -243,7 +247,7 @@ func begin() -> bool:
 	return true
 
 func cancel() -> void:
-	if not active or phase == &"receipt":
+	if not active or phase in [&"receipt",&"printer_jam"]:
 		return
 	# Scans are only staged until payment. Leaving the focused checkout restarts
 	# the basket cleanly instead of leaving invisible partial scan state behind.
@@ -305,6 +309,19 @@ func _input(event: InputEvent) -> void:
 	var pressed := event.pressed and not event.echo
 	if pressed and key == KEY_ESCAPE:
 		cancel()
+	elif phase == &"printer_jam":
+		if not pressed:
+			return
+		if key in [KEY_LEFT,KEY_A]:
+			printer_alignment = clampf(printer_alignment-0.1,-0.6,0.6)
+			_apply_printer_alignment()
+		elif key in [KEY_RIGHT,KEY_D]:
+			printer_alignment = clampf(printer_alignment+0.1,-0.6,0.6)
+			_apply_printer_alignment()
+		elif key in [KEY_E,KEY_ENTER,KEY_KP_ENTER]:
+			_feed_printer()
+		else:
+			return
 	elif phase == &"cash":
 		if not pressed:
 			return
@@ -489,6 +506,7 @@ func _enter_payment() -> void:
 	var transaction_number := gameplay.served+gameplay.lost_sales+1
 	card_attempts = 0
 	card_decline_pending = gameplay.career_shifts >= 1 and transaction_number % 5 == 0
+	printer_jam_pending = gameplay.career_shifts >= 2 and transaction_number % 4 == 0
 	if transaction_number % 3 == 0:
 		_enter_cash(int(detail.get("total",0)))
 	else:
@@ -604,16 +622,48 @@ func _confirm_payment() -> void:
 		return
 	if is_instance_valid(paying_customer) and paying_customer.has_method("clear_basket"):
 		paying_customer.clear_basket()
+	var method := "CARD" if phase == &"card" else "CASH"
 	terminal_label.text = "APPROVED" if phase == &"card" else ""
 	terminal_label.modulate = Color("cbe3a7")
 	card_root.hide()
 	cash_root.hide()
 	cash_note_root.hide()
-	phase = &"receipt"
-	var method := "CARD" if terminal_label.visible else "CASH"
-	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [method,float(total)/100.0]
+	pending_receipt_total = total
+	pending_receipt_method = method
+	if printer_jam_pending:
+		_enter_printer_jam()
+		return
+	_print_receipt()
+
+func _enter_printer_jam() -> void:
+	phase = &"printer_jam"
+	printer_alignment = -0.5 if (gameplay.served+gameplay.lost_sales)%2 == 0 else 0.5
 	receipt_root.show()
-	var start := receipt_root.position
+	receipt_label.text = "PAPER"
+	receipt_root.position = Vector3(0.47,0.98,-0.18)
+	_apply_printer_alignment()
+	_refresh_ui()
+
+func _apply_printer_alignment() -> void:
+	if not is_instance_valid(receipt_root):
+		return
+	receipt_root.rotation.y = printer_alignment*0.65
+
+func _feed_printer() -> void:
+	if phase != &"printer_jam":
+		return
+	if absf(printer_alignment) > 0.11:
+		status.text = "Paper is still crooked in the feed slot."
+		return
+	printer_jam_pending = false
+	receipt_root.rotation.y = 0.0
+	_print_receipt()
+
+func _print_receipt() -> void:
+	phase = &"receipt"
+	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [pending_receipt_method,float(pending_receipt_total)/100.0]
+	receipt_root.show()
+	var start := Vector3(0.47,1.035,-0.18)
 	receipt_root.position = start+Vector3(0,-0.10,0)
 	var tween := create_tween()
 	tween.tween_property(receipt_root,"position",start,0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -648,6 +698,11 @@ func _refresh_ui() -> void:
 		status.text = "Customer has another card."
 		progress.text = "No sale has been charged."
 		help.text = "[E / ENTER] Try another card   ·   [C] Pay cash"
+	elif phase == &"printer_jam":
+		title.text = "RECEIPT PRINTER · PAPER JAM"
+		status.text = "Straighten the receipt paper in the feed slot."
+		progress.text = "Alignment: %d%%" % roundi((1.0-clampf(absf(printer_alignment)/0.6,0.0,1.0))*100.0)
+		help.text = "← / → align paper   ·   [E / ENTER] feed paper"
 	else:
 		title.text = "PAYMENT APPROVED"
 		status.text = "Receipt printing…"
@@ -679,6 +734,11 @@ func _end_mode() -> void:
 	cash_history.clear()
 	card_attempts = 0
 	card_decline_pending = false
+	printer_jam_pending = false
+	printer_alignment = 0.0
+	pending_receipt_total = 0
+	pending_receipt_method = ""
+	receipt_root.rotation = Vector3.ZERO
 	panel.hide()
 	scanner_material.albedo_color = Color("713d39")
 	move_left = false
