@@ -222,6 +222,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if String(action).begins_with("pump_reset_"):
+		var pump_number := int(String(action).trim_prefix("pump_reset_"))
+		pump_service.reset_fault(pump_number)
+		return
 	if action == &"pump_terminal":
 		if is_instance_valid(checkout_minigame) and checkout_minigame.active:
 			return
