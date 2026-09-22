@@ -29,6 +29,7 @@ var phone_system: Node
 var customer_assistance: Node
 var spill_service: Node
 var radio_tuner: Node
+var device_service: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -113,6 +114,10 @@ func _ready() -> void:
 	radio_tuner.name = "RadioTuner"
 	radio_tuner.world = self
 	add_child(radio_tuner)
+	device_service = preload("res://scripts/device_service.gd").new()
+	device_service.name = "DeviceService"
+	device_service.world = self
+	add_child(device_service)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -154,7 +159,8 @@ func _process(delta: float) -> void:
 	var phone_busy: bool = is_instance_valid(phone_system) and phone_system.active
 	var spill_busy: bool = is_instance_valid(spill_service) and spill_service.active
 	var radio_busy: bool = is_instance_valid(radio_tuner) and radio_tuner.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy and not phone_busy and not spill_busy and not radio_busy:
+	var device_busy: bool = is_instance_valid(device_service) and device_service.active
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy and not phone_busy and not spill_busy and not radio_busy and not device_busy:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
@@ -193,7 +199,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active) or (is_instance_valid(phone_system) and phone_system.active) or (is_instance_valid(spill_service) and spill_service.active) or (is_instance_valid(radio_tuner) and radio_tuner.active)
+	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active) or (is_instance_valid(phone_system) and phone_system.active) or (is_instance_valid(spill_service) and spill_service.active) or (is_instance_valid(radio_tuner) and radio_tuner.active) or (is_instance_valid(device_service) and device_service.active)
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -219,6 +225,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(phone_system) and phone_system.active: return
 	if is_instance_valid(spill_service) and spill_service.active: return
 	if is_instance_valid(radio_tuner) and radio_tuner.active: return
+	if is_instance_valid(device_service) and device_service.active: return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed:
@@ -269,6 +276,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"service_tools":
+		device_service.handle_action(action)
+		return
+	if action == &"cooler" and is_instance_valid(device_service) and device_service.handle_action(action):
+		return
 	if action in [&"cleaning_kit",&"spill_cleanup"]:
 		spill_service.handle_action(action)
 		return
@@ -333,7 +345,7 @@ func _on_used(action: StringName) -> void:
 func can_start_interrupt(source: Node = null) -> bool:
 	if phase != Phase.ACTIVE or not gameplay.active or gameplay.dialogue.active or story_time > 0:
 		return false
-	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service,radio_tuner]:
+	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service,radio_tuner,device_service]:
 		if system != source and is_instance_valid(system) and bool(system.get("active")):
 			return false
 	if source != pump_service and is_instance_valid(pump_service) and (pump_service.request_pending or pump_service.fault_pending):
@@ -347,6 +359,8 @@ func can_start_interrupt(source: Node = null) -> bool:
 	if source != spill_service and is_instance_valid(spill_service) and (spill_service.spill_pending or spill_service.return_required):
 		return false
 	if source != radio_tuner and is_instance_valid(radio_tuner) and radio_tuner.drift_pending:
+		return false
+	if source != device_service and is_instance_valid(device_service) and (device_service.fault_pending or device_service.return_required):
 		return false
 	if is_instance_valid(customer_assistance) and customer_assistance.request_active:
 		return false
