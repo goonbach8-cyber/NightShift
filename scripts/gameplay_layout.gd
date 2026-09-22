@@ -48,6 +48,7 @@ var phone_point: Node3D
 var phone_display: Label3D
 var phone_handset: Node3D
 var cleaning_station: Node3D
+var service_tool_station: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -105,6 +106,7 @@ func _ready() -> void:
 	setup_breaker_panel()
 	setup_phone()
 	setup_cleaning_station()
+	setup_service_tools()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -291,6 +293,23 @@ func setup_cleaning_station() -> void:
 	model.box(model,Vector3(0,0.16,0),Vector3(0.42,0.28,0.34),Color("596a64"))
 	model.box(model,Vector3(0.10,0.95,0),Vector3(0.045,1.60,0.045),Color("9b8057"))
 	model.box(model,Vector3(0.10,0.16,0),Vector3(0.52,0.09,0.18),Color("344b4b"))
+
+func setup_service_tools() -> void:
+	service_tool_station = Node3D.new()
+	service_tool_station.name = "ServiceTools"
+	service_tool_station.set_script(preload("res://scenes/interactions/interactable.gd"))
+	service_tool_station.action_id = &"service_tools"
+	service_tool_station.prompt = "Maintenance tools"
+	warehouse.add_child(service_tool_station)
+	service_tool_station.position = Vector3(8.15,0,-2.85)
+	marker(service_tool_station,"Approach",Vector3(0.65,0,0))
+	var model := preload("res://scripts/product_display.gd").new()
+	service_tool_station.add_child(model)
+	model.box(model,Vector3(0,0.28,0),Vector3(0.60,0.30,0.34),Color("7a403b"))
+	model.box(model,Vector3(0,0.45,0),Vector3(0.54,0.05,0.30),Color("933f36"))
+	model.box(model,Vector3(0,0.46,0.16),Vector3(0.12,0.06,0.03),Color("c6b47f"))
+	model.box(model,Vector3(0.12,0.74,0),Vector3(0.045,0.58,0.045),Color("9b8057"))
+	model.box(model,Vector3(0.12,1.00,0),Vector3(0.16,0.05,0.05),Color("727d78"))
 
 func setup_phone() -> void:
 	phone_point = Node3D.new()
