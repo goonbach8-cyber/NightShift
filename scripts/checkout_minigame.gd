@@ -164,12 +164,23 @@ func begin() -> bool:
 func cancel() -> void:
 	if not active or phase == &"receipt":
 		return
+	# Scans are only staged until payment. Leaving the focused checkout restarts
+	# the basket cleanly instead of leaving invisible partial scan state behind.
+	if is_instance_valid(customer) and gameplay.scanned_owner == customer.get_instance_id():
+		gameplay.scanned_owner = 0
+		gameplay.scanned_units = 0
+		if layout.has_method("set_checkout_product"):
+			layout.set_checkout_product(&"",false)
+		gameplay.changed.emit()
 	if is_instance_valid(customer) and customer.has_method("set_checkout_basket_hidden"):
 		customer.set_checkout_basket_hidden(false)
 	_end_mode()
 
 func _process(delta: float) -> void:
 	if not active:
+		return
+	if phase != &"receipt" and (gameplay.queue.is_empty() or not is_instance_valid(customer) or gameplay.queue[0] != customer):
+		cancel()
 		return
 	if phase == &"scan" and not busy and is_instance_valid(current_visual):
 		var horizontal := (1.0 if move_right else 0.0) - (1.0 if move_left else 0.0)
