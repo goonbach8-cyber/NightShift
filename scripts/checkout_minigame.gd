@@ -260,17 +260,11 @@ func _input(event: InputEvent) -> void:
 		return
 	var key := event.physical_keycode
 	var pressed := event.pressed and not event.echo
-	if key in [KEY_A,KEY_LEFT]:
-		move_left = event.pressed
-	elif key in [KEY_D,KEY_RIGHT]:
-		move_right = event.pressed
-	elif key in [KEY_W,KEY_UP]:
-		rotate_left = event.pressed
-	elif key in [KEY_S,KEY_DOWN]:
-		rotate_right = event.pressed
-	elif pressed and key == KEY_ESCAPE:
+	if pressed and key == KEY_ESCAPE:
 		cancel()
-	elif phase == &"cash" and pressed:
+	elif phase == &"cash":
+		if not pressed:
+			return
 		if key in [KEY_LEFT,KEY_A]:
 			cash_selection = wrapi(cash_selection-1,0,CASH_VALUES.size())
 			_update_cash_selection()
@@ -283,6 +277,16 @@ func _input(event: InputEvent) -> void:
 			_remove_cash()
 		elif key in [KEY_ENTER,KEY_KP_ENTER]:
 			_confirm_cash()
+		else:
+			return
+	elif key in [KEY_A,KEY_LEFT]:
+		move_left = event.pressed
+	elif key in [KEY_D,KEY_RIGHT]:
+		move_right = event.pressed
+	elif key in [KEY_W,KEY_UP]:
+		rotate_left = event.pressed
+	elif key in [KEY_S,KEY_DOWN]:
+		rotate_right = event.pressed
 	elif pressed and key in [KEY_E,KEY_ENTER,KEY_KP_ENTER] and phase == &"card":
 		_confirm_payment()
 	elif key in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_SPACE,KEY_1,KEY_2,KEY_E,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE]:
