@@ -76,7 +76,7 @@ func _process(delta: float) -> void:
 		_trigger_drift()
 
 func _trigger_drift() -> void:
-	var current := radio.tuned_frequency
+	var current: float = radio.tuned_frequency
 	drift_target = current
 	var offset := 1.3 if (gameplay.career_shifts+1)%2 == 0 else -1.1
 	radio.set_frequency(current+offset)
@@ -117,7 +117,7 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if not active or not event is InputEventKey or event.echo:
 		return
-	var key := event.physical_keycode
+	var key: Key = event.physical_keycode
 	if key == KEY_ESCAPE and event.pressed:
 		close()
 	elif key in [KEY_LEFT,KEY_A]:

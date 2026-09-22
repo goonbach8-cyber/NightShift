@@ -48,9 +48,9 @@ func _ready() -> void:
 	_update_terminal_prompt()
 
 func _build_channels() -> void:
-	var entrance := layout.entrance.global_position
-	var checkout := layout.checkout.global_position
-	var warehouse := layout.warehouse.global_position
+	var entrance: Vector3 = layout.entrance.global_position
+	var checkout: Vector3 = layout.checkout.global_position
+	var warehouse: Vector3 = layout.warehouse.global_position
 	channels = [
 		{"name":"CAM 01 · FORECOURT","area":"forecourt","eye":entrance+Vector3(0,5.2,7.6),"target":entrance+Vector3(0,0.7,4.2)},
 		{"name":"CAM 02 · ENTRANCE","area":"entrance","eye":entrance+Vector3(-4.8,3.0,-0.6),"target":entrance+Vector3(0,0.9,-1.2)},

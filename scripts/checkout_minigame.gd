@@ -305,8 +305,8 @@ func _input(event: InputEvent) -> void:
 			return
 	if not event is InputEventKey:
 		return
-	var key := event.physical_keycode
-	var pressed := event.pressed and not event.echo
+	var key: Key = event.physical_keycode
+	var pressed: bool = event.pressed and not event.echo
 	if pressed and key == KEY_ESCAPE:
 		cancel()
 	elif phase == &"printer_jam":
@@ -503,7 +503,7 @@ func _enter_payment() -> void:
 		current_visual.queue_free()
 		current_visual = null
 	var detail: Dictionary = gameplay.checkout_details()
-	var transaction_number := gameplay.served+gameplay.lost_sales+1
+	var transaction_number: int = gameplay.served+gameplay.lost_sales+1
 	card_attempts = 0
 	card_decline_pending = gameplay.career_shifts >= 1 and transaction_number % 5 == 0
 	printer_jam_pending = gameplay.career_shifts >= 2 and transaction_number % 4 == 0
@@ -556,7 +556,7 @@ func _remove_cash() -> void:
 		return
 	cash_added -= cash_history.pop_back()
 	if not change_visuals.is_empty():
-		var visual := change_visuals.pop_back()
+		var visual: Node3D = change_visuals.pop_back()
 		if is_instance_valid(visual):
 			visual.queue_free()
 	_refresh_ui()

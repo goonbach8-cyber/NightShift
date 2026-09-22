@@ -47,7 +47,7 @@ func _start_request(customer: CharacterBody3D) -> void:
 	request_customer = customer
 	request_customer.state = &"assistance"
 	request_customer.status_text = "Waiting for lost item"
-	var night := gameplay.career_shifts+1
+	var night: int = gameplay.career_shifts+1
 	match night:
 		2:
 			item_kind = &"keys"

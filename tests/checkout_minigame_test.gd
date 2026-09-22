@@ -59,7 +59,7 @@ func run() -> void:
 	check(game._barcode_aligned(),"Chip bag barcode is readable in its natural starting orientation")
 	game._scan_current()
 	await create_timer(0.28).timeout
-	check(game.phase == &"payment" and loop.scanned_units == 3 and loop.revenue_rappen == 0,"All scans lead to card payment without selling early")
+	check(game.phase == &"card" and loop.scanned_units == 3 and loop.revenue_rappen == 0,"All scans lead to card payment without selling early")
 	check(game.terminal_label.visible and game.terminal_label.text.contains("CHF 8.60"),"Physical terminal shows the exact final amount")
 
 	game._confirm_payment()
@@ -109,7 +109,8 @@ func run() -> void:
 	decline_customer.state = &"queued"
 	decline_customer.global_position = layout.queue_points[0].global_position
 	loop.queue.append(decline_customer)
-	loop.inventory.reserve(decline_customer.get_instance_id(),&"water",1)
+	check(loop.inventory.take_crate(&"water") and loop.inventory.restock(&"water"),"Depleted water display is replenished before the third basket")
+	check(loop.inventory.reserve(decline_customer.get_instance_id(),&"water",1),"Declined-card basket owns actual stock")
 	await process_frame
 	check(game.begin(),"Later-night card transaction starts normally")
 	game.item_rotation = -PI

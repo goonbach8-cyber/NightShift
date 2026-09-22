@@ -100,7 +100,7 @@ func story_ring() -> void:
 	)
 
 func _queue_work_call() -> void:
-	var night := gameplay.career_shifts+1
+	var night: int = gameplay.career_shifts+1
 	var caller := "Riverline Dispatch"
 	var number := "4417"
 	var lines := PackedStringArray(["Night delivery desk. Is the rear service gate clear for tonight's drop?"])
@@ -190,7 +190,7 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if not active or not event is InputEventKey or not event.pressed or event.echo:
 		return
-	var key := event.physical_keycode
+	var key: Key = event.physical_keycode
 	if key == KEY_ESCAPE:
 		if mode == &"call":
 			_end_call(false)

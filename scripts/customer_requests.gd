@@ -50,7 +50,7 @@ func _start_request(customer: CharacterBody3D) -> void:
 	request_customer = customer
 	request_customer.state = &"customer_request"
 	request_customer.status_text = "Waiting for assistance"
-	var night := gameplay.career_shifts+1
+	var night: int = gameplay.career_shifts+1
 	match night:
 		2:
 			request_kind = &"wc_key"
@@ -131,7 +131,7 @@ func _on_price_check_used(_action: StringName) -> void:
 	if not active or request_kind != &"price_check" or task_complete:
 		return
 	task_complete = true
-	var price := gameplay.inventory.products[target_product].price_rappen
+	var price: int = gameplay.inventory.products[target_product].price_rappen
 	gameplay.story_flags[StringName("price_check_night_%d" % (gameplay.career_shifts+1))] = true
 	_clear_task_point()
 	_show_carried_prop(&"note")

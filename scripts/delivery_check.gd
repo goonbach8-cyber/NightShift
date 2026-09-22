@@ -108,7 +108,7 @@ func begin() -> bool:
 	actual_manifest = gameplay.delivery_manifest.duplicate()
 	# Some later shifts contain an ordinary receiving discrepancy. The player must
 	# actually compare the carton label instead of confirming every line by habit.
-	var night := gameplay.career_shifts+1
+	var night: int = gameplay.career_shifts+1
 	if night == 3 and actual_manifest.has(&"chips"):
 		actual_manifest[&"chips"] = maxi(0,int(actual_manifest[&"chips"])-1)
 	elif night == 5 and actual_manifest.has(&"energy"):
@@ -118,7 +118,7 @@ func begin() -> bool:
 		order.append(id)
 	# Cartons are not presented in the same order as the office manifest.
 	if order.size() > 1:
-		var rotate_by := (gameplay.career_shifts+1)%order.size()
+		var rotate_by: int = (gameplay.career_shifts+1)%order.size()
 		for i in rotate_by:
 			order.push_back(order.pop_front())
 	player.controls_locked = true
@@ -203,7 +203,7 @@ func _refresh_ui() -> void:
 	title.text = "DELIVERY · RECEIVING CHECK"
 	manifest_label.text = "MANIFEST\n"+_manifest_text(true)
 	var id: StringName = order[selected]
-	var checked := verified.get(id,false)
+	var checked: bool = verified.get(id,false)
 	var mark := "  !" if discrepancies.has(id) else ("  ✓" if checked else "")
 	carton_label.text = "%s\nCARTON LABEL: ×%d%s" % [gameplay.inventory.products[id].display_name,int(actual_manifest[id]),mark]
 	if checked:

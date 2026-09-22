@@ -154,7 +154,7 @@ func build_gondola(node_name: String, at: Vector3, title: String, variant_offset
 				if functional_snacks and z > 0.15 and z < 0.85:
 					continue
 				var variant := (i + variant_offset + int(y * 10.0)) % 6
-				var color := ["a97344","beaa70","557b69","965647","5f7895","b86e55"][variant]
+				var color: String = ["a97344","beaa70","557b69","965647","5f7895","b86e55"][variant]
 				if (i+variant_offset)%3 == 0:
 					cylinder(Vector3(side_x,y+0.17,z),0.065,0.24,color,body)
 				else:
@@ -195,7 +195,7 @@ func build_cooler_module(at: Vector3, title: String, palette_offset: int) -> voi
 		box(at+Vector3(0,y,0.02),Vector3(1.30,0.035,0.68),"bcc7be")
 		for i in 6:
 			var x := -0.50+i*0.20
-			var color := ["557b69","5f7895","a97344","965647","beaa70","3f8f80"][(i+palette_offset+int(y*10.0))%6]
+			var color: String = ["557b69","5f7895","a97344","965647","beaa70","3f8f80"][(i+palette_offset+int(y*10.0))%6]
 			cylinder(at+Vector3(x,y+0.13,0.18),0.055,0.23,color)
 	for x in [-0.70,0.0,0.70]:
 		box(at+Vector3(x,0.88,0.44),Vector3(0.035,1.35,0.055),"9caaa5")
@@ -219,7 +219,7 @@ func build_wall_shelf(at: Vector3, title: String) -> void:
 		box(at+Vector3(0,y,0.16),Vector3(1.98,0.06,0.50),"b4b3a0")
 		for col in range(9):
 			var x := -0.82+col*0.205
-			var color := ["c8bda1","708b85","967956","a97344","5f7895","b86e55"][(row+col)%6]
+			var color: String = ["c8bda1","708b85","967956","a97344","5f7895","b86e55"][(row+col)%6]
 			if (row+col)%3 == 0:
 				cylinder(at+Vector3(x,y+0.13,0.28),0.052,0.22,color)
 			else:

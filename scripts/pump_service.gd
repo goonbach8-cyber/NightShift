@@ -145,7 +145,7 @@ func cancel() -> void:
 func _input(event: InputEvent) -> void:
 	if not active or not event is InputEventKey:
 		return
-	var pressed := event.pressed and not event.echo
+	var pressed: bool = event.pressed and not event.echo
 	if not pressed:
 		return
 	match event.physical_keycode:
@@ -185,7 +185,7 @@ func _authorize() -> void:
 	help.text = ""
 	_set_pump_status(request_pump,"AUTH",Color("8fc59d"))
 	await get_tree().create_timer(0.75).timeout
-	var should_fault := gameplay.career_shifts >= 1 and request_serial % 2 == 0
+	var should_fault: bool = gameplay.career_shifts >= 1 and request_serial % 2 == 0
 	if should_fault:
 		_begin_fault(request_pump)
 	else:

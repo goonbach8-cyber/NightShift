@@ -92,7 +92,7 @@ func _process(delta: float) -> void:
 
 func _spawn_spill() -> void:
 	spill_pending = true
-	var night := gameplay.career_shifts+1
+	var night: int = gameplay.career_shifts+1
 	var target: StringName = &"chips"
 	if night == 3:
 		target = &"energy"
@@ -103,7 +103,7 @@ func _spawn_spill() -> void:
 	else:
 		target = &"chips"
 		area_label = "snack aisle"
-	var base := layout.product_points[target].global_position+Vector3(0.48,0.015,-0.18)
+	var base: Vector3 = layout.product_points[target].global_position+Vector3(0.48,0.015,-0.18)
 	spill_root = Node3D.new()
 	spill_root.name = "ShopFloorSpill"
 	world.add_child(spill_root)
@@ -300,7 +300,7 @@ func _refresh_ui() -> void:
 func _input(event: InputEvent) -> void:
 	if not active or not event is InputEventKey:
 		return
-	var key := event.physical_keycode
+	var key: Key = event.physical_keycode
 	if key in [KEY_A,KEY_LEFT]:
 		sweep_left = event.pressed
 	elif key in [KEY_D,KEY_RIGHT]:
