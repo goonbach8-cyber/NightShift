@@ -98,6 +98,8 @@ func objective_text() -> String:
 		return world.customer_assistance.objective_text()
 	if is_instance_valid(world.spill_service) and (world.spill_service.spill_pending or world.spill_service.return_required):
 		return world.spill_service.objective_text()
+	if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending:
+		return world.radio_tuner.objective_text()
 	if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Reset pump %02d outside" % world.pump_service.fault_pump
 	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
 	if is_instance_valid(world.power_service) and world.power_service.fault_pending: return "Reset the tripped electrical circuit"
@@ -121,7 +123,8 @@ func update() -> void:
 	var delivery_focus: bool = is_instance_valid(world.delivery_check) and world.delivery_check.active
 	var phone_focus: bool = is_instance_valid(world.phone_system) and world.phone_system.active
 	var spill_focus: bool = is_instance_valid(world.spill_service) and world.spill_service.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus or phone_focus or spill_focus
+	var radio_focus: bool = is_instance_valid(world.radio_tuner) and world.radio_tuner.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus or phone_focus or spill_focus or radio_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -148,7 +151,8 @@ func update() -> void:
 				secondary.text = "%d / %d on shelf" % [stock.shelf_units,stock.capacity]
 		if target == world.layout.warehouse.get_node("Supply"):
 			secondary.text = "%d in storage   ·   [TAB] Select stock" % loop.inventory.stocks[loop.selected_product()].warehouse_units if not loop.delivery_carried else "Mixed delivery · Store all items"
-		elif target == world.layout.radio_point: secondary.text = "[Y] Next track   ·   [+ / −] Volume"
+		elif target == world.layout.radio_point:
+			secondary.text = ("Signal drift · %.1f FM" % world.radio.tuned_frequency) if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending else ("%.1f FM · %s" % [world.radio.tuned_frequency,world.radio.station_name()])
 		elif target == world.layout.pump_terminal and is_instance_valid(world.pump_service):
 			secondary.text = "Pump %02d · %s" % [world.pump_service.request_pump,world.pump_service._money(world.pump_service.request_limit)] if world.pump_service.request_pending else "Forecourt clear"
 		elif target == world.layout.cctv_terminal and is_instance_valid(world.cctv_system):
@@ -240,5 +244,6 @@ func compact_prompt(target: Node3D) -> String:
 	for id in world.layout.pump_reset_points:
 		if target == world.layout.pump_reset_points[id]:
 			return "Reset pump %02d" % int(id)
-	if target == world.layout.radio_point: return "Radio · "+("Switch off" if world.radio.enabled else "Switch on")
+	if target == world.layout.radio_point:
+		return "Retune radio" if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending else "Open radio tuner"
 	return target.prompt
