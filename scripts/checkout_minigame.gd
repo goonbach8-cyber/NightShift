@@ -209,6 +209,8 @@ func begin() -> bool:
 	phase = &"scan"
 	busy = false
 	customer = gameplay.queue[0]
+	customer.state = &"checkout"
+	customer.status_text = "Being served"
 	placed_count = int(gameplay.checkout_details().get("scanned",0))
 	_clear_item_visuals()
 	if customer.has_method("set_checkout_basket_hidden"):
@@ -251,8 +253,12 @@ func cancel() -> void:
 		if layout.has_method("set_checkout_product"):
 			layout.set_checkout_product(&"",false)
 		gameplay.changed.emit()
-	if is_instance_valid(customer) and customer.has_method("set_checkout_basket_hidden"):
-		customer.set_checkout_basket_hidden(false)
+	if is_instance_valid(customer):
+		if not customer.paid:
+			customer.state = &"queued"
+			customer.status_text = "Waiting at checkout"
+		if customer.has_method("set_checkout_basket_hidden"):
+			customer.set_checkout_basket_hidden(false)
 	_end_mode()
 
 func _process(delta: float) -> void:
