@@ -30,6 +30,7 @@ var customer_assistance: Node
 var spill_service: Node
 var radio_tuner: Node
 var device_service: Node
+var customer_requests: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -118,6 +119,10 @@ func _ready() -> void:
 	device_service.name = "DeviceService"
 	device_service.world = self
 	add_child(device_service)
+	customer_requests = preload("res://scripts/customer_requests.gd").new()
+	customer_requests.name = "CustomerRequests"
+	customer_requests.world = self
+	add_child(customer_requests)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -276,6 +281,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"customer_service_key":
+		customer_requests.handle_action(action)
+		return
 	if action == &"service_tools":
 		device_service.handle_action(action)
 		return
@@ -301,11 +309,17 @@ func _on_used(action: StringName) -> void:
 		pump_service.reset_fault(pump_number)
 		return
 	if action == &"pump_terminal":
+		if is_instance_valid(customer_requests) and customer_requests.handle_pump_terminal():
+			return
 		if is_instance_valid(checkout_minigame) and checkout_minigame.active:
 			return
 		pump_service.begin()
 		return
-	# One later-shift customer can need a small physical assistance task before checkout.
+	# Later-shift customers can ask for grounded station help before the sale continues.
+	if action == &"finish" and phase == Phase.ACTIVE and gameplay.checkout_ready() and layout.at_operator(player) and is_instance_valid(customer_requests):
+		if customer_requests.handle_checkout_use():
+			return
+	# One customer per shift can also lose a personal item in the shop.
 	if action == &"finish" and phase == Phase.ACTIVE and gameplay.checkout_ready() and layout.at_operator(player) and is_instance_valid(customer_assistance):
 		if customer_assistance.handle_checkout_use():
 			return
@@ -363,6 +377,8 @@ func can_start_interrupt(source: Node = null) -> bool:
 	if source != device_service and is_instance_valid(device_service) and (device_service.fault_pending or device_service.return_required):
 		return false
 	if is_instance_valid(customer_assistance) and customer_assistance.request_active:
+		return false
+	if is_instance_valid(customer_requests) and customer_requests.active:
 		return false
 	return true
 
