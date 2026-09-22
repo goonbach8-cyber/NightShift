@@ -42,6 +42,7 @@ var checkout_item: MeshInstance3D
 var checkout_item_material: StandardMaterial3D
 var pump_terminal: Node3D
 var pump_reset_points: Dictionary = {}
+var cctv_terminal: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -95,6 +96,7 @@ func _ready() -> void:
 	setup_checkout_visual()
 	setup_pump_terminal()
 	setup_pump_reset_points()
+	setup_cctv_terminal()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -250,6 +252,22 @@ func setup_pump_terminal() -> void:
 	model.box(model,Vector3(-0.10,1.04,0.16),Vector3(0.06,0.035,0.02),Color("c7b782"))
 	model.box(model,Vector3(0.0,1.04,0.16),Vector3(0.06,0.035,0.02),Color("6f8d88"))
 	model.box(model,Vector3(0.10,1.04,0.16),Vector3(0.06,0.035,0.02),Color("8c5e58"))
+
+func setup_cctv_terminal() -> void:
+	cctv_terminal = Node3D.new()
+	cctv_terminal.name = "CCTVTerminal"
+	cctv_terminal.set_script(preload("res://scenes/interactions/interactable.gd"))
+	cctv_terminal.action_id = &"cctv_terminal"
+	cctv_terminal.prompt = "Security cameras"
+	checkout.add_child(cctv_terminal)
+	cctv_terminal.position = Vector3(0.58,0,-0.18)
+	marker(cctv_terminal,"Approach",Vector3(0.05,0,-0.84))
+	var model := preload("res://scripts/product_display.gd").new()
+	cctv_terminal.add_child(model)
+	model.box(model,Vector3(0,1.34,0),Vector3(0.52,0.38,0.18),Color("28363a"))
+	model.box(model,Vector3(0,1.36,0.10),Vector3(0.42,0.27,0.02),Color("101b20"))
+	model.box(model,Vector3(0,1.08,0),Vector3(0.12,0.22,0.10),Color("4e5b5b"))
+	model.box(model,Vector3(0,0.98,0),Vector3(0.42,0.06,0.26),Color("5d665f"))
 
 func setup_pump_reset_points() -> void:
 	var names := ["Pump","Pump02","Pump03","Pump04"]
