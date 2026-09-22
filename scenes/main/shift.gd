@@ -26,6 +26,7 @@ var cctv_system: Node
 var power_service: Node
 var delivery_check: Node
 var phone_system: Node
+var customer_assistance: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -98,6 +99,10 @@ func _ready() -> void:
 	phone_system.name = "PhoneSystem"
 	phone_system.world = self
 	add_child(phone_system)
+	customer_assistance = preload("res://scripts/customer_assistance.gd").new()
+	customer_assistance.name = "CustomerAssistance"
+	customer_assistance.world = self
+	add_child(customer_assistance)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -271,6 +276,10 @@ func _on_used(action: StringName) -> void:
 			return
 		pump_service.begin()
 		return
+	# One later-shift customer can need a small physical assistance task before checkout.
+	if action == &"finish" and phase == Phase.ACTIVE and gameplay.checkout_ready() and layout.at_operator(player) and is_instance_valid(customer_assistance):
+		if customer_assistance.handle_checkout_use():
+			return
 	# Rendererless automation keeps the direct checkout path. In the actual game,
 	# the same inventory/payment rules are driven by the physical checkout interaction.
 	if action == &"finish" and phase == Phase.ACTIVE and gameplay.checkout_ready() and layout.at_operator(player) and not gameplay.quick_checkout and DisplayServer.get_name() != "headless":
