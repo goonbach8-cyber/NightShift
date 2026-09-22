@@ -43,6 +43,7 @@ var checkout_item_material: StandardMaterial3D
 var pump_terminal: Node3D
 var pump_reset_points: Dictionary = {}
 var cctv_terminal: Node3D
+var breaker_panel: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -97,6 +98,7 @@ func _ready() -> void:
 	setup_pump_terminal()
 	setup_pump_reset_points()
 	setup_cctv_terminal()
+	setup_breaker_panel()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -268,6 +270,23 @@ func setup_cctv_terminal() -> void:
 	model.box(model,Vector3(0,1.36,0.10),Vector3(0.42,0.27,0.02),Color("101b20"))
 	model.box(model,Vector3(0,1.08,0),Vector3(0.12,0.22,0.10),Color("4e5b5b"))
 	model.box(model,Vector3(0,0.98,0),Vector3(0.42,0.06,0.26),Color("5d665f"))
+
+func setup_breaker_panel() -> void:
+	breaker_panel = Node3D.new()
+	breaker_panel.name = "BreakerPanel"
+	breaker_panel.set_script(preload("res://scenes/interactions/interactable.gd"))
+	breaker_panel.action_id = &"breaker_panel"
+	breaker_panel.prompt = "Electrical breaker panel"
+	warehouse.add_child(breaker_panel)
+	breaker_panel.position = Vector3(7.35,0,-0.45)
+	marker(breaker_panel,"Approach",Vector3(0.85,0,0))
+	var model := preload("res://scripts/product_display.gd").new()
+	breaker_panel.add_child(model)
+	model.box(model,Vector3(0,1.05,0),Vector3(0.12,1.20,0.76),Color("5e6662"))
+	model.box(model,Vector3(-0.07,1.05,0),Vector3(0.03,1.05,0.64),Color("273234"))
+	for i in 4:
+		var y := 1.38-i*0.22
+		model.box(model,Vector3(0.08,y,0),Vector3(0.06,0.11,0.12),Color("c7b782" if i == 0 else "7f8a84"))
 
 func setup_pump_reset_points() -> void:
 	var names := ["Pump","Pump02","Pump03","Pump04"]
