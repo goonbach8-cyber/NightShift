@@ -161,6 +161,11 @@ func clear_basket() -> void:
 	basket_items = 0
 	basket_visual.hide()
 
+func set_checkout_basket_hidden(hidden: bool) -> void:
+	if not is_instance_valid(basket_visual):
+		return
+	basket_visual.visible = not hidden and basket_items > 0
+
 func go_to(marker: Marker3D) -> void:
 	target = marker
 	walking = true
