@@ -324,6 +324,26 @@ func _on_used(action: StringName) -> void:
 	completed = gameplay.tasks
 	_update_objective()
 
+func can_start_interrupt(source: Node = null) -> bool:
+	if phase != Phase.ACTIVE or not gameplay.active or gameplay.dialogue.active or story_time > 0:
+		return false
+	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service]:
+		if system != source and is_instance_valid(system) and bool(system.get("active")):
+			return false
+	if source != pump_service and is_instance_valid(pump_service) and (pump_service.request_pending or pump_service.fault_pending):
+		return false
+	if source != cctv_system and is_instance_valid(cctv_system) and cctv_system.motion_pending:
+		return false
+	if source != power_service and is_instance_valid(power_service) and power_service.fault_pending:
+		return false
+	if source != phone_system and is_instance_valid(phone_system) and phone_system.ringing:
+		return false
+	if source != spill_service and is_instance_valid(spill_service) and (spill_service.spill_pending or spill_service.return_required):
+		return false
+	if is_instance_valid(customer_assistance) and customer_assistance.request_active:
+		return false
+	return true
+
 func _update_objective() -> void:
 	if is_instance_valid(hud) and is_instance_valid(story_world): hud.update()
 
