@@ -47,6 +47,7 @@ var breaker_panel: Node3D
 var phone_point: Node3D
 var phone_display: Label3D
 var phone_handset: Node3D
+var cleaning_station: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -103,6 +104,7 @@ func _ready() -> void:
 	setup_cctv_terminal()
 	setup_breaker_panel()
 	setup_phone()
+	setup_cleaning_station()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -274,6 +276,21 @@ func setup_cctv_terminal() -> void:
 	model.box(model,Vector3(0,1.36,0.10),Vector3(0.42,0.27,0.02),Color("101b20"))
 	model.box(model,Vector3(0,1.08,0),Vector3(0.12,0.22,0.10),Color("4e5b5b"))
 	model.box(model,Vector3(0,0.98,0),Vector3(0.42,0.06,0.26),Color("5d665f"))
+
+func setup_cleaning_station() -> void:
+	cleaning_station = Node3D.new()
+	cleaning_station.name = "CleaningStation"
+	cleaning_station.set_script(preload("res://scenes/interactions/interactable.gd"))
+	cleaning_station.action_id = &"cleaning_kit"
+	cleaning_station.prompt = "Cleaning kit"
+	warehouse.add_child(cleaning_station)
+	cleaning_station.position = Vector3(7.72,0,3.55)
+	marker(cleaning_station,"Approach",Vector3(0.72,0,0))
+	var model := preload("res://scripts/product_display.gd").new()
+	cleaning_station.add_child(model)
+	model.box(model,Vector3(0,0.16,0),Vector3(0.42,0.28,0.34),Color("596a64"))
+	model.box(model,Vector3(0.10,0.95,0),Vector3(0.045,1.60,0.045),Color("9b8057"))
+	model.box(model,Vector3(0.10,0.16,0),Vector3(0.52,0.09,0.18),Color("344b4b"))
 
 func setup_phone() -> void:
 	phone_point = Node3D.new()
