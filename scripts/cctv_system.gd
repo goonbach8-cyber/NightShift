@@ -12,6 +12,7 @@ var player: CharacterBody3D
 var active := false
 var selected_channel := 0
 var view_time := 0.0
+var zoom_fov := 68.0
 var motion_pending := false
 var motion_channel := -1
 var checks_completed := 0
@@ -66,7 +67,7 @@ func _build_feed() -> void:
 	add_child(viewport)
 	feed_camera = Camera3D.new()
 	feed_camera.name = "FeedCamera"
-	feed_camera.fov = 68.0
+	feed_camera.fov = zoom_fov
 	feed_camera.near = 0.08
 	feed_camera.far = 90.0
 	viewport.add_child(feed_camera)
@@ -147,6 +148,7 @@ func begin() -> bool:
 		selected_channel = (motion_channel+channels.size()-1)%channels.size()
 	else:
 		selected_channel = 0
+	zoom_fov = 68.0
 	_apply_channel()
 	player.controls_locked = true
 	player.velocity.x = 0
@@ -182,6 +184,12 @@ func _input(event: InputEvent) -> void:
 			selected_channel = wrapi(selected_channel+1,0,channels.size())
 			view_time = 0.0
 			_apply_channel()
+		KEY_UP, KEY_W:
+			zoom_fov = maxf(38.0,zoom_fov-6.0)
+			feed_camera.fov = zoom_fov
+		KEY_DOWN, KEY_S:
+			zoom_fov = minf(82.0,zoom_fov+6.0)
+			feed_camera.fov = zoom_fov
 		KEY_E, KEY_ENTER, KEY_KP_ENTER:
 			_acknowledge()
 		_:
@@ -212,6 +220,7 @@ func _apply_channel() -> void:
 		return
 	var data: Dictionary = channels[selected_channel]
 	feed_camera.position = data.eye
+	feed_camera.fov = zoom_fov
 	feed_camera.look_at(data.target,Vector3.UP)
 	if is_instance_valid(channel_label):
 		channel_label.text = data.name
@@ -225,10 +234,10 @@ func _refresh_ui() -> void:
 			status.text = "Motion alert source · review this feed."
 		else:
 			status.text = "Motion alert active · locate the reported area."
-		help.text = "← / → switch camera   ·   [E / ENTER] clear reviewed alert   ·   ESC close"
+		help.text = "← / → camera   ·   ↑ / ↓ zoom   ·   [E / ENTER] clear reviewed alert   ·   ESC close"
 	else:
 		status.text = "Live security feed · no active alert."
-		help.text = "← / → switch camera   ·   ESC close"
+		help.text = "← / → camera   ·   ↑ / ↓ zoom   ·   ESC close"
 
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.cctv_terminal):
