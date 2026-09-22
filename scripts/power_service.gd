@@ -76,6 +76,8 @@ func _process(_delta: float) -> void:
 		return
 	if is_instance_valid(world.effects) and world.effects.remaining > 0:
 		return
+	if not world.can_start_interrupt(self):
+		return
 	_begin_fault()
 
 func _begin_fault() -> void:
