@@ -40,6 +40,7 @@ var service_waste: MeshInstance3D
 var service_point: Node3D
 var checkout_item: MeshInstance3D
 var checkout_item_material: StandardMaterial3D
+var pump_terminal: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -91,6 +92,7 @@ func _ready() -> void:
 	inventory.add_product(preload("res://data/products/chips.tres"))
 	setup_carried_visual()
 	setup_checkout_visual()
+	setup_pump_terminal()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -229,6 +231,23 @@ func set_carry_state(delivery: bool, product: StringName) -> void:
 func set_service_done(done: bool) -> void:
 	if is_instance_valid(service_waste):
 		service_waste.visible = not done
+
+func setup_pump_terminal() -> void:
+	pump_terminal = Node3D.new()
+	pump_terminal.name = "PumpTerminal"
+	pump_terminal.set_script(preload("res://scenes/interactions/interactable.gd"))
+	pump_terminal.action_id = &"pump_terminal"
+	pump_terminal.prompt = "Fuel pump control"
+	checkout.add_child(pump_terminal)
+	pump_terminal.position = Vector3(-0.54,0,-0.03)
+	marker(pump_terminal,"Approach",Vector3(-0.1,0,-0.82))
+	var model := preload("res://scripts/product_display.gd").new()
+	pump_terminal.add_child(model)
+	model.box(model,Vector3(0,1.18,0),Vector3(0.42,0.28,0.30),Color("263d3c"))
+	model.box(model,Vector3(0,1.20,0.16),Vector3(0.31,0.15,0.02),Color("102426"))
+	model.box(model,Vector3(-0.10,1.04,0.16),Vector3(0.06,0.035,0.02),Color("c7b782"))
+	model.box(model,Vector3(0.0,1.04,0.16),Vector3(0.06,0.035,0.02),Color("6f8d88"))
+	model.box(model,Vector3(0.10,1.04,0.16),Vector3(0.06,0.035,0.02),Color("8c5e58"))
 
 func setup_checkout_visual() -> void:
 	checkout_item = MeshInstance3D.new()
