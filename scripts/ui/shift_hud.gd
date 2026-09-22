@@ -94,6 +94,7 @@ func objective_text() -> String:
 	if loop.preparing: return "Preparing the shop…"
 	if loop.can_finish(): return "Finish at the staff notes"
 	if loop.delivery_carried: return "Store the delivery in the warehouse"
+	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
 	var carried: StringName = loop.inventory.carried_product()
 	if carried != &"": return "Restock "+String(loop.inventory.products[carried].display_name)
 	if loop.served+loop.lost_sales == loop.customer_count and loop.definition.required_story.any(func(id): return not loop.story_flags.get(StringName("presented_"+String(id)),false)):
@@ -106,7 +107,8 @@ func objective_text() -> String:
 func update() -> void:
 	var loop: Node = world.gameplay
 	var checkout_focus: bool = is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus
+	var pump_focus: bool = is_instance_valid(world.pump_service) and world.pump_service.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -133,6 +135,8 @@ func update() -> void:
 		if target == world.layout.warehouse.get_node("Supply"):
 			secondary.text = "%d in storage   ·   [TAB] Select stock" % loop.inventory.stocks[loop.selected_product()].warehouse_units if not loop.delivery_carried else "Mixed delivery · Store all items"
 		elif target == world.layout.radio_point: secondary.text = "[Y] Next track   ·   [+ / −] Volume"
+		elif target == world.layout.pump_terminal and is_instance_valid(world.pump_service):
+			secondary.text = "Pump %02d · %s" % [world.pump_service.request_pump,world.pump_service._money(world.pump_service.request_limit)] if world.pump_service.request_pending else "Forecourt clear"
 		elif target == world.get_node("Station/ShiftBoard"): secondary.text = "[F] Read shift notes"
 		if target == world.layout.checkout and loop.checkout_ready() and world.layout.at_operator(world.player):
 			var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,loop.career_shifts+1)
@@ -196,5 +200,7 @@ func compact_prompt(target: Node3D) -> String:
 		if loop.inventory.stocks[loop.selected_product()].shelf_units == loop.inventory.stocks[loop.selected_product()].capacity: return "Check stock · Display full"
 		return "Collect "+String(loop.inventory.products[loop.selected_product()].display_name)
 	if target == world.layout.delivery: return "Pick up delivery" if carried == &"" else "Restock your display first"
+	if target == world.layout.pump_terminal:
+		return "Open pump control" if is_instance_valid(world.pump_service) and world.pump_service.request_pending else "Pump control · No requests"
 	if target == world.layout.radio_point: return "Radio · "+("Switch off" if world.radio.enabled else "Switch on")
 	return target.prompt
