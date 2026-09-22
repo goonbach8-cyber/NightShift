@@ -96,6 +96,7 @@ func objective_text() -> String:
 	if loop.delivery_carried: return "Store the delivery in the warehouse"
 	if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Reset pump %02d outside" % world.pump_service.fault_pump
 	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
+	if is_instance_valid(world.cctv_system) and world.cctv_system.motion_pending: return "Review the CCTV motion alert"
 	var carried: StringName = loop.inventory.carried_product()
 	if carried != &"": return "Restock "+String(loop.inventory.products[carried].display_name)
 	if loop.served+loop.lost_sales == loop.customer_count and loop.definition.required_story.any(func(id): return not loop.story_flags.get(StringName("presented_"+String(id)),false)):
@@ -109,7 +110,8 @@ func update() -> void:
 	var loop: Node = world.gameplay
 	var checkout_focus: bool = is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active
 	var pump_focus: bool = is_instance_valid(world.pump_service) and world.pump_service.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus
+	var cctv_focus: bool = is_instance_valid(world.cctv_system) and world.cctv_system.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -138,6 +140,8 @@ func update() -> void:
 		elif target == world.layout.radio_point: secondary.text = "[Y] Next track   ·   [+ / −] Volume"
 		elif target == world.layout.pump_terminal and is_instance_valid(world.pump_service):
 			secondary.text = "Pump %02d · %s" % [world.pump_service.request_pump,world.pump_service._money(world.pump_service.request_limit)] if world.pump_service.request_pending else "Forecourt clear"
+		elif target == world.layout.cctv_terminal and is_instance_valid(world.cctv_system):
+			secondary.text = "Motion alert · "+String(world.cctv_system.channels[world.cctv_system.motion_channel].area).capitalize() if world.cctv_system.motion_pending else "4 live camera feeds"
 		elif target == world.get_node("Station/ShiftBoard"): secondary.text = "[F] Read shift notes"
 		if target == world.layout.checkout and loop.checkout_ready() and world.layout.at_operator(world.player):
 			var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,loop.career_shifts+1)
@@ -204,6 +208,8 @@ func compact_prompt(target: Node3D) -> String:
 	if target == world.layout.pump_terminal:
 		if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Pump fault · Reset outside"
 		return "Open pump control" if is_instance_valid(world.pump_service) and world.pump_service.request_pending else "Pump control · No requests"
+	if target == world.layout.cctv_terminal:
+		return "Review CCTV alert" if is_instance_valid(world.cctv_system) and world.cctv_system.motion_pending else "View security cameras"
 	for id in world.layout.pump_reset_points:
 		if target == world.layout.pump_reset_points[id]:
 			return "Reset pump %02d" % int(id)
