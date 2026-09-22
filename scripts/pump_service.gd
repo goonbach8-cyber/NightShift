@@ -222,8 +222,24 @@ func _spawn_vehicle(pump: int) -> void:
 	model.box(model,Vector3(-0.15,0.74,0.35),Vector3(0.54,0.18,0.025),Color("263b40"))
 	for x in [-0.50,0.50]:
 		for z in [-0.34,0.34]:
-			var wheel := model.cylinder(Vector3(x,0.19,z),0.15,0.14,Color("161d20"),vehicle_root)
+			var wheel := _cylinder(vehicle_root,Vector3(x,0.19,z),0.15,0.14,Color("161d20"))
 			wheel.rotation.x = PI/2.0
+
+func _cylinder(parent: Node3D, at: Vector3, radius: float, height: float, color: Color) -> MeshInstance3D:
+	var visual := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+	mesh.radial_segments = 14
+	visual.mesh = mesh
+	visual.position = at
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.86
+	visual.material_override = material
+	parent.add_child(visual)
+	return visual
 
 func _remove_vehicle() -> void:
 	if is_instance_valid(vehicle_root):
