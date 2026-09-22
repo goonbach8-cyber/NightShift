@@ -68,6 +68,36 @@ func run() -> void:
 	check(not game.active and not player.controls_locked,"Receipt completes and returns control to normal play")
 	check(loop.checkout_details().is_empty(),"Completed physical checkout leaves no stale basket state")
 
+	# Every third completed transaction uses cash so the grounded change interaction
+	# receives deterministic regression coverage without random test behavior.
+	loop.served = 2
+	loop.order_patterns.assign([{&"water":1}])
+	loop.spawn_customer()
+	var cash_customer = loop.customers[-1]
+	cash_customer.set_physics_process(false)
+	cash_customer.walking = false
+	cash_customer.state = &"queued"
+	cash_customer.global_position = layout.queue_points[0].global_position
+	loop.queue.append(cash_customer)
+	loop.inventory.reserve(cash_customer.get_instance_id(),&"water",1)
+	await process_frame
+	check(game.begin(),"Third transaction can start the same physical checkout")
+	game.item_rotation = -PI
+	game.slide = -0.02
+	game._apply_item_transform()
+	game._scan_current()
+	await create_timer(0.28).timeout
+	check(game.phase == &"cash" and game.cash_given == 500 and game.cash_due == 220,"Third transaction asks for grounded cash change")
+	game._add_cash(200)
+	game._add_cash(50)
+	game._add_cash(20)
+	game._add_cash(10)
+	check(game.cash_added == 280,"Cash tray builds the exact CHF 2.80 change")
+	game._confirm_cash()
+	await create_timer(1.15).timeout
+	check(loop.revenue_rappen == 1080 and loop.served == 3,"Exact cash change commits the same atomic sale path")
+	check(not game.active and not player.controls_locked,"Cash receipt returns to normal play")
+
 	world.queue_free()
 	await create_timer(0.3).timeout
 	print("CHECKOUT MINIGAME TESTS: %d failure(s)" % failures)
