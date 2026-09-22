@@ -91,7 +91,7 @@ func _build_ui() -> void:
 func _process(_delta: float) -> void:
 	if gameplay == null or not gameplay.active:
 		return
-	if not request_pending and requests_completed < max_requests and gameplay.elapsed >= next_request_at:
+	if not request_pending and requests_completed < max_requests and gameplay.elapsed >= next_request_at and world.can_start_interrupt(self):
 		_create_request()
 
 func _create_request() -> void:
