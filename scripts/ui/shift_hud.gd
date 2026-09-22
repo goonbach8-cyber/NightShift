@@ -94,6 +94,7 @@ func objective_text() -> String:
 	if loop.preparing: return "Preparing the shop…"
 	if loop.can_finish(): return "Finish at the staff notes"
 	if loop.delivery_carried: return "Store the delivery in the warehouse"
+	if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Reset pump %02d outside" % world.pump_service.fault_pump
 	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
 	var carried: StringName = loop.inventory.carried_product()
 	if carried != &"": return "Restock "+String(loop.inventory.products[carried].display_name)
@@ -201,6 +202,10 @@ func compact_prompt(target: Node3D) -> String:
 		return "Collect "+String(loop.inventory.products[loop.selected_product()].display_name)
 	if target == world.layout.delivery: return "Pick up delivery" if carried == &"" else "Restock your display first"
 	if target == world.layout.pump_terminal:
+		if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Pump fault · Reset outside"
 		return "Open pump control" if is_instance_valid(world.pump_service) and world.pump_service.request_pending else "Pump control · No requests"
+	for id in world.layout.pump_reset_points:
+		if target == world.layout.pump_reset_points[id]:
+			return "Reset pump %02d" % int(id)
 	if target == world.layout.radio_point: return "Radio · "+("Switch off" if world.radio.enabled else "Switch on")
 	return target.prompt
