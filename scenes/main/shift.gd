@@ -25,6 +25,7 @@ var pump_service: Node
 var cctv_system: Node
 var power_service: Node
 var delivery_check: Node
+var phone_system: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -93,6 +94,10 @@ func _ready() -> void:
 	delivery_check.name = "DeliveryCheck"
 	delivery_check.world = self
 	add_child(delivery_check)
+	phone_system = preload("res://scripts/phone_system.gd").new()
+	phone_system.name = "PhoneSystem"
+	phone_system.world = self
+	add_child(phone_system)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -131,7 +136,8 @@ func _process(delta: float) -> void:
 	var cctv_busy: bool = is_instance_valid(cctv_system) and cctv_system.active
 	var power_busy: bool = is_instance_valid(power_service) and power_service.active
 	var delivery_busy: bool = is_instance_valid(delivery_check) and delivery_check.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy:
+	var phone_busy: bool = is_instance_valid(phone_system) and phone_system.active
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy and not phone_busy:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
@@ -141,8 +147,8 @@ func _process(delta: float) -> void:
 		if event.effect == &"light_dip" and not (is_instance_valid(power_service) and power_service.fault_pending): effects.light_dip()
 		if event.effect == &"radio_interrupt": radio.interrupt_briefly()
 		if event.effect == &"phone_ring":
-			effects.phone_ring()
-			if is_instance_valid(story_world): story_world.signal_phone()
+			if is_instance_valid(phone_system): phone_system.story_ring()
+			else: effects.phone_ring()
 		if event.effect == &"navigation_chime": effects.navigation_chime()
 		if event.effect == &"reality_overlap":
 			effects.reality_overlap()
@@ -170,7 +176,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active)
+	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active) or (is_instance_valid(phone_system) and phone_system.active)
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -193,6 +199,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(cctv_system) and cctv_system.active: return
 	if is_instance_valid(power_service) and power_service.active: return
 	if is_instance_valid(delivery_check) and delivery_check.active: return
+	if is_instance_valid(phone_system) and phone_system.active: return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed:
@@ -243,6 +250,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"phone":
+		phone_system.begin()
+		return
 	if action == &"delivery" and DisplayServer.get_name() != "headless":
 		if delivery_check.begin():
 			return
