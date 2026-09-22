@@ -15,6 +15,7 @@ var drift_pending := false
 var drift_target := 0.0
 var next_drift_at := 78.0
 var drift_done := false
+var hidden_listen_time := 0.0
 
 var panel: PanelContainer
 var title: Label
@@ -55,9 +56,20 @@ func _build_ui() -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.hide()
 
-func _process(_delta: float) -> void:
-	if gameplay == null or not gameplay.active:
+func _process(delta: float) -> void:
+	if gameplay == null:
 		return
+	radio.set_hidden_station_enabled(gameplay.career_shifts >= 3 and gameplay.career_shifts < 6)
+	if not gameplay.active:
+		return
+	if active and gameplay.career_shifts >= 3 and absf(radio.tuned_frequency-101.7) <= 0.12 and radio.signal_strength > 0.75 and radio.enabled and not gameplay.story_flags.get(&"found_unlisted_radio",false):
+		hidden_listen_time += delta
+		if hidden_listen_time >= 1.2:
+			gameplay.story_flags[&"found_unlisted_radio"] = true
+			world._say("Radio: ‘...Redwater traffic bulletin. Service Road 14 remains open...’",7.0)
+			gameplay.changed.emit()
+	else:
+		hidden_listen_time = 0.0
 	if gameplay.career_shifts < 1 or gameplay.career_shifts >= 5 or drift_done or drift_pending:
 		return
 	if gameplay.elapsed >= next_drift_at and world.can_start_interrupt(self):
@@ -83,6 +95,7 @@ func begin() -> bool:
 	if gameplay.dialogue.active or _other_focus_active():
 		return false
 	active = true
+	hidden_listen_time = 0.0
 	selected_frequency = radio.tuned_frequency
 	player.controls_locked = true
 	player.velocity = Vector3.ZERO
@@ -151,7 +164,7 @@ func _refresh_ui() -> void:
 		return
 	title.text = "SHOP RADIO · TUNER"
 	frequency_label.text = "%.1f FM" % selected_frequency
-	station_label.text = radio.station_name()
+	station_label.text = "UNLISTED / REDWATER TRAFFIC" if radio.hidden_station_enabled and absf(selected_frequency-101.7) <= 0.12 else radio.station_name()
 	strength_label.text = "Signal %d%% · %s" % [roundi(radio.signal_strength*100.0),"ON" if radio.enabled else "OFF"]
 	help.text = "← / → fine tune   ·   ↑ / ↓ coarse tune   ·   [T] power   ·   [E] confirm"
 
