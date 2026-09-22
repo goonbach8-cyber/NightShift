@@ -356,6 +356,14 @@ func _on_used(action: StringName) -> void:
 	completed = gameplay.tasks
 	_update_objective()
 
+func has_interaction_focus(source: Node = null) -> bool:
+	if gameplay.dialogue.active:
+		return true
+	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service,radio_tuner,device_service]:
+		if system != source and is_instance_valid(system) and system.active:
+			return true
+	return false
+
 func can_start_interrupt(source: Node = null) -> bool:
 	if phase != Phase.ACTIVE or not gameplay.active or gameplay.dialogue.active or story_time > 0:
 		return false

@@ -133,6 +133,8 @@ func _queue_motion_check() -> void:
 func begin() -> bool:
 	if active:
 		return true
+	if world.has_interaction_focus(self):
+		return false
 	if world.phase != world.Phase.ACTIVE or not gameplay.active:
 		world._say("CCTV is available during the shift.")
 		return false
@@ -165,7 +167,7 @@ func close() -> void:
 		return
 	active = false
 	panel.hide()
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active) or (is_instance_valid(world.pump_service) and world.pump_service.active)
+	player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
 func _input(event: InputEvent) -> void:

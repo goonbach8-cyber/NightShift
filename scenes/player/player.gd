@@ -78,6 +78,9 @@ func _update_interaction() -> void:
 		if not candidate is Node3D or not candidate.is_visible_in_tree() or not candidate.is_available():
 			continue
 		var point: Vector3 = candidate.global_position + Vector3.UP * 0.8
+		var anchor := candidate.get_node_or_null("PlayerInteraction") as Node3D
+		if anchor != null:
+			point = anchor.global_position + Vector3.UP * 0.8
 		var origin := global_position + Vector3.UP * 0.8
 		var distance := origin.distance_to(point)
 		if distance >= interaction_distance:

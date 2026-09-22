@@ -33,7 +33,7 @@ func run() -> void:
 
 	for i in delivery.order.size():
 		delivery.selected = i
-		delivery._verify_selected()
+		delivery._verify_selected(true)
 	check(delivery.verified.size() == loop.delivery_manifest.size(),"Every matching carton can be verified")
 
 	delivery._accept()

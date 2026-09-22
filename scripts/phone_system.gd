@@ -85,8 +85,9 @@ func _process(delta: float) -> void:
 			_miss_call()
 
 func story_ring() -> void:
-	if ringing:
+	if ringing or gameplay.story_flags.get(&"phone_0317_started",false):
 		return
+	gameplay.story_flags[&"phone_0317_started"] = true
 	_start_incoming(
 		&"0317",
 		"UNKNOWN",
@@ -152,6 +153,8 @@ func _start_incoming(kind: StringName, caller: String, number: String, lines: Pa
 func begin() -> bool:
 	if active:
 		return true
+	if world.has_interaction_focus(self):
+		return false
 	if world.phase != world.Phase.ACTIVE or not gameplay.active:
 		world._say("The counter phone is used during the shift.")
 		return false
@@ -183,7 +186,7 @@ func close() -> void:
 	if mode != &"call":
 		_lift_handset(false)
 	mode = &"ringing" if ringing else &"idle"
-	player.controls_locked = gameplay.dialogue.active or _other_focus_active()
+	player.controls_locked = world.has_interaction_focus(self)
 	_update_phone_display()
 	world._update_objective()
 
@@ -283,6 +286,8 @@ func _miss_call() -> void:
 	else:
 		work_call_done = true
 	_clear_incoming()
+	# An open incoming-call panel must not retain its now-unanswerable mode.
+	close()
 	_update_phone_display()
 	gameplay.changed.emit()
 
@@ -325,7 +330,7 @@ func _end_call(completed: bool) -> void:
 	active = false
 	panel.hide()
 	mode = &"idle"
-	player.controls_locked = gameplay.dialogue.active or _other_focus_active()
+	player.controls_locked = world.has_interaction_focus(self)
 	_update_phone_display()
 	gameplay.changed.emit()
 	world._update_objective()
@@ -451,7 +456,7 @@ func _lift_handset(lifted: bool) -> void:
 	tween.tween_property(layout.phone_handset,"rotation:z",angle,0.16)
 
 func _other_focus_active() -> bool:
-	return (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active) or (is_instance_valid(world.pump_service) and world.pump_service.active) or (is_instance_valid(world.cctv_system) and world.cctv_system.active) or (is_instance_valid(world.power_service) and world.power_service.active) or (is_instance_valid(world.delivery_check) and world.delivery_check.active)
+	return world.has_interaction_focus(self)
 
 func _digit_for_key(key: Key) -> String:
 	match key:

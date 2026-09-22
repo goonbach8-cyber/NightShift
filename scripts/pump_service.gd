@@ -113,6 +113,8 @@ func _create_request() -> void:
 func begin() -> bool:
 	if active:
 		return true
+	if world.has_interaction_focus(self):
+		return false
 	if not gameplay.active or world.phase != world.Phase.ACTIVE:
 		world._say("Pump control is available during the shift.")
 		return false
@@ -301,7 +303,7 @@ func _end_mode() -> void:
 	active = false
 	busy = false
 	panel.hide()
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active)
+	player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
 func _money(rappen: int) -> String:

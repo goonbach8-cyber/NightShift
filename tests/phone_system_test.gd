@@ -1,0 +1,50 @@
+extends "res://tests/service_runtime_base.gd"
+
+func run() -> void:
+	await setup()
+	var phone = world.phone_system
+	check(is_instance_valid(world.layout.phone_point),"Counter phone exists in world")
+	phone.story_ring()
+	check(phone.ringing and phone.ring_player.playing,"Story call rings through phone audio")
+	check(phone.begin() and world.player.controls_locked,"Phone panel owns gameplay focus")
+	key(phone,KEY_E)
+	check(phone.mode == &"call" and loop.story_flags.get(&"answered_0317",false),"Answer records story decision")
+	for i in 3: key(phone,KEY_E)
+	check(not phone.active and not world.player.controls_locked and loop.story_flags.get(&"completed_0317_call",false),"Completed call releases controls")
+	check(phone.call_log.size() == 1,"One incoming call produces one log entry")
+	phone.story_ring()
+	check(not phone.ringing,"Presented story call cannot ring twice")
+	# Reset only the per-call fixture to cover each alternative in isolation.
+	loop.story_flags.erase(&"phone_0317_started")
+	phone.story_ring()
+	phone.begin()
+	key(phone,KEY_X)
+	check(not phone.ringing and not phone.active and loop.story_flags.get(&"ignored_0317",false),"Ignore hangs up and persists decision")
+	loop.story_flags.erase(&"phone_0317_started")
+	phone.story_ring()
+	phone.begin()
+	phone._process(phone.ring_timeout+0.1)
+	check(not phone.ringing and not phone.active and not world.player.controls_locked,"Timeout while incoming panel is open releases focus")
+	check(loop.story_flags.get(&"missed_0317",false),"Missed story call persists decision")
+	phone.begin()
+	for code in [KEY_0,KEY_3,KEY_1,KEY_8,KEY_BACKSPACE,KEY_7]: key(phone,code)
+	check(phone.dial_buffer == "0317","Keypad and backspace build correct number")
+	key(phone,KEY_ENTER)
+	check(loop.story_flags.get(&"dialed_0317",false) and phone.mode == &"call","Player can dial 0317")
+	key(phone,KEY_ESCAPE)
+	phone.begin()
+	phone.dial_buffer = "9999"
+	key(phone,KEY_ENTER)
+	check(phone.body.text.contains("NOT IN SERVICE"),"Unknown number reports failure without starting call")
+	phone.dial_buffer = "4417"
+	key(phone,KEY_ENTER)
+	check(phone.incoming_caller == "Riverline Dispatch","Known number connects to dispatch")
+	key(phone,KEY_ESCAPE)
+	loop.career_shifts = 1
+	phone._queue_work_call()
+	phone.begin()
+	key(phone,KEY_E)
+	key(phone,KEY_1)
+	await create_timer(0.75).timeout
+	check(loop.story_flags.get(&"dispatch_gate_confirmed",false) and phone.work_call_done and not phone.active,"Work call choice completes without lingering lock")
+	await finish()

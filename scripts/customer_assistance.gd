@@ -38,6 +38,8 @@ func handle_checkout_use() -> bool:
 		return true
 	if gameplay.served+gameplay.lost_sales < 1:
 		return false
+	if not world.can_start_interrupt(self):
+		return false
 	_start_request(front)
 	return true
 

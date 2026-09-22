@@ -155,6 +155,8 @@ func _take_tools() -> void:
 func begin_service() -> bool:
 	if active:
 		return true
+	if world.has_interaction_focus(self):
+		return false
 	if not fault_pending or not toolkit_carried or _other_focus_active():
 		return false
 	active = true
@@ -175,7 +177,7 @@ func close() -> void:
 		return
 	active = false
 	panel.hide()
-	player.controls_locked = gameplay.dialogue.active or _other_focus_active()
+	player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
 func _input(event: InputEvent) -> void:
@@ -228,7 +230,7 @@ func _finish_repair() -> void:
 	panel_open = false
 	panel.hide()
 	cooler_panel.hide()
-	player.controls_locked = gameplay.dialogue.active or _other_focus_active()
+	player.controls_locked = world.has_interaction_focus(self)
 	_update_prompts()
 	gameplay.changed.emit()
 	world._update_objective()
@@ -282,6 +284,7 @@ func _update_screw_visuals() -> void:
 
 func _update_prompts() -> void:
 	if is_instance_valid(layout.service_tool_station):
+		layout.service_tool_station.available = fault_pending or return_required
 		if return_required and toolkit_carried:
 			layout.service_tool_station.prompt = "Return maintenance toolkit"
 		elif fault_pending and not toolkit_carried:
@@ -313,7 +316,7 @@ func _clear_carried_tools() -> void:
 	carried_toolkit = null
 
 func _other_focus_active() -> bool:
-	return (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active) or (is_instance_valid(world.pump_service) and world.pump_service.active) or (is_instance_valid(world.cctv_system) and world.cctv_system.active) or (is_instance_valid(world.power_service) and world.power_service.active) or (is_instance_valid(world.delivery_check) and world.delivery_check.active) or (is_instance_valid(world.phone_system) and world.phone_system.active) or (is_instance_valid(world.spill_service) and world.spill_service.active) or (is_instance_valid(world.radio_tuner) and world.radio_tuner.active)
+	return world.has_interaction_focus(self)
 
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var visual := MeshInstance3D.new()

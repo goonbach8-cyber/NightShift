@@ -175,6 +175,8 @@ func _take_kit() -> void:
 func begin_cleanup() -> bool:
 	if active:
 		return true
+	if world.has_interaction_focus(self):
+		return false
 	if not spill_pending or not kit_carried or not is_instance_valid(spill_root):
 		return false
 	if _other_focus_active():
@@ -231,7 +233,7 @@ func _finish_cleanup() -> void:
 	active = false
 	panel.hide()
 	_show_carried_mop()
-	player.controls_locked = gameplay.dialogue.active or _other_focus_active()
+	player.controls_locked = world.has_interaction_focus(self)
 	_update_station_prompt()
 	gameplay.changed.emit()
 	world._update_objective()
@@ -310,7 +312,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func _other_focus_active() -> bool:
-	return (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active) or (is_instance_valid(world.pump_service) and world.pump_service.active) or (is_instance_valid(world.cctv_system) and world.cctv_system.active) or (is_instance_valid(world.power_service) and world.power_service.active) or (is_instance_valid(world.delivery_check) and world.delivery_check.active) or (is_instance_valid(world.phone_system) and world.phone_system.active)
+	return world.has_interaction_focus(self)
 
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var visual := MeshInstance3D.new()

@@ -207,6 +207,8 @@ func _build_ui() -> void:
 func begin() -> bool:
 	if active:
 		return true
+	if world.has_interaction_focus(self):
+		return false
 	if not gameplay.checkout_ready() or gameplay.dialogue.active or not layout.at_operator(player):
 		return false
 	active = true
@@ -747,7 +749,7 @@ func _end_mode() -> void:
 	rotate_right = false
 	var restore := create_tween()
 	restore.tween_property(camera,"size",previous_camera_size,0.22)
-	player.controls_locked = gameplay.dialogue.active
+	player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
