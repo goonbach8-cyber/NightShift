@@ -21,6 +21,7 @@ var checkout_backdrop: PanelContainer
 var story_world: Node3D
 var hud: Control
 var checkout_minigame: Node
+var pump_service: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -73,6 +74,10 @@ func _ready() -> void:
 	checkout_minigame.name = "CheckoutMinigame"
 	checkout_minigame.world = self
 	add_child(checkout_minigame)
+	pump_service = preload("res://scripts/pump_service.gd").new()
+	pump_service.name = "PumpService"
+	pump_service.world = self
+	add_child(pump_service)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -107,7 +112,8 @@ func _process(delta: float) -> void:
 			ready_event = i
 			break
 	var checkout_busy: bool = is_instance_valid(checkout_minigame) and checkout_minigame.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy:
+	var pump_busy: bool = is_instance_valid(pump_service) and pump_service.active
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
@@ -146,7 +152,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active)
+	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active)
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -165,6 +171,7 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if menu.page != "": return
 	if is_instance_valid(checkout_minigame) and checkout_minigame.active: return
+	if is_instance_valid(pump_service) and pump_service.active: return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed:
@@ -215,6 +222,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"pump_terminal":
+		if is_instance_valid(checkout_minigame) and checkout_minigame.active:
+			return
+		pump_service.begin()
+		return
 	# Rendererless automation keeps the direct checkout path. In the actual game,
 	# the same inventory/payment rules are driven by the physical checkout interaction.
 	if action == &"finish" and phase == Phase.ACTIVE and gameplay.checkout_ready() and layout.at_operator(player) and not gameplay.quick_checkout and DisplayServer.get_name() != "headless":
