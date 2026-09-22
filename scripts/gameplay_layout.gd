@@ -49,6 +49,7 @@ var phone_display: Label3D
 var phone_handset: Node3D
 var cleaning_station: Node3D
 var service_tool_station: Node3D
+var customer_service_key: Node3D
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -107,6 +108,7 @@ func _ready() -> void:
 	setup_phone()
 	setup_cleaning_station()
 	setup_service_tools()
+	setup_customer_service_key()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -310,6 +312,29 @@ func setup_service_tools() -> void:
 	model.box(model,Vector3(0,0.46,0.16),Vector3(0.12,0.06,0.03),Color("c6b47f"))
 	model.box(model,Vector3(0.12,0.74,0),Vector3(0.045,0.58,0.045),Color("9b8057"))
 	model.box(model,Vector3(0.12,1.00,0),Vector3(0.16,0.05,0.05),Color("727d78"))
+
+func setup_customer_service_key() -> void:
+	customer_service_key = Node3D.new()
+	customer_service_key.name = "CustomerServiceKey"
+	customer_service_key.set_script(preload("res://scenes/interactions/interactable.gd"))
+	customer_service_key.action_id = &"customer_service_key"
+	customer_service_key.prompt = "Restroom key"
+	customer_service_key.available = false
+	warehouse.add_child(customer_service_key)
+	customer_service_key.position = Vector3(7.15,0,2.85)
+	marker(customer_service_key,"Approach",Vector3(0.65,0,0))
+	var model := preload("res://scripts/product_display.gd").new()
+	customer_service_key.add_child(model)
+	model.box(model,Vector3(0,1.22,0),Vector3(0.30,0.44,0.06),Color("4c5957"))
+	model.box(model,Vector3(0,1.22,0.04),Vector3(0.06,0.06,0.04),Color("c3ab6e"))
+	var tag := Label3D.new()
+	tag.text = "WC KEY"
+	tag.position = Vector3(0,1.42,0.04)
+	tag.font_size = 12
+	tag.pixel_size = 0.0021
+	tag.modulate = Color("ded8bd")
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	customer_service_key.add_child(tag)
 
 func setup_phone() -> void:
 	phone_point = Node3D.new()
