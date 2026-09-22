@@ -100,6 +100,8 @@ func objective_text() -> String:
 		return world.spill_service.objective_text()
 	if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending:
 		return world.radio_tuner.objective_text()
+	if is_instance_valid(world.device_service) and (world.device_service.fault_pending or world.device_service.return_required):
+		return world.device_service.objective_text()
 	if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Reset pump %02d outside" % world.pump_service.fault_pump
 	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
 	if is_instance_valid(world.power_service) and world.power_service.fault_pending: return "Reset the tripped electrical circuit"
@@ -124,7 +126,8 @@ func update() -> void:
 	var phone_focus: bool = is_instance_valid(world.phone_system) and world.phone_system.active
 	var spill_focus: bool = is_instance_valid(world.spill_service) and world.spill_service.active
 	var radio_focus: bool = is_instance_valid(world.radio_tuner) and world.radio_tuner.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus or phone_focus or spill_focus or radio_focus
+	var device_focus: bool = is_instance_valid(world.device_service) and world.device_service.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus or phone_focus or spill_focus or radio_focus or device_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -163,6 +166,8 @@ func update() -> void:
 			secondary.text = ("Incoming · "+world.phone_system.incoming_number) if world.phone_system.ringing else "Dial numbers or review this shift's call log"
 		elif target == world.layout.cleaning_station and is_instance_valid(world.spill_service):
 			secondary.text = world.spill_service.objective_text() if world.spill_service.spill_pending or world.spill_service.return_required else "Mop and cleaning supplies"
+		elif target == world.layout.service_tool_station and is_instance_valid(world.device_service):
+			secondary.text = world.device_service.objective_text() if world.device_service.fault_pending or world.device_service.return_required else "Screwdriver and maintenance kit"
 		elif target == world.get_node("Station/ShiftBoard"): secondary.text = "[F] Read shift notes"
 		if target == world.layout.checkout and loop.checkout_ready() and world.layout.at_operator(world.player):
 			var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,loop.career_shifts+1)
@@ -241,6 +246,10 @@ func compact_prompt(target: Node3D) -> String:
 		if is_instance_valid(world.spill_service) and world.spill_service.return_required: return "Return cleaning kit"
 		if is_instance_valid(world.spill_service) and world.spill_service.spill_pending and not world.spill_service.kit_carried: return "Take mop"
 		return "Cleaning kit"
+	if target == world.layout.service_tool_station:
+		if is_instance_valid(world.device_service) and world.device_service.return_required: return "Return maintenance toolkit"
+		if is_instance_valid(world.device_service) and world.device_service.fault_pending and not world.device_service.toolkit_carried: return "Take maintenance toolkit"
+		return "Maintenance tools"
 	for id in world.layout.pump_reset_points:
 		if target == world.layout.pump_reset_points[id]:
 			return "Reset pump %02d" % int(id)
