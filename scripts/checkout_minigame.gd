@@ -38,6 +38,8 @@ var counter_root: Node3D
 var scanner_plate: MeshInstance3D
 var scanner_material: StandardMaterial3D
 var terminal_label: Label3D
+var card_root: Node3D
+var card_material: StandardMaterial3D
 var receipt_root: Node3D
 var receipt_label: Label3D
 var cash_root: Node3D
@@ -103,6 +105,19 @@ func _build_counter() -> void:
 	terminal_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	terminal_label.visible = false
 	counter_root.add_child(terminal_label)
+
+	card_root = Node3D.new()
+	card_root.name = "CustomerCard"
+	card_root.position = Vector3(-0.18,1.06,-0.13)
+	card_root.rotation.z = -0.10
+	card_root.visible = false
+	counter_root.add_child(card_root)
+	var card := _box(card_root,Vector3.ZERO,Vector3(0.28,0.018,0.18),Color("405b66"))
+	card_material = StandardMaterial3D.new()
+	card_material.albedo_color = Color("405b66")
+	card_material.roughness = 0.46
+	card.material_override = card_material
+	_box(card_root,Vector3(-0.07,0.012,0.015),Vector3(0.055,0.006,0.045),Color("c7b782"))
 
 	receipt_root = Node3D.new()
 	receipt_root.name = "Receipt"
@@ -210,6 +225,7 @@ func begin() -> bool:
 		Input.action_release(action)
 	panel.show()
 	terminal_label.hide()
+	card_root.hide()
 	receipt_root.hide()
 	cash_root.hide()
 	cash_note_root.hide()
@@ -472,7 +488,10 @@ func _enter_payment() -> void:
 	else:
 		phase = &"card"
 		terminal_label.text = "CARD\nCHF %.2f" % (float(detail.get("total",0))/100.0)
+		terminal_label.modulate = Color("cbe3a7")
 		terminal_label.show()
+		card_material.albedo_color = Color("405b66")
+		card_root.show()
 		cash_root.hide()
 		cash_note_root.hide()
 	scanner_material.albedo_color = Color("394543")
@@ -481,6 +500,7 @@ func _enter_payment() -> void:
 func _enter_cash(total: int) -> void:
 	phase = &"cash"
 	terminal_label.hide()
+	card_root.hide()
 	cash_due = total
 	cash_given = _cash_tender(total)
 	cash_added = 0
@@ -565,6 +585,8 @@ func _confirm_payment() -> void:
 	if phase == &"card" and card_decline_pending and card_attempts == 0:
 		card_attempts += 1
 		terminal_label.text = "DECLINED"
+		terminal_label.modulate = Color("e38b78")
+		card_material.albedo_color = Color("6b4248")
 		phase = &"card_retry"
 		busy = false
 		_refresh_ui()
@@ -577,6 +599,8 @@ func _confirm_payment() -> void:
 	if is_instance_valid(paying_customer) and paying_customer.has_method("clear_basket"):
 		paying_customer.clear_basket()
 	terminal_label.text = "APPROVED" if phase == &"card" else ""
+	terminal_label.modulate = Color("cbe3a7")
+	card_root.hide()
 	cash_root.hide()
 	cash_note_root.hide()
 	phase = &"receipt"
@@ -640,6 +664,7 @@ func _end_mode() -> void:
 	busy = false
 	current_id = &""
 	terminal_label.hide()
+	card_root.hide()
 	receipt_root.hide()
 	cash_root.hide()
 	cash_note_root.hide()
