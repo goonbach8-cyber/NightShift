@@ -22,7 +22,7 @@ func run() -> void:
 
 	service._create_request()
 	check(service.request_pending and service.request_pump in [1,2,3,4],"Fuel request selects one of four physical pumps")
-	check(service.request_limit in service.PRESETS,"Fuel request uses a supported prepay limit")
+	check(service.request_limit in [3000,5000,8000],"Fuel request uses a supported prepay limit")
 	check(is_instance_valid(service.vehicle_root),"Waiting fuel request creates a visible forecourt vehicle")
 	check(world.layout.pump_terminal.prompt.contains("awaiting authorization"),"Physical pump terminal advertises the waiting request")
 
@@ -36,11 +36,11 @@ func run() -> void:
 	check(service.request_pending and not service.busy,"Wrong pump cannot authorize somebody else's dispenser")
 
 	service.selected_pump = requested_pump
-	service.selected_limit_index = (service.PRESETS.find(requested_limit)+1)%service.PRESETS.size()
+	service.selected_limit_index = ([3000,5000,8000].find(requested_limit)+1)%[3000,5000,8000].size()
 	service._authorize()
 	check(service.request_pending and not service.busy,"Wrong prepay limit leaves request safely pending")
 
-	service.selected_limit_index = service.PRESETS.find(requested_limit)
+	service.selected_limit_index = [3000,5000,8000].find(requested_limit)
 	service._authorize()
 	await create_timer(0.9).timeout
 	check(not service.request_pending and service.requests_completed == 1,"Correct pump and limit complete exactly one forecourt request")
