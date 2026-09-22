@@ -13,6 +13,7 @@ var selected := 0
 var order: Array[StringName] = []
 var actual_manifest: Dictionary = {}
 var verified: Dictionary = {}
+var discrepancies: Dictionary = {}
 
 var panel: PanelContainer
 var title: Label
@@ -103,7 +104,15 @@ func begin() -> bool:
 	active = true
 	selected = 0
 	verified.clear()
+	discrepancies.clear()
 	actual_manifest = gameplay.delivery_manifest.duplicate()
+	# Some later shifts contain an ordinary receiving discrepancy. The player must
+	# actually compare the carton label instead of confirming every line by habit.
+	var night := gameplay.career_shifts+1
+	if night == 3 and actual_manifest.has(&"chips"):
+		actual_manifest[&"chips"] = maxi(0,int(actual_manifest[&"chips"])-1)
+	elif night == 5 and actual_manifest.has(&"energy"):
+		actual_manifest[&"energy"] = int(actual_manifest[&"energy"])+1
 	order.clear()
 	for id in actual_manifest.keys():
 		order.append(id)
@@ -145,25 +154,33 @@ func _input(event: InputEvent) -> void:
 			selected = wrapi(selected+1,0,order.size())
 			_refresh_ui()
 		KEY_E:
-			_verify_selected()
+			_verify_selected(true)
+		KEY_R:
+			_verify_selected(false)
 		KEY_ENTER, KEY_KP_ENTER:
 			_accept()
 		_:
 			return
 	get_viewport().set_input_as_handled()
 
-func _verify_selected() -> void:
+func _verify_selected(mark_as_match: bool) -> void:
 	if order.is_empty():
 		return
 	var id: StringName = order[selected]
 	var expected := int(gameplay.delivery_manifest.get(id,0))
 	var actual := int(actual_manifest.get(id,0))
+	var really_matches := actual == expected
 	paper_sound.play()
-	if actual != expected:
-		status.text = "%s mismatch · manifest %d / carton %d" % [gameplay.inventory.products[id].display_name,expected,actual]
+	if mark_as_match != really_matches:
+		status.text = "%s: compare the quantities again." % gameplay.inventory.products[id].display_name
 		return
 	verified[id] = true
-	status.text = "%s checked · %d units" % [gameplay.inventory.products[id].display_name,actual]
+	if really_matches:
+		discrepancies.erase(id)
+		status.text = "%s checked · %d units" % [gameplay.inventory.products[id].display_name,actual]
+	else:
+		discrepancies[id] = {"expected":expected,"actual":actual}
+		status.text = "%s discrepancy logged · manifest %d / carton %d" % [gameplay.inventory.products[id].display_name,expected,actual]
 	_refresh_ui()
 
 func _accept() -> void:
@@ -173,6 +190,9 @@ func _accept() -> void:
 	if not gameplay.accept_delivery(actual_manifest):
 		status.text = "Delivery cannot be accepted while your hands are full."
 		return
+	if not discrepancies.is_empty():
+		gameplay.story_flags[StringName("delivery_discrepancy_night_%d" % (gameplay.career_shifts+1))] = true
+		world._say("Delivery accepted with %d logged discrepancy." % discrepancies.size(),5.0)
 	clipboard_root.hide()
 	paper_sound.play()
 	close()
@@ -184,17 +204,20 @@ func _refresh_ui() -> void:
 	manifest_label.text = "MANIFEST\n"+_manifest_text(true)
 	var id: StringName = order[selected]
 	var checked := verified.get(id,false)
-	carton_label.text = "%s\nCARTON LABEL: ×%d%s" % [gameplay.inventory.products[id].display_name,int(actual_manifest[id]),"  ✓" if checked else ""]
+	var mark := "  !" if discrepancies.has(id) else ("  ✓" if checked else "")
+	carton_label.text = "%s\nCARTON LABEL: ×%d%s" % [gameplay.inventory.products[id].display_name,int(actual_manifest[id]),mark]
 	if checked:
-		status.text = "This carton has been checked."
+		status.text = "Discrepancy logged." if discrepancies.has(id) else "This carton has been checked."
 	elif status.text.is_empty() or status.text.begins_with("This carton"):
 		status.text = "Compare the carton label with the manifest."
-	help.text = "← / → carton   ·   [E] verify label   ·   [ENTER] accept after all are checked   ·   ESC close"
+	help.text = "← / → carton   ·   [E] quantities match   ·   [R] mismatch   ·   [ENTER] accept after all checked"
 
 func _manifest_text(mark_checked: bool) -> String:
 	var lines := PackedStringArray()
 	for id in gameplay.delivery_manifest:
-		var mark := " ✓" if mark_checked and verified.get(id,false) else ""
+		var mark := ""
+		if mark_checked and verified.get(id,false):
+			mark = " !" if discrepancies.has(id) else " ✓"
 		lines.append("%s ×%d%s" % [gameplay.inventory.products[id].display_name,int(gameplay.delivery_manifest[id]),mark])
 	return "\n".join(lines)
 
