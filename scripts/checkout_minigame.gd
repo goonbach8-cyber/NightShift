@@ -41,6 +41,9 @@ var terminal_label: Label3D
 var receipt_root: Node3D
 var receipt_label: Label3D
 var cash_root: Node3D
+var cash_note_root: Node3D
+var cash_note_label: Label3D
+var change_visuals: Array[Node3D] = []
 var cash_materials: Array[StandardMaterial3D] = []
 var cash_selection := 0
 var cash_added := 0
@@ -144,6 +147,20 @@ func _build_counter() -> void:
 		cash_root.add_child(label)
 	_update_cash_selection()
 
+	cash_note_root = Node3D.new()
+	cash_note_root.name = "CustomerCash"
+	cash_note_root.position = Vector3(-0.43,1.04,-0.16)
+	cash_note_root.visible = false
+	counter_root.add_child(cash_note_root)
+	_box(cash_note_root,Vector3.ZERO,Vector3(0.34,0.012,0.18),Color("a8b98e"))
+	cash_note_label = Label3D.new()
+	cash_note_label.position = Vector3(0,0.015,0)
+	cash_note_label.font_size = 13
+	cash_note_label.pixel_size = 0.0022
+	cash_note_label.modulate = Color("24302c")
+	cash_note_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	cash_note_root.add_child(cash_note_label)
+
 func _build_ui() -> void:
 	panel = PanelContainer.new()
 	panel.name = "CheckoutMicrogamePanel"
@@ -193,6 +210,8 @@ func begin() -> bool:
 	terminal_label.hide()
 	receipt_root.hide()
 	cash_root.hide()
+	cash_note_root.hide()
+	_clear_change_visuals()
 	cash_added = 0
 	cash_history.clear()
 	if int(gameplay.checkout_details().get("remaining",0)) <= 0:
@@ -453,7 +472,10 @@ func _enter_cash(total: int) -> void:
 	cash_given = _cash_tender(total)
 	cash_added = 0
 	cash_history.clear()
+	_clear_change_visuals()
 	cash_selection = 0
+	cash_note_label.text = _money(cash_given)
+	cash_note_root.show()
 	cash_root.show()
 	_update_cash_selection()
 
@@ -469,12 +491,17 @@ func _add_cash(value: int) -> void:
 		return
 	cash_added += value
 	cash_history.append(value)
+	_spawn_change_coin(value)
 	_refresh_ui()
 
 func _remove_cash() -> void:
 	if phase != &"cash" or cash_history.is_empty():
 		return
 	cash_added -= cash_history.pop_back()
+	if not change_visuals.is_empty():
+		var visual := change_visuals.pop_back()
+		if is_instance_valid(visual):
+			visual.queue_free()
 	_refresh_ui()
 
 func _confirm_cash() -> void:
@@ -490,6 +517,33 @@ func _update_cash_selection() -> void:
 	for i in cash_materials.size():
 		cash_materials[i].albedo_color = Color("c7b782") if i == cash_selection else Color("9a9072")
 
+func _spawn_change_coin(value: int) -> void:
+	var coin := MeshInstance3D.new()
+	coin.name = "Change_"+str(value)
+	var mesh := CylinderMesh.new()
+	var index := maxi(0,CASH_VALUES.find(value))
+	mesh.top_radius = 0.050+index*0.003
+	mesh.bottom_radius = mesh.top_radius
+	mesh.height = 0.012
+	mesh.radial_segments = 16
+	coin.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("b6aa86") if value >= 100 else Color("b07f62")
+	material.metallic = 0.45
+	material.roughness = 0.42
+	coin.material_override = material
+	var column := change_visuals.size()%4
+	var row := int(change_visuals.size()/4)
+	coin.position = Vector3(0.30+column*0.085,1.055,0.28-row*0.08)
+	counter_root.add_child(coin)
+	change_visuals.append(coin)
+
+func _clear_change_visuals() -> void:
+	for visual in change_visuals:
+		if is_instance_valid(visual):
+			visual.queue_free()
+	change_visuals.clear()
+
 func _confirm_payment() -> void:
 	if phase not in [&"card",&"cash"] or busy:
 		return
@@ -504,6 +558,7 @@ func _confirm_payment() -> void:
 		paying_customer.clear_basket()
 	terminal_label.text = "APPROVED" if phase == &"card" else ""
 	cash_root.hide()
+	cash_note_root.hide()
 	phase = &"receipt"
 	var method := "CARD" if terminal_label.visible else "CASH"
 	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [method,float(total)/100.0]
@@ -562,6 +617,8 @@ func _end_mode() -> void:
 	terminal_label.hide()
 	receipt_root.hide()
 	cash_root.hide()
+	cash_note_root.hide()
+	_clear_change_visuals()
 	cash_added = 0
 	cash_history.clear()
 	panel.hide()
