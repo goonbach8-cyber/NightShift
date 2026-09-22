@@ -113,7 +113,7 @@ func _process(delta: float) -> void:
 		return
 	if gameplay.active:
 		max_checks = 1 if gameplay.career_shifts == 0 else 2
-		if not motion_pending and checks_completed < max_checks and gameplay.elapsed >= next_check_at:
+		if not motion_pending and checks_completed < max_checks and gameplay.elapsed >= next_check_at and world.can_start_interrupt(self):
 			_queue_motion_check()
 	if not active:
 		return
