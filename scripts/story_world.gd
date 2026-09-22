@@ -24,7 +24,6 @@ var travel_return := Vector3.ZERO
 var resume_shift := false
 var overlay: ColorRect
 var checkout_display: Node3D
-var phone_display: Label3D
 var overlap_remaining := 0.0
 
 func setup(owner_world: Node3D) -> void:
@@ -72,17 +71,6 @@ func setup(owner_world: Node3D) -> void:
 	model.box(checkout_display,Vector3(0.23,0.24,0),Vector3(0.06,0.48,0.36),Color("5f6965"))
 	for x in [-0.16,0.0,0.16]:
 		model.box(checkout_display,Vector3(x,0.58,0),Vector3(0.12,0.18,0.18),Color("a16e42"))
-
-	# The Night-1 warning now has a physical source on the counter.
-	var phone := Node3D.new()
-	phone.name = "CounterPhone"
-	phone.position = to_local(layout.checkout.global_position)+Vector3(-0.58,1.10,-0.18)
-	add_child(phone)
-	model.box(phone,Vector3.ZERO,Vector3(0.42,0.14,0.24),Color("27383a"))
-	model.box(phone,Vector3(0,0.09,-0.01),Vector3(0.30,0.05,0.12),Color("53615d"))
-	phone_display = label(phone,"",Vector3(0,0.09,0.13),16)
-	phone_display.modulate = Color("cbe3a7")
-	phone_display.visible = false
 
 	construction = Node3D.new()
 	construction.name = "ConstructionNotice"
@@ -319,14 +307,10 @@ func travel(outbound: bool) -> void:
 	trip_busy = false
 
 func signal_phone() -> void:
-	if not is_instance_valid(phone_display):
-		return
-	phone_display.text = "03:17"
-	phone_display.visible = true
-	var timer := get_tree().create_timer(4.0)
-	timer.timeout.connect(func():
-		if is_instance_valid(phone_display):
-			phone_display.visible = false)
+	# Kept as a compatibility hook for older event code; the physical phone now
+	# belongs to the dedicated phone system.
+	if is_instance_valid(world.phone_system):
+		world.phone_system.story_ring()
 
 func start_overlap() -> void:
 	overlap_remaining = 3.17
