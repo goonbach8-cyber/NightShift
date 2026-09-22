@@ -27,6 +27,7 @@ var delivery_ready: bool = false
 var delivery_carried: bool = false
 var supply_selection: int = 0
 var delivery_manifest: Dictionary = {&"water": 6, &"energy": 4, &"chips": 3}
+var carried_delivery_manifest: Dictionary = {}
 # Demo data; the inventory and customer code do not special-case these products.
 var order_patterns: Array[Dictionary] = [{&"water":1},{&"energy":1},{&"chips":1,&"water":1},{&"energy":1,&"chips":1},{&"water":2},{&"energy":1,&"water":1,&"chips":1}]
 var completed_orders: Array[Dictionary] = []
@@ -423,10 +424,12 @@ func interact(action: StringName, player: Node3D) -> void:
 				fill_shelf(&"water")
 			&"supply":
 				if delivery_carried:
-					if inventory.receive_delivery(&"shift_delivery",delivery_manifest):
+					var manifest: Dictionary = carried_delivery_manifest if not carried_delivery_manifest.is_empty() else delivery_manifest
+					if inventory.receive_delivery(&"shift_delivery",manifest):
 						delivery_carried = false
 						tasks[&"delivery"] = true
-						notice.emit("Stored: "+inventory.basket_text(delivery_manifest))
+						notice.emit("Stored: "+inventory.basket_text(manifest))
+						carried_delivery_manifest.clear()
 				elif inventory.take_crate(selected_product()):
 					notice.emit("Carrying stock: "+inventory.products[selected_product()].display_name)
 				else:
@@ -435,13 +438,7 @@ func interact(action: StringName, player: Node3D) -> void:
 					elif inventory.stocks[selected_product()].warehouse_units == 0: notice.emit("No %s left in the warehouse." % inventory.products[selected_product()].display_name)
 					else: notice.emit("The %s display is already full." % inventory.products[selected_product()].display_name)
 			&"delivery":
-				if delivery_ready and inventory.carried_product() == &"":
-					delivery_ready = false
-					delivery_carried = true
-					layout.delivery.available = false
-					layout.delivery_visual.hide()
-					notice.emit("Carrying delivery. Bring it to warehouse supply.")
-				else:
+				if not accept_delivery(delivery_manifest):
 					notice.emit("First put carried stock in its matching display.")
 			&"finish":
 				if not layout.at_operator(player):
@@ -450,6 +447,19 @@ func interact(action: StringName, player: Node3D) -> void:
 					notice.emit("No customer ready yet. Check your other tasks.")
 	update_supply_prompt()
 	changed.emit()
+
+func accept_delivery(actual_manifest: Dictionary = {}) -> bool:
+	if not delivery_ready or inventory.carried_product() != &"":
+		return false
+	delivery_ready = false
+	delivery_carried = true
+	carried_delivery_manifest = (actual_manifest if not actual_manifest.is_empty() else delivery_manifest).duplicate()
+	layout.delivery.available = false
+	layout.delivery_visual.hide()
+	notice.emit("Carrying delivery. Bring it to warehouse supply.")
+	update_supply_prompt()
+	changed.emit()
+	return true
 
 func can_finish() -> bool:
 	return served+lost_sales == customer_count and departed == customer_count and required_tasks.all(func(id): return tasks.has(id)) and definition.required_story.all(func(id): return story_flags.get(StringName("presented_"+String(id)),false))
