@@ -48,6 +48,23 @@ func run() -> void:
 	check(not is_instance_valid(service.vehicle_root),"Authorized forecourt vehicle leaves its pump")
 	check(world.layout.pump_terminal.prompt.contains("No requests"),"Terminal clears after service")
 
+	# Later shifts can turn an authorization into a physical dispenser fault.
+	loop.career_shifts = 1
+	service._create_request()
+	var fault_request_pump: int = service.request_pump
+	service.begin()
+	service.selected_pump = fault_request_pump
+	service.selected_limit_index = [3000,5000,8000].find(service.request_limit)
+	service._authorize()
+	await create_timer(0.9).timeout
+	check(service.fault_pending and service.fault_pump == fault_request_pump,"Later authorization can require a physical pump reset")
+	check(world.layout.pump_reset_points[fault_request_pump].available,"Only the faulted dispenser exposes its reset interaction")
+	check(not service.active,"Fault sends the player back into the forecourt instead of trapping them in terminal UI")
+	service.reset_fault(fault_request_pump)
+	await process_frame
+	check(not service.fault_pending and service.requests_completed == 2,"Outdoor reset completes the interrupted fuel request")
+	check(not world.layout.pump_reset_points[fault_request_pump].available,"Reset control disables again after repair")
+
 	world.queue_free()
 	await create_timer(0.3).timeout
 	print("PUMP SERVICE TESTS: %d failure(s)" % failures)
