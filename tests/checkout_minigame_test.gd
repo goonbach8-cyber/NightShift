@@ -38,7 +38,7 @@ func run() -> void:
 	check(game.current_id == &"water","First staged item matches basket order")
 	check(not game._barcode_aligned(),"Water starts with its barcode turned away from the scanner")
 	game.item_rotation = -PI
-	game.slide = game.SCANNER_X
+	game.slide = -0.02
 	game._apply_item_transform()
 	check(game._barcode_aligned(),"Rotating the bottle exposes its barcode")
 	game._scan_current()
@@ -46,7 +46,7 @@ func run() -> void:
 	check(loop.scanned_units == 1 and game.current_id == &"energy","Successful physical scan advances exactly one basket item")
 
 	game.item_rotation = -PI/2.0
-	game.slide = game.SCANNER_X
+	game.slide = -0.02
 	game._apply_item_transform()
 	check(game._barcode_aligned(),"Energy can uses a different barcode side")
 	game._scan_current()
@@ -54,7 +54,7 @@ func run() -> void:
 	check(loop.scanned_units == 2 and game.current_id == &"chips","Second scan advances without charging the customer")
 
 	game.item_rotation = 0.0
-	game.slide = game.SCANNER_X
+	game.slide = -0.02
 	game._apply_item_transform()
 	check(game._barcode_aligned(),"Chip bag barcode is readable in its natural starting orientation")
 	game._scan_current()
