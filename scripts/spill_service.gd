@@ -73,7 +73,7 @@ func _build_ui() -> void:
 func _process(delta: float) -> void:
 	if gameplay == null:
 		return
-	if gameplay.active and not completed and not spill_pending and not return_required and gameplay.career_shifts >= 1 and gameplay.career_shifts < 5 and gameplay.elapsed >= next_spill_at and gameplay.served+gameplay.lost_sales >= 1:
+	if gameplay.active and not completed and not spill_pending and not return_required and gameplay.career_shifts >= 1 and gameplay.career_shifts < 5 and gameplay.elapsed >= next_spill_at and gameplay.served+gameplay.lost_sales >= 1 and world.can_start_interrupt(self):
 		_spawn_spill()
 	if not active:
 		return
