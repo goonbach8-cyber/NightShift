@@ -40,6 +40,14 @@ var scanner_material: StandardMaterial3D
 var terminal_label: Label3D
 var receipt_root: Node3D
 var receipt_label: Label3D
+var cash_root: Node3D
+var cash_materials: Array[StandardMaterial3D] = []
+var cash_selection := 0
+var cash_added := 0
+var cash_due := 0
+var cash_given := 0
+var cash_history: Array[int] = []
+const CASH_VALUES: Array[int] = [200,100,50,20,10,5]
 
 var panel: PanelContainer
 var title: Label
@@ -105,6 +113,37 @@ func _build_counter() -> void:
 	receipt_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	receipt_root.add_child(receipt_label)
 
+	cash_root = Node3D.new()
+	cash_root.name = "CashTray"
+	cash_root.position = Vector3(0.40,1.04,-0.02)
+	cash_root.visible = false
+	counter_root.add_child(cash_root)
+	for i in CASH_VALUES.size():
+		var coin := MeshInstance3D.new()
+		var mesh := CylinderMesh.new()
+		mesh.top_radius = 0.055 + i*0.004
+		mesh.bottom_radius = mesh.top_radius
+		mesh.height = 0.014
+		mesh.radial_segments = 16
+		coin.mesh = mesh
+		coin.position = Vector3(-0.30+i*0.12,0,0.0)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color("9a9072")
+		mat.metallic = 0.35
+		mat.roughness = 0.48
+		coin.material_override = mat
+		cash_materials.append(mat)
+		cash_root.add_child(coin)
+		var label := Label3D.new()
+		label.text = _money(CASH_VALUES[i])
+		label.position = Vector3(-0.30+i*0.12,0.045,0)
+		label.font_size = 12
+		label.pixel_size = 0.0020
+		label.modulate = Color("e7e2d4")
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		cash_root.add_child(label)
+	_update_cash_selection()
+
 func _build_ui() -> void:
 	panel = PanelContainer.new()
 	panel.name = "CheckoutMicrogamePanel"
@@ -153,6 +192,9 @@ func begin() -> bool:
 	panel.show()
 	terminal_label.hide()
 	receipt_root.hide()
+	cash_root.hide()
+	cash_added = 0
+	cash_history.clear()
 	if int(gameplay.checkout_details().get("remaining",0)) <= 0:
 		_enter_payment()
 	else:
@@ -228,9 +270,22 @@ func _input(event: InputEvent) -> void:
 		rotate_right = event.pressed
 	elif pressed and key == KEY_ESCAPE:
 		cancel()
-	elif pressed and key in [KEY_E,KEY_ENTER,KEY_KP_ENTER] and phase == &"payment":
+	elif phase == &"cash" and pressed:
+		if key in [KEY_LEFT,KEY_A]:
+			cash_selection = wrapi(cash_selection-1,0,CASH_VALUES.size())
+			_update_cash_selection()
+		elif key in [KEY_RIGHT,KEY_D]:
+			cash_selection = wrapi(cash_selection+1,0,CASH_VALUES.size())
+			_update_cash_selection()
+		elif key == KEY_E:
+			_add_cash(CASH_VALUES[cash_selection])
+		elif key == KEY_BACKSPACE:
+			_remove_cash()
+		elif key in [KEY_ENTER,KEY_KP_ENTER]:
+			_confirm_cash()
+	elif pressed and key in [KEY_E,KEY_ENTER,KEY_KP_ENTER] and phase == &"card":
 		_confirm_payment()
-	elif key in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_SPACE,KEY_1,KEY_2,KEY_E,KEY_ENTER,KEY_KP_ENTER]:
+	elif key in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_SPACE,KEY_1,KEY_2,KEY_E,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE]:
 		# Work/dialogue shortcuts must not leak into the world during checkout focus.
 		pass
 	else:
@@ -371,19 +426,68 @@ func _placed_position(index: int) -> Vector3:
 	return Vector3(0.45+column*0.16,1.10,0.26-row*0.14)
 
 func _enter_payment() -> void:
-	phase = &"payment"
 	busy = false
 	if is_instance_valid(current_visual):
 		current_visual.queue_free()
 		current_visual = null
 	var detail: Dictionary = gameplay.checkout_details()
-	terminal_label.text = "CARD\nCHF %.2f" % (float(detail.get("total",0))/100.0)
-	terminal_label.show()
+	var transaction_number := gameplay.served+gameplay.lost_sales+1
+	if transaction_number % 3 == 0:
+		_enter_cash(int(detail.get("total",0)))
+	else:
+		phase = &"card"
+		terminal_label.text = "CARD\nCHF %.2f" % (float(detail.get("total",0))/100.0)
+		terminal_label.show()
+		cash_root.hide()
 	scanner_material.albedo_color = Color("394543")
 	_refresh_ui()
 
+func _enter_cash(total: int) -> void:
+	phase = &"cash"
+	terminal_label.hide()
+	cash_due = total
+	cash_given = _cash_tender(total)
+	cash_added = 0
+	cash_history.clear()
+	cash_selection = 0
+	cash_root.show()
+	_update_cash_selection()
+
+func _cash_tender(total: int) -> int:
+	var notes := [500,1000,2000,5000,10000]
+	for amount in notes:
+		if amount > total:
+			return amount
+	return int(ceil(float(total)/10000.0))*10000+10000
+
+func _add_cash(value: int) -> void:
+	if phase != &"cash" or busy:
+		return
+	cash_added += value
+	cash_history.append(value)
+	_refresh_ui()
+
+func _remove_cash() -> void:
+	if phase != &"cash" or cash_history.is_empty():
+		return
+	cash_added -= cash_history.pop_back()
+	_refresh_ui()
+
+func _confirm_cash() -> void:
+	if phase != &"cash" or busy:
+		return
+	var change := cash_given-cash_due
+	if cash_added != change:
+		status.text = "Change is "+("short" if cash_added < change else "too high")+" · need "+_money(change)
+		return
+	_confirm_payment()
+
+func _update_cash_selection() -> void:
+	for i in cash_materials.size():
+		cash_materials[i].albedo_color = Color("c7b782") if i == cash_selection else Color("9a9072")
+
 func _confirm_payment() -> void:
-	if phase != &"payment" or busy:
+	if phase not in [&"card",&"cash"] or busy:
 		return
 	busy = true
 	var detail: Dictionary = gameplay.checkout_details()
@@ -394,9 +498,11 @@ func _confirm_payment() -> void:
 		return
 	if is_instance_valid(paying_customer) and paying_customer.has_method("clear_basket"):
 		paying_customer.clear_basket()
-	terminal_label.text = "APPROVED"
+	terminal_label.text = "APPROVED" if phase == &"card" else ""
+	cash_root.hide()
 	phase = &"receipt"
-	receipt_label.text = "NIGHTSHIFT\nCHF %.2f\nTHANK YOU" % (float(total)/100.0)
+	var method := "CARD" if terminal_label.visible else "CASH"
+	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [method,float(total)/100.0]
 	receipt_root.show()
 	var start := receipt_root.position
 	receipt_root.position = start+Vector3(0,-0.10,0)
@@ -417,11 +523,17 @@ func _refresh_ui() -> void:
 			status.text = "Rotate "+name+" — barcode is not facing the scanner"
 		progress.text = "%d / %d scanned" % [detail.get("scanned",0),detail.get("count",0)]
 		help.text = "A / D move   ·   W / S rotate   ·   drag mouse   ·   wheel rotates"
-	elif phase == &"payment":
+	elif phase == &"card":
 		title.text = "CARD TERMINAL"
 		status.text = "Present card · CHF %.2f" % (float(detail.get("total",0))/100.0)
 		progress.text = "%d items scanned" % detail.get("count",0)
 		help.text = "[E / ENTER]  Confirm card payment"
+	elif phase == &"cash":
+		var change := cash_given-cash_due
+		title.text = "CASH · CHANGE"
+		status.text = "Customer gives %s · Return %s" % [_money(cash_given),_money(change)]
+		progress.text = "Tray: %s / %s" % [_money(cash_added),_money(change)]
+		help.text = "← / → choose coin   ·   E add   ·   Backspace undo   ·   Enter confirm"
 	else:
 		title.text = "PAYMENT APPROVED"
 		status.text = "Receipt printing…"
@@ -445,6 +557,9 @@ func _end_mode() -> void:
 	current_id = &""
 	terminal_label.hide()
 	receipt_root.hide()
+	cash_root.hide()
+	cash_added = 0
+	cash_history.clear()
 	panel.hide()
 	scanner_material.albedo_color = Color("713d39")
 	move_left = false
@@ -468,6 +583,9 @@ func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInsta
 	visual.material_override = material
 	parent.add_child(visual)
 	return visual
+
+func _money(rappen: int) -> String:
+	return "CHF %.2f" % (float(rappen)/100.0)
 
 func _make_beep() -> AudioStreamWAV:
 	var rate := 22050
