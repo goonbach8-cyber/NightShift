@@ -105,7 +105,8 @@ func objective_text() -> String:
 
 func update() -> void:
 	var loop: Node = world.gameplay
-	var modal: bool = loop.dialogue.active or world.menu.page != ""
+	var checkout_focus: bool = is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
