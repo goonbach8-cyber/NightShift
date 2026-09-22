@@ -26,6 +26,8 @@ var next_request_at := 26.0
 var max_requests := 2
 var request_serial := 0
 var busy := false
+var fault_pending := false
+var fault_pump := 0
 
 var vehicle_root: Node3D
 var pump_labels: Dictionary = {}
@@ -97,6 +99,9 @@ func _create_request() -> void:
 	request_pump = ((gameplay.career_shifts*2 + request_serial*3) % 4)+1
 	request_limit = PRESETS[(gameplay.career_shifts+request_serial) % PRESETS.size()]
 	request_pending = true
+	fault_pending = false
+	fault_pump = 0
+	_set_reset_availability(0)
 	selected_pump = 1
 	selected_limit_index = 0
 	_spawn_vehicle(request_pump)
@@ -180,11 +185,46 @@ func _authorize() -> void:
 	help.text = ""
 	_set_pump_status(request_pump,"AUTH",Color("8fc59d"))
 	await get_tree().create_timer(0.75).timeout
+	var should_fault := gameplay.career_shifts >= 1 and request_serial % 2 == 0
+	if should_fault:
+		_begin_fault(request_pump)
+	else:
+		_complete_request()
+
+func _begin_fault(pump: int) -> void:
+	fault_pending = true
+	fault_pump = pump
+	_set_pump_status(pump,"FAULT",Color("d67c69"))
+	_set_reset_availability(pump)
+	_update_terminal_prompt()
+	_end_mode()
+	world._say("Pump %02d fault · Reset the dispenser outside." % pump,6.0)
+	gameplay.changed.emit()
+
+func reset_fault(pump: int) -> bool:
+	if not fault_pending or pump != fault_pump:
+		world._say("This dispenser is operating normally.")
+		return false
+	fault_pending = false
+	fault_pump = 0
+	_set_reset_availability(0)
+	_set_pump_status(pump,"READY",Color("8fa9a2"))
+	world._say("Pump %02d reset. Fuel authorization restored." % pump,4.0)
 	_complete_request()
+	return true
+
+func _set_reset_availability(pump: int) -> void:
+	if not is_instance_valid(layout):
+		return
+	for id in layout.pump_reset_points:
+		layout.pump_reset_points[id].available = int(id) == pump
 
 func _complete_request() -> void:
 	var completed_pump := request_pump
 	request_pending = false
+	fault_pending = false
+	fault_pump = 0
+	_set_reset_availability(0)
 	requests_completed += 1
 	request_pump = 0
 	request_limit = 0
@@ -207,7 +247,12 @@ func _refresh_ui() -> void:
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.pump_terminal):
 		return
-	layout.pump_terminal.prompt = "Pump %02d awaiting authorization" % request_pump if request_pending else "Fuel pump control · No requests"
+	if fault_pending:
+		layout.pump_terminal.prompt = "Pump %02d fault · Reset outside" % fault_pump
+	elif request_pending:
+		layout.pump_terminal.prompt = "Pump %02d awaiting authorization" % request_pump
+	else:
+		layout.pump_terminal.prompt = "Fuel pump control · No requests"
 
 func _spawn_vehicle(pump: int) -> void:
 	_remove_vehicle()
