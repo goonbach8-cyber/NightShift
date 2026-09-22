@@ -23,6 +23,7 @@ var hud: Control
 var checkout_minigame: Node
 var pump_service: Node
 var cctv_system: Node
+var power_service: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -83,6 +84,10 @@ func _ready() -> void:
 	cctv_system.name = "CCTVSystem"
 	cctv_system.world = self
 	add_child(cctv_system)
+	power_service = preload("res://scripts/power_service.gd").new()
+	power_service.name = "PowerService"
+	power_service.world = self
+	add_child(power_service)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -119,14 +124,15 @@ func _process(delta: float) -> void:
 	var checkout_busy: bool = is_instance_valid(checkout_minigame) and checkout_minigame.active
 	var pump_busy: bool = is_instance_valid(pump_service) and pump_service.active
 	var cctv_busy: bool = is_instance_valid(cctv_system) and cctv_system.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy:
+	var power_busy: bool = is_instance_valid(power_service) and power_service.active
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
 		if not event.show_caption or event.effect in [&"world_state",&"light_dip"]: story_label.text = ""
 		story_time = 16
 		story_cooldown = gameplay.definition.event_spacing_seconds
-		if event.effect == &"light_dip": effects.light_dip()
+		if event.effect == &"light_dip" and not (is_instance_valid(power_service) and power_service.fault_pending): effects.light_dip()
 		if event.effect == &"radio_interrupt": radio.interrupt_briefly()
 		if event.effect == &"phone_ring":
 			effects.phone_ring()
@@ -158,7 +164,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active)
+	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active)
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -179,6 +185,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(checkout_minigame) and checkout_minigame.active: return
 	if is_instance_valid(pump_service) and pump_service.active: return
 	if is_instance_valid(cctv_system) and cctv_system.active: return
+	if is_instance_valid(power_service) and power_service.active: return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed:
@@ -229,6 +236,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"breaker_panel":
+		power_service.begin()
+		return
 	if action == &"cctv_terminal":
 		cctv_system.begin()
 		return
