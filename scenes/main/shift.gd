@@ -22,6 +22,7 @@ var story_world: Node3D
 var hud: Control
 var checkout_minigame: Node
 var pump_service: Node
+var cctv_system: Node
 @onready var player: CharacterBody3D = $Player
 @onready var objective: Label = $HUD/Objective
 @onready var prompt: Label = $HUD/Prompt
@@ -78,6 +79,10 @@ func _ready() -> void:
 	pump_service.name = "PumpService"
 	pump_service.world = self
 	add_child(pump_service)
+	cctv_system = preload("res://scripts/cctv_system.gd").new()
+	cctv_system.name = "CCTVSystem"
+	cctv_system.world = self
+	add_child(cctv_system)
 	gameplay.dialogue.changed.connect(_dialogue_changed)
 	for object in get_tree().get_nodes_in_group("interactable"):
 		object.used.connect(_on_used)
@@ -113,7 +118,8 @@ func _process(delta: float) -> void:
 			break
 	var checkout_busy: bool = is_instance_valid(checkout_minigame) and checkout_minigame.active
 	var pump_busy: bool = is_instance_valid(pump_service) and pump_service.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy:
+	var cctv_busy: bool = is_instance_valid(cctv_system) and cctv_system.active
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy:
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
@@ -152,7 +158,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active)
+	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active)
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -172,6 +178,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if menu.page != "": return
 	if is_instance_valid(checkout_minigame) and checkout_minigame.active: return
 	if is_instance_valid(pump_service) and pump_service.active: return
+	if is_instance_valid(cctv_system) and cctv_system.active: return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed:
@@ -222,6 +229,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"cctv_terminal":
+		cctv_system.begin()
+		return
 	if String(action).begins_with("pump_reset_"):
 		var pump_number := int(String(action).trim_prefix("pump_reset_"))
 		pump_service.reset_fault(pump_number)
