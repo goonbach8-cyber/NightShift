@@ -98,6 +98,36 @@ func run() -> void:
 	check(loop.revenue_rappen == 1080 and loop.served == 3,"Exact cash change commits the same atomic sale path")
 	check(not game.active and not player.controls_locked,"Cash receipt returns to normal play")
 
+	# From Night 2 onward, a rare deterministic card decline adds a believable interruption.
+	loop.career_shifts = 1
+	loop.served = 4
+	loop.order_patterns.assign([{&"water":1}])
+	loop.spawn_customer()
+	var decline_customer = loop.customers[-1]
+	decline_customer.set_physics_process(false)
+	decline_customer.walking = false
+	decline_customer.state = &"queued"
+	decline_customer.global_position = layout.queue_points[0].global_position
+	loop.queue.append(decline_customer)
+	loop.inventory.reserve(decline_customer.get_instance_id(),&"water",1)
+	await process_frame
+	check(game.begin(),"Later-night card transaction starts normally")
+	game.item_rotation = -PI
+	game.slide = -0.02
+	game._apply_item_transform()
+	game._scan_current()
+	await create_timer(0.28).timeout
+	check(game.phase == &"card","Fifth transaction still uses the normal card terminal")
+	game._confirm_payment()
+	check(game.phase == &"card_retry" and loop.revenue_rappen == 1080,"First declined card attempt does not charge the basket")
+	var retry := InputEventKey.new()
+	retry.physical_keycode = KEY_E
+	retry.pressed = true
+	game._input(retry)
+	await create_timer(1.15).timeout
+	check(loop.revenue_rappen == 1300 and loop.served == 5,"Second card succeeds through the normal atomic sale path")
+	check(not game.active,"Declined-card recovery still ends with a normal receipt")
+
 	world.queue_free()
 	await create_timer(0.3).timeout
 	print("CHECKOUT MINIGAME TESTS: %d failure(s)" % failures)
