@@ -94,6 +94,8 @@ func objective_text() -> String:
 	if loop.preparing: return "Preparing the shop…"
 	if loop.can_finish(): return "Finish at the staff notes"
 	if loop.delivery_carried: return "Store the delivery in the warehouse"
+	if is_instance_valid(world.customer_requests) and world.customer_requests.active:
+		return world.customer_requests.objective_text()
 	if is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active:
 		return world.customer_assistance.objective_text()
 	if is_instance_valid(world.spill_service) and (world.spill_service.spill_pending or world.spill_service.return_required):
@@ -134,7 +136,8 @@ func update() -> void:
 	progress.visible = world.phase == world.Phase.ACTIVE
 	objective_panel.visible = not modal
 	var assistance_blocking: bool = is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active and loop.checkout_ready() and not loop.queue.is_empty() and loop.queue[0] == world.customer_assistance.request_customer
-	checkout_panel.visible = loop.checkout_ready() and world.layout.at_operator(world.player) and not modal and not assistance_blocking
+	var request_blocking: bool = is_instance_valid(world.customer_requests) and world.customer_requests.blocks_checkout()
+	checkout_panel.visible = loop.checkout_ready() and world.layout.at_operator(world.player) and not modal and not assistance_blocking and not request_blocking
 	if checkout_panel.visible:
 		var detail: Dictionary = loop.checkout_details()
 		checkout_title.text = "TOTAL" if detail.remaining == 0 else (String(detail.last)+" scanned" if detail.scanned else "Ready to scan")
@@ -157,7 +160,10 @@ func update() -> void:
 		elif target == world.layout.radio_point:
 			secondary.text = ("Signal drift · %.1f FM" % world.radio.tuned_frequency) if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending else ("%.1f FM · %s" % [world.radio.tuned_frequency,world.radio.station_name()])
 		elif target == world.layout.pump_terminal and is_instance_valid(world.pump_service):
-			secondary.text = "Pump %02d · %s" % [world.pump_service.request_pump,world.pump_service._money(world.pump_service.request_limit)] if world.pump_service.request_pending else "Forecourt clear"
+			if is_instance_valid(world.customer_requests) and world.customer_requests.active and world.customer_requests.request_kind == &"fuel_receipt" and not world.customer_requests.task_complete:
+				secondary.text = "Customer needs Pump %02d receipt" % world.customer_requests.target_pump
+			else:
+				secondary.text = "Pump %02d · %s" % [world.pump_service.request_pump,world.pump_service._money(world.pump_service.request_limit)] if world.pump_service.request_pending else "Forecourt clear"
 		elif target == world.layout.cctv_terminal and is_instance_valid(world.cctv_system):
 			secondary.text = "Motion alert · "+String(world.cctv_system.channels[world.cctv_system.motion_channel].area).capitalize() if world.cctv_system.motion_pending else "4 live camera feeds"
 		elif target == world.layout.breaker_panel and is_instance_valid(world.power_service):
@@ -216,6 +222,8 @@ func compact_prompt(target: Node3D) -> String:
 	if target == world.layout.checkout:
 		if not world.layout.at_operator(world.player): return "Use the staff side"
 		if not loop.checkout_ready(): return "Checkout · Waiting for customer"
+		if is_instance_valid(world.customer_requests) and world.customer_requests.blocks_checkout():
+			return "Give customer requested item" if world.customer_requests.task_complete else "Customer needs assistance"
 		if is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active and not loop.queue.is_empty() and loop.queue[0] == world.customer_assistance.request_customer:
 			return "Return "+world.customer_assistance.item_label if world.customer_assistance.item_found else "Customer needs help"
 		return "Accept payment" if loop.checkout_details().remaining == 0 else "Scan item"
@@ -234,6 +242,8 @@ func compact_prompt(target: Node3D) -> String:
 		return "Collect "+String(loop.inventory.products[loop.selected_product()].display_name)
 	if target == world.layout.delivery: return "Inspect delivery" if carried == &"" else "Restock your display first"
 	if target == world.layout.pump_terminal:
+		if is_instance_valid(world.customer_requests) and world.customer_requests.active and world.customer_requests.request_kind == &"fuel_receipt" and not world.customer_requests.task_complete:
+			return "Print Pump %02d receipt" % world.customer_requests.target_pump
 		if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Pump fault · Reset outside"
 		return "Open pump control" if is_instance_valid(world.pump_service) and world.pump_service.request_pending else "Pump control · No requests"
 	if target == world.layout.cctv_terminal:
