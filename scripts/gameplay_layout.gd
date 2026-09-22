@@ -41,6 +41,7 @@ var service_point: Node3D
 var checkout_item: MeshInstance3D
 var checkout_item_material: StandardMaterial3D
 var pump_terminal: Node3D
+var pump_reset_points: Dictionary = {}
 
 func _ready() -> void:
 	shelf = get_node(shelf_path)
@@ -93,6 +94,7 @@ func _ready() -> void:
 	setup_carried_visual()
 	setup_checkout_visual()
 	setup_pump_terminal()
+	setup_pump_reset_points()
 	product_nodes[&"water"] = shelf
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
@@ -248,6 +250,25 @@ func setup_pump_terminal() -> void:
 	model.box(model,Vector3(-0.10,1.04,0.16),Vector3(0.06,0.035,0.02),Color("c7b782"))
 	model.box(model,Vector3(0.0,1.04,0.16),Vector3(0.06,0.035,0.02),Color("6f8d88"))
 	model.box(model,Vector3(0.10,1.04,0.16),Vector3(0.06,0.035,0.02),Color("8c5e58"))
+
+func setup_pump_reset_points() -> void:
+	var names := ["Pump","Pump02","Pump03","Pump04"]
+	for i in names.size():
+		var pump := get_node("../Station/"+names[i])
+		var point := Node3D.new()
+		point.name = "PumpReset%02d" % (i+1)
+		point.set_script(preload("res://scenes/interactions/interactable.gd"))
+		point.action_id = StringName("pump_reset_%d" % (i+1))
+		point.prompt = "Reset pump %02d" % (i+1)
+		point.available = false
+		pump.add_child(point)
+		point.position = Vector3(0,0,0.62)
+		marker(point,"Approach",Vector3(0.9,0,0))
+		var model := preload("res://scripts/product_display.gd").new()
+		point.add_child(model)
+		model.box(model,Vector3(0,1.20,0),Vector3(0.18,0.18,0.07),Color("783f3d"))
+		model.box(model,Vector3(0,1.20,0.04),Vector3(0.08,0.08,0.02),Color("d1b36d"))
+		pump_reset_points[i+1] = point
 
 func setup_checkout_visual() -> void:
 	checkout_item = MeshInstance3D.new()
