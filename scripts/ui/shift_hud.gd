@@ -97,6 +97,7 @@ func objective_text() -> String:
 	if is_instance_valid(world.pump_service) and world.pump_service.fault_pending: return "Reset pump %02d outside" % world.pump_service.fault_pump
 	if is_instance_valid(world.pump_service) and world.pump_service.request_pending: return "Authorize the waiting fuel pump"
 	if is_instance_valid(world.power_service) and world.power_service.fault_pending: return "Reset the tripped electrical circuit"
+	if is_instance_valid(world.phone_system) and world.phone_system.ringing: return "Answer or ignore the ringing phone"
 	if is_instance_valid(world.cctv_system) and world.cctv_system.motion_pending: return "Review the CCTV motion alert"
 	var carried: StringName = loop.inventory.carried_product()
 	if carried != &"": return "Restock "+String(loop.inventory.products[carried].display_name)
@@ -114,7 +115,8 @@ func update() -> void:
 	var cctv_focus: bool = is_instance_valid(world.cctv_system) and world.cctv_system.active
 	var power_focus: bool = is_instance_valid(world.power_service) and world.power_service.active
 	var delivery_focus: bool = is_instance_valid(world.delivery_check) and world.delivery_check.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus
+	var phone_focus: bool = is_instance_valid(world.phone_system) and world.phone_system.active
+	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus or phone_focus
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -147,6 +149,8 @@ func update() -> void:
 			secondary.text = "Motion alert · "+String(world.cctv_system.channels[world.cctv_system.motion_channel].area).capitalize() if world.cctv_system.motion_pending else "4 live camera feeds"
 		elif target == world.layout.breaker_panel and is_instance_valid(world.power_service):
 			secondary.text = String(world.power_service.circuits[world.power_service.fault_circuit].symptom) if world.power_service.fault_pending else "All circuits stable"
+		elif target == world.layout.phone_point and is_instance_valid(world.phone_system):
+			secondary.text = ("Incoming · "+world.phone_system.incoming_number) if world.phone_system.ringing else "Dial numbers or review this shift's call log"
 		elif target == world.get_node("Station/ShiftBoard"): secondary.text = "[F] Read shift notes"
 		if target == world.layout.checkout and loop.checkout_ready() and world.layout.at_operator(world.player):
 			var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,loop.career_shifts+1)
@@ -217,6 +221,8 @@ func compact_prompt(target: Node3D) -> String:
 		return "Review CCTV alert" if is_instance_valid(world.cctv_system) and world.cctv_system.motion_pending else "View security cameras"
 	if target == world.layout.breaker_panel:
 		return "Reset tripped circuit" if is_instance_valid(world.power_service) and world.power_service.fault_pending else "Check breaker panel"
+	if target == world.layout.phone_point:
+		return "Answer phone" if is_instance_valid(world.phone_system) and world.phone_system.ringing else "Use counter phone"
 	for id in world.layout.pump_reset_points:
 		if target == world.layout.pump_reset_points[id]:
 			return "Reset pump %02d" % int(id)
