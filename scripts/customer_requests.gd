@@ -39,6 +39,8 @@ func handle_checkout_use() -> bool:
 		else:
 			_repeat_request()
 		return true
+	if not world.can_start_interrupt(self):
+		return false
 	_start_request(front)
 	return true
 
