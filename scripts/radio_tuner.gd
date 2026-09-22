@@ -167,5 +167,5 @@ func objective_text() -> String:
 	return "Retune the shop radio" if drift_pending else ""
 
 func _other_focus_active() -> bool:
-	return (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active) or (is_instance_valid(world.pump_service) and world.pump_service.active) or (is_instance_valid(world.cctv_system) and world.cctv_system.active) or (is_instance_valid(world.power_service) and world.power_service.active) or (is_instance_valid(world.delivery_check) and world.delivery_check.active) or (is_instance_valid(world.phone_system) and world.phone_system.active) or (is_instance_valid(world.spill_service) and world.spill_service.active)
+	return (is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active) or (is_instance_valid(world.pump_service) and world.pump_service.active) or (is_instance_valid(world.cctv_system) and world.cctv_system.active) or (is_instance_valid(world.power_service) and world.power_service.active) or (is_instance_valid(world.delivery_check) and world.delivery_check.active) or (is_instance_valid(world.phone_system) and world.phone_system.active) or (is_instance_valid(world.spill_service) and world.spill_service.active) or (is_instance_valid(world.device_service) and world.device_service.active)
 
