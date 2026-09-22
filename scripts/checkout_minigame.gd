@@ -50,6 +50,8 @@ var cash_added := 0
 var cash_due := 0
 var cash_given := 0
 var cash_history: Array[int] = []
+var card_attempts := 0
+var card_decline_pending := false
 const CASH_VALUES: Array[int] = [200,100,50,20,10,5]
 
 var panel: PanelContainer
@@ -306,9 +308,17 @@ func _input(event: InputEvent) -> void:
 		rotate_left = event.pressed
 	elif key in [KEY_S,KEY_DOWN]:
 		rotate_right = event.pressed
+	elif phase == &"card_retry" and pressed:
+		if key in [KEY_E,KEY_ENTER,KEY_KP_ENTER]:
+			phase = &"card"
+			_confirm_payment()
+		elif key == KEY_C:
+			_enter_cash(int(gameplay.checkout_details().get("total",0)))
+		else:
+			return
 	elif pressed and key in [KEY_E,KEY_ENTER,KEY_KP_ENTER] and phase == &"card":
 		_confirm_payment()
-	elif key in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_SPACE,KEY_1,KEY_2,KEY_E,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE]:
+	elif key in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_SPACE,KEY_1,KEY_2,KEY_E,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE,KEY_C]:
 		# Work/dialogue shortcuts must not leak into the world during checkout focus.
 		pass
 	else:
@@ -455,6 +465,8 @@ func _enter_payment() -> void:
 		current_visual = null
 	var detail: Dictionary = gameplay.checkout_details()
 	var transaction_number := gameplay.served+gameplay.lost_sales+1
+	card_attempts = 0
+	card_decline_pending = gameplay.career_shifts >= 1 and transaction_number % 5 == 0
 	if transaction_number % 3 == 0:
 		_enter_cash(int(detail.get("total",0)))
 	else:
@@ -462,6 +474,7 @@ func _enter_payment() -> void:
 		terminal_label.text = "CARD\nCHF %.2f" % (float(detail.get("total",0))/100.0)
 		terminal_label.show()
 		cash_root.hide()
+		cash_note_root.hide()
 	scanner_material.albedo_color = Color("394543")
 	_refresh_ui()
 
@@ -549,6 +562,13 @@ func _confirm_payment() -> void:
 		return
 	busy = true
 	var detail: Dictionary = gameplay.checkout_details()
+	if phase == &"card" and card_decline_pending and card_attempts == 0:
+		card_attempts += 1
+		terminal_label.text = "DECLINED"
+		phase = &"card_retry"
+		busy = false
+		_refresh_ui()
+		return
 	var total: int = int(detail.get("total",0))
 	var paying_customer := customer
 	if not gameplay.checkout():
@@ -593,6 +613,11 @@ func _refresh_ui() -> void:
 		status.text = "Customer gives %s · Return %s" % [_money(cash_given),_money(change)]
 		progress.text = "Tray: %s / %s" % [_money(cash_added),_money(change)]
 		help.text = "← / → choose coin   ·   E add   ·   Backspace undo   ·   Enter confirm"
+	elif phase == &"card_retry":
+		title.text = "CARD DECLINED"
+		status.text = "Customer has another card."
+		progress.text = "No sale has been charged."
+		help.text = "[E / ENTER] Try another card   ·   [C] Pay cash"
 	else:
 		title.text = "PAYMENT APPROVED"
 		status.text = "Receipt printing…"
@@ -621,6 +646,8 @@ func _end_mode() -> void:
 	_clear_change_visuals()
 	cash_added = 0
 	cash_history.clear()
+	card_attempts = 0
+	card_decline_pending = false
 	panel.hide()
 	scanner_material.albedo_color = Color("713d39")
 	move_left = false
