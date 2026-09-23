@@ -175,12 +175,14 @@ func update() -> void:
 		elif target == world.layout.service_tool_station and is_instance_valid(world.device_service):
 			secondary.text = world.device_service.objective_text() if world.device_service.fault_pending or world.device_service.return_required else "Screwdriver and maintenance kit"
 		elif target == world.get_node("Station/ShiftBoard"): secondary.text = "[F] Read shift notes"
-		if target == world.layout.checkout and loop.checkout_ready() and world.layout.at_operator(world.player):
-			var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,loop.career_shifts+1)
-			var special: bool = content.has("seen_flag") or not content.choices.is_empty()
-			secondary.text = "[F] Talk · About the phone call" if special else "[F] Talk"
-			secondary.add_theme_color_override("font_color",STYLE.ACCENT if special else STYLE.MUTED)
-	prompt_panel.visible = not prompt.text.is_empty()
+	# Conversation is available at the operator position even when a nearby device
+	# wins the E prompt; its F hint must not disappear behind that selection.
+	if not modal and loop.checkout_ready() and world.layout.at_operator(world.player):
+		var content: Dictionary = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,loop.career_shifts+1)
+		var special: bool = content.has("seen_flag") or not content.choices.is_empty()
+		secondary.text = "[F] Talk · About the phone call" if special else "[F] Talk"
+		secondary.add_theme_color_override("font_color",STYLE.ACCENT if special else STYLE.MUTED)
+	prompt_panel.visible = not prompt.text.is_empty() or not secondary.text.is_empty()
 	secondary.visible = not secondary.text.is_empty()
 	var font: Font = prompt.get_theme_font("font")
 	var width: float = clampf(maxf(font.get_string_size(prompt.text,HORIZONTAL_ALIGNMENT_LEFT,-1,20).x,font.get_string_size(secondary.text,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x)+48,240,minf(620,size.x-64))
