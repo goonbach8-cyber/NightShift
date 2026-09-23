@@ -26,7 +26,11 @@ func sell() -> void:
 					await walk(layout.customer_service_key.get_node("Approach").global_position)
 					await use()
 				&"price_check":
-					await walk(request.task_point.global_position)
+					await walk(layout.product_points[request.target_product].global_position)
+					player._update_interaction()
+					check(player.interaction_target == request.task_point,"Price-check tag is reachable from the matching shelf approach")
+					if player.interaction_target != request.task_point:
+						return
 					await use()
 				&"fuel_receipt":
 					await walk(layout.pump_terminal.get_node("Approach").global_position)

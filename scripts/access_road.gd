@@ -42,9 +42,21 @@ func _ready() -> void:
 
 	road_floor = StaticBody3D.new()
 	road_floor.name = "RoadSurface"
-	var collision := CollisionShape3D.new()
-	collision.shape = surface.mesh.create_trimesh_shape()
-	road_floor.add_child(collision)
+	road_floor.add_to_group("navigation_floor")
+	# Use short, overlapping box strips for the walkable deck. The rendered road
+	# stays curved; segmented floor colliders give both the CharacterBody and the
+	# sampled nav grid a dependable, continuous surface.
+	for i in range(centers.size()-1):
+		var a := centers[i]
+		var b := centers[i+1]
+		var delta := b-a
+		var floor_shape := BoxShape3D.new()
+		floor_shape.size = Vector3(minf(half_width_at(i),half_width_at(i+1))*2.0,0.03,delta.length()+0.18)
+		var collision := CollisionShape3D.new()
+		collision.shape = floor_shape
+		collision.position = Vector3((a.x+b.x)*0.5,-0.012,(a.y+b.y)*0.5)
+		collision.rotation.y = atan2(delta.x,delta.y)
+		road_floor.add_child(collision)
 	add_child(road_floor)
 
 	# Edge paint starts after the mouth so it visually merges into the old road.
@@ -105,9 +117,11 @@ func edge(index: int, side: int) -> Vector3:
 	var tangent := tangent_at(index)
 	var normal := Vector2(-tangent.y,tangent.x)
 	# A flared mouth overlaps the existing carriageway and then narrows to a normal lane.
-	var half_width := 3.4 if index == 0 else (3.0 if index == 1 else (2.55 if index == 2 else 2.2))
-	var p := centers[index]+normal*half_width*side
+	var p := centers[index]+normal*half_width_at(index)*side
 	return Vector3(p.x,-0.012,p.y)
+
+func half_width_at(index: int) -> float:
+	return 3.4 if index == 0 else (3.0 if index == 1 else (2.55 if index == 2 else 2.2))
 
 func line(a: Vector3, b: Vector3, width: float, color: Color) -> void:
 	var item := model.box(self,(a+b)/2,Vector3(width,0.012,a.distance_to(b)),color)

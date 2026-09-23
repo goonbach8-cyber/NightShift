@@ -48,7 +48,8 @@ func rebuild(world: Node3D, doors: Array[Node3D]) -> void:
 func find_floors(node: Node, result: Array[AABB]) -> void:
 	if node is CollisionShape3D and not node.disabled and node.shape is BoxShape3D:
 		var size: Vector3 = node.shape.size
-		if size.y <= 0.4 and size.x >= 2 and size.z >= 2:
+		var explicitly_walkable := node.get_parent().is_in_group("navigation_floor")
+		if size.y <= 0.4 and (explicitly_walkable or (size.x >= 2 and size.z >= 2)):
 			result.append(node.global_transform * AABB(-size/2,size))
 	for child in node.get_children():
 		find_floors(child,result)

@@ -38,7 +38,9 @@ func setup(owner_world: Node3D) -> void:
 	var forecourt: Vector3 = to_local(layout.entrance.global_position)+Vector3(4.0,0,9.2)
 	road.position = forecourt
 	add_child(road)
-	point(self,"route",forecourt+Vector3(4.8,0,6.1),"Navigation / Depot collection")
+	# Keep the story trigger on the actual branch centreline. The old offset
+	# placed it beside the asphalt, outside both the road collision and nav grid.
+	point(self,"route",forecourt+Vector3(6.6,0,6.95),"Navigation / Depot collection")
 	crack = Node3D.new()
 	crack.name = "AsphaltCrack"
 	crack.position = to_local(layout.entrance.global_position)+Vector3(1.8,0,1.2)

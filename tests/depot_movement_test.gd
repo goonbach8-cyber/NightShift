@@ -8,8 +8,16 @@ func run() -> void:
 	loop.configure_night(preload("res://scripts/night_catalog.gd").for_night(4))
 	await create_timer(0.1).timeout
 	var story = world.story_world
-	story.interact(&"route")
+	loop.navigation.rebuild(world,layout.doors)
+	var route_point: Node3D = story.get_node("route")
+	var route: PackedVector3Array = loop.navigation.path(player.global_position,route_point.global_position)
+	check(not route.is_empty(),"Night 4 route marker stays on the walkable branch")
+	await walk(route_point.global_position)
+	player._update_interaction()
+	check(player.interaction_target == route_point,"Player can interact at the physical route marker")
+	await use()
 	while story.trip_busy: await create_timer(0.1).timeout
+	check(story.in_depot,"Night 4 route reaches the depot through the physical interaction")
 	loop.navigation.rebuild(world,layout.doors)
 	for action in [&"move_left",&"move_right",&"move_forward",&"move_backward"]:
 		player.global_position = story.depot.global_position+Vector3(0,0.05,0)
