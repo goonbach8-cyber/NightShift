@@ -275,6 +275,7 @@ func _ignore() -> void:
 		work_call_done = true
 	_clear_incoming()
 	close()
+	_update_phone_display()
 	gameplay.changed.emit()
 
 func _miss_call() -> void:
@@ -432,6 +433,7 @@ func _refresh_ui() -> void:
 func _update_phone_display() -> void:
 	if not is_instance_valid(layout.phone_display):
 		return
+	layout.phone_point.selection_bias = -0.35 if ringing else 0.4
 	if ringing:
 		layout.phone_display.text = "INCOMING\n"+incoming_number
 		layout.phone_display.modulate = Color("e1b36e")

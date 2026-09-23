@@ -129,7 +129,10 @@ func run() -> void:
 		check(loop.customers.is_empty() and loop.inventory.reservations.is_empty(),"Night ends without customer or reservation leaks")
 		check(loop.event_history.has(StringName("night_%d_main" % (night+1))),"Guaranteed main event happened during shift")
 		check(loop.story_flags.get(StringName("presented_night_%d_main" % (night+1)),false),"Main event was presented, not merely queued")
-		await use()
+		if has_method("prepare_shift_end"):
+			await call("prepare_shift_end")
+		if not has_method("prepare_shift_end") or player.interaction_target == layout.checkout:
+			await use()
 		check(world.phase == world.Phase.ACTIVE,"Checkout does not end the night")
 		await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
 		await use()

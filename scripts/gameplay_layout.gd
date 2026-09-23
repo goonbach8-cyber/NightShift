@@ -58,6 +58,7 @@ func _ready() -> void:
 	entrance = get_node(entrance_path)
 	shelf_point = marker(shelf,"CustomerApproach",shelf_approach)
 	operator_point = marker(checkout,"Operator",operator_offset)
+	marker(checkout,"PlayerInteraction",Vector3(0,0.4,-0.65))
 	spawn_point = marker(entrance,"CustomerSpawn",spawn_offset)
 	entry_wait_point = marker(entrance,"CustomerEntryWait",entry_wait_offset)
 	for i in 4:
@@ -120,7 +121,7 @@ func _ready() -> void:
 	snacks.action_id = &"stock_chips"
 	bind_product(&"chips",snacks,Vector3(0,0,2.25))
 	# Interaction belongs to the accessible front face, not the deep gondola pivot.
-	marker(snacks,"PlayerInteraction",Vector3(0,0,1.2))
+	marker(snacks,"PlayerInteraction",Vector3(0,0,1.85))
 	# Dynamic inventory geometry is created after static map batching.
 	for config in [{"id": &"energy", "kind": "can", "origin": Vector3(-0.335,0.549,0.29), "spacing": Vector3(0.67,0.4,0), "columns":2}, {"id": &"chips", "kind": "bag", "origin": Vector3(-0.42,0.5,0.5), "spacing": Vector3(0.42,0.45,0), "columns":3}]:
 		var display = preload("res://scripts/product_display.gd").new()
@@ -256,9 +257,11 @@ func setup_pump_terminal() -> void:
 	pump_terminal.set_script(preload("res://scenes/interactions/interactable.gd"))
 	pump_terminal.action_id = &"pump_terminal"
 	pump_terminal.prompt = "Fuel pump control"
+	pump_terminal.selection_bias = 0.4
 	checkout.add_child(pump_terminal)
 	pump_terminal.position = Vector3(-0.54,0,-0.03)
 	marker(pump_terminal,"Approach",Vector3(-0.1,0,-0.82))
+	marker(pump_terminal,"PlayerInteraction",Vector3(0,0.65,-0.72))
 	var model := preload("res://scripts/product_display.gd").new()
 	pump_terminal.add_child(model)
 	model.box(model,Vector3(0,1.18,0),Vector3(0.42,0.28,0.30),Color("263d3c"))
@@ -273,9 +276,11 @@ func setup_cctv_terminal() -> void:
 	cctv_terminal.set_script(preload("res://scenes/interactions/interactable.gd"))
 	cctv_terminal.action_id = &"cctv_terminal"
 	cctv_terminal.prompt = "Security cameras"
+	cctv_terminal.selection_bias = 0.4
 	checkout.add_child(cctv_terminal)
 	cctv_terminal.position = Vector3(0.58,0,-0.18)
 	marker(cctv_terminal,"Approach",Vector3(0.05,0,-0.84))
+	marker(cctv_terminal,"PlayerInteraction",Vector3(0,0.65,-0.72))
 	var model := preload("res://scripts/product_display.gd").new()
 	cctv_terminal.add_child(model)
 	model.box(model,Vector3(0,1.34,0),Vector3(0.52,0.38,0.18),Color("28363a"))
@@ -290,8 +295,10 @@ func setup_cleaning_station() -> void:
 	cleaning_station.action_id = &"cleaning_kit"
 	cleaning_station.prompt = "Cleaning kit"
 	warehouse.add_child(cleaning_station)
-	cleaning_station.position = Vector3(7.72,0,3.55)
-	marker(cleaning_station,"Approach",Vector3(0.72,0,0))
+	# Keep the kit in the accessible stockroom, outside the closed WC-side alcove.
+	cleaning_station.position = Vector3(9.5,0,-1.65)
+	marker(cleaning_station,"Approach",Vector3(-0.5,0,0))
+	marker(cleaning_station,"PlayerInteraction",Vector3(-0.2,0,0))
 	var model := preload("res://scripts/product_display.gd").new()
 	cleaning_station.add_child(model)
 	model.box(model,Vector3(0,0.16,0),Vector3(0.42,0.28,0.34),Color("596a64"))
@@ -323,8 +330,10 @@ func setup_customer_service_key() -> void:
 	customer_service_key.prompt = "Restroom key"
 	customer_service_key.available = false
 	warehouse.add_child(customer_service_key)
-	customer_service_key.position = Vector3(7.15,0,2.85)
-	marker(customer_service_key,"Approach",Vector3(0.65,0,0))
+	# The key board hangs on the accessible stock shelf, not in the sealed WC alcove.
+	customer_service_key.position = Vector3(10.88,0,-0.3)
+	marker(customer_service_key,"Approach",Vector3(-0.68,0,0))
+	marker(customer_service_key,"PlayerInteraction",Vector3(-0.12,0,0))
 	var model := preload("res://scripts/product_display.gd").new()
 	customer_service_key.add_child(model)
 	model.box(model,Vector3(0,1.22,0),Vector3(0.30,0.44,0.06),Color("4c5957"))
@@ -344,9 +353,11 @@ func setup_phone() -> void:
 	phone_point.set_script(preload("res://scenes/interactions/interactable.gd"))
 	phone_point.action_id = &"phone"
 	phone_point.prompt = "Counter phone"
+	phone_point.selection_bias = 0.4
 	checkout.add_child(phone_point)
 	phone_point.position = Vector3(-0.72,0,0.30)
 	marker(phone_point,"Approach",Vector3(0.16,0,-0.82))
+	marker(phone_point,"PlayerInteraction",Vector3(0,0.65,-0.72))
 	var model := preload("res://scripts/product_display.gd").new()
 	phone_point.add_child(model)
 	model.box(model,Vector3(0,1.04,0),Vector3(0.34,0.11,0.22),Color("27383a"))

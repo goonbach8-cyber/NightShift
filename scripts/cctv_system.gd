@@ -244,6 +244,7 @@ func _refresh_ui() -> void:
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.cctv_terminal):
 		return
+	layout.cctv_terminal.selection_bias = -0.05 if motion_pending else 0.4
 	if motion_pending:
 		layout.cctv_terminal.prompt = "CCTV motion alert · "+String(channels[motion_channel].area).capitalize()
 	else:
