@@ -12,6 +12,7 @@ func run() -> void:
 	bind_world()
 	await create_timer(0.4).timeout
 	world.phase = world.Phase.ACTIVE
+	loop.active = true
 	loop.inventory.initialize_shelves()
 	player.global_position = layout.warehouse.get_node("Supply").global_position+Vector3(0,0,1)
 	await create_timer(0.2).timeout
@@ -47,6 +48,7 @@ func run() -> void:
 	check(layout.entrance.is_open,"Door interaction resumes after dialogue")
 	player.global_position = layout.radio_point.get_node("Approach").global_position
 	await create_timer(0.2).timeout
+	check(player.interaction_target == layout.radio_point,"Radio is the selected world interaction before dialogue")
 	await speak()
 	var track: int = world.radio.track_index
 	var volume: float = world.radio.volume_db
@@ -55,6 +57,7 @@ func run() -> void:
 	await key(KEY_M)
 	check(world.muted,"Global mute remains accessible during dialogue")
 	await key(KEY_SPACE)
+	check(player.interaction_target == layout.radio_point,"Radio focus returns after dialogue closes")
 	await key(KEY_E)
 	check(world.radio_tuner.active and player.controls_locked,"World radio interaction resumes after the last dialogue line")
 	await key(KEY_T)
