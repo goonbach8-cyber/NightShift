@@ -17,6 +17,8 @@ func run() -> void:
 	loop.stock.shelf_units = 8
 	loop.stock.changed.emit()
 	await walk(layout.operator_point.global_position)
+	player._update_interaction()
+	check(player.interaction_target == layout.checkout,"Idle pump terminal does not steal checkout focus")
 	var deadline := Time.get_ticks_msec()+90000
 	while (loop.queue.size() < 4 or loop.queue.any(func(c): return c.walking)) and Time.get_ticks_msec() < deadline:
 		await create_timer(0.25).timeout
@@ -34,6 +36,7 @@ func run() -> void:
 		if not await await_customer():
 			await finish()
 			return
+		await resolve_operator_interruptions()
 		await use()
 	check(loop.served == 8 and loop.lost_sales == 0 and loop.stock.shelf_units == 0,"Eight customers cycle through a bounded queue without overselling")
 	deadline = Time.get_ticks_msec()+45000

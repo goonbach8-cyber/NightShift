@@ -57,7 +57,9 @@ func _run() -> void:
 	check(texture.atlas.get_size() == Vector2(512, 320), "Original 512x320 artwork retained")
 	var directions := {"move_left": &"left", "move_right": &"right", "move_forward": &"up", "move_backward": &"down"}
 	for action in directions:
-		await place(Vector3(0, 0.05, 0))
+		# The old origin is now inside the narrow gondola aisle. Use the real player spawn,
+		# whose open frontage allows an uncontested movement/animation check in all axes.
+		await place(Vector3(0, 0.05, 1.5))
 		Input.action_press(action)
 		await frames(25)
 		check(player.sprite.animation == StringName("walk_" + String(directions[action])), "Walk direction: " + action)
@@ -67,12 +69,12 @@ func _run() -> void:
 		check(player.sprite.animation == StringName("idle_" + String(directions[action])), "Idle direction: " + action)
 	for x in ["move_left", "move_right"]:
 		for z in ["move_forward", "move_backward"]:
-			await place(Vector3(0, 0.05, 0))
+			await place(Vector3(0, 0.05, 1.5))
 			Input.action_press(x)
 			Input.action_press(z)
 			await frames(20)
 			check(is_equal_approx(Vector2(player.velocity.x, player.velocity.z).length(), 4.0), "Diagonal speed: " + x + "/" + z)
-	await place(Vector3(0, 0.05, 0))
+	await place(Vector3(0, 0.05, 1.5))
 	Input.action_press("move_right")
 	var visited: Dictionary = {}
 	for i in range(70):
@@ -151,7 +153,7 @@ func _run() -> void:
 	Input.action_press("move_backward")
 	await frames(20)
 	Input.action_release("move_backward")
-	check(player.position.z < 4.7, "Closed door blocks passage")
+	check(player.position.z < door.global_position.z - 0.1, "Closed door blocks passage")
 	await use()
 	await frames(40)
 	check(door.is_open and door.panel.collision_layer == 0, "Door opens and clears collision")
@@ -177,7 +179,8 @@ func _run() -> void:
 	Input.action_press("move_backward")
 	await frames(40)
 	Input.action_release("move_backward")
-	check(player.position.z < 10.6 and player.is_on_floor(), "Forecourt boundary prevents falling out")
+	var south_boundary: Node3D = world.get_node("Station/SouthBoundaryMiddle")
+	check(player.position.z < south_boundary.global_position.z - 0.25 and player.is_on_floor(), "Forecourt boundary prevents falling out")
 	check(world.get_node("Ambience").playing, "Ambient audio starts")
 	var held_key := InputEventKey.new()
 	held_key.physical_keycode = KEY_M

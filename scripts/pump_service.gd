@@ -249,7 +249,9 @@ func _refresh_ui() -> void:
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.pump_terminal):
 		return
-	layout.pump_terminal.selection_bias = -0.35 if request_pending else 0.4
+	# The terminal shares the counter with the register. Keep it secondary while
+	# idle so checkout owns focus; an active request deliberately takes priority.
+	layout.pump_terminal.selection_bias = -0.35 if request_pending else 1.0
 	if fault_pending:
 		layout.pump_terminal.prompt = "Pump %02d fault · Reset outside" % fault_pump
 	elif request_pending:

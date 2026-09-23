@@ -1,6 +1,7 @@
 extends "res://tests/vertical_slice_test.gd"
 
 func sell() -> void:
+	await resolve_operator_interruptions()
 	var previous: int = loop.served
 	var units := 0
 	for quantity in loop.queue[0].order.values(): units += int(quantity)

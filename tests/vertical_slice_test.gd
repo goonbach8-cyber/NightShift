@@ -27,6 +27,17 @@ func use() -> void:
 	Input.parse_input_event(event)
 	await create_timer(0.1).timeout
 
+func key(code: Key) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	event.pressed = true
+	Input.parse_input_event(event)
+	await process_frame
+	event = InputEventKey.new()
+	event.physical_keycode = code
+	Input.parse_input_event(event)
+	await create_timer(0.1).timeout
+
 func capture(label: String) -> void:
 	if DisplayServer.get_name() != "headless":
 		var rendered := [false]
@@ -79,6 +90,32 @@ func await_customer() -> bool:
 		print("CUSTOMER DEBUG ",customer.state," pos ",customer.position," path ",customer.route," moving ",customer.walking)
 	check(false,"Customer reached the checkout before timeout")
 	return false
+
+func resolve_operator_interruptions() -> void:
+	if world.pump_service.request_pending:
+		await walk(layout.pump_terminal.get_node("Approach").global_position)
+		check(player.interaction_target == layout.pump_terminal,"Fuel request is reachable from its pump terminal")
+		await use()
+		check(world.pump_service.active and player.controls_locked,"Fuel authorization opens the focused control panel")
+		await use() # The request opens with the requested pump and prepay amount selected.
+		var deadline := Time.get_ticks_msec()+3000
+		while world.pump_service.active and Time.get_ticks_msec()<deadline:
+			await process_frame
+		check(not world.pump_service.active and not player.controls_locked,"Completed authorization returns player control")
+		if world.pump_service.fault_pending:
+			var reset_point: Node3D = layout.pump_reset_points[world.pump_service.fault_pump]
+			await walk(reset_point.get_node("Approach").global_position)
+			await use()
+			check(not world.pump_service.fault_pending,"Dispenser fault is reset at its physical pump")
+		await walk(layout.operator_point.global_position)
+	if world.phone_system.ringing:
+		await walk(layout.phone_point.get_node("Approach").global_position)
+		check(player.interaction_target == layout.phone_point,"Ringing counter phone is physically reachable")
+		await use()
+		check(world.phone_system.active and world.phone_system.mode == &"ringing","Counter phone opens its incoming-call panel")
+		await key(KEY_X)
+		check(not world.phone_system.ringing and not world.phone_system.active and not player.controls_locked,"Ignoring the call returns control to the shift")
+		await walk(layout.operator_point.global_position)
 
 func run() -> void:
 	world = load("res://scenes/main/main.tscn").instantiate()
@@ -146,6 +183,7 @@ func run() -> void:
 		if not await await_customer():
 			await finish()
 			return
+		await resolve_operator_interruptions()
 		await use()
 	check(loop.served == 4 and loop.revenue_rappen == 880,"Four customers are served in queue order")
 	var deadline := Time.get_ticks_msec()+45000
