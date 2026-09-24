@@ -16,6 +16,7 @@ var target_product: StringName = &""
 var target_pump := 0
 var request_label := ""
 var task_point: Node3D
+var price_tag_visual: Node3D
 var carried_prop: Node3D
 
 func _ready() -> void:
@@ -79,6 +80,8 @@ func _start_request(customer: CharacterBody3D) -> void:
 			request_label = "restroom key"
 			layout.customer_service_key.available = true
 			world._say("Customer: Could I get the restroom key?",6.0)
+	if is_instance_valid(world.pump_service):
+		world.pump_service._update_terminal_prompt()
 	gameplay.changed.emit()
 	world._update_objective()
 
@@ -99,6 +102,8 @@ func handle_pump_terminal() -> bool:
 	if not active or task_complete or request_kind != &"fuel_receipt":
 		return false
 	task_complete = true
+	if is_instance_valid(world.pump_service):
+		world.pump_service._update_terminal_prompt()
 	_show_carried_prop(&"receipt")
 	world._say("Pump %02d receipt printed. Bring it back to the customer." % target_pump,5.0)
 	gameplay.story_flags[StringName("fuel_receipt_lookup_night_%d" % (gameplay.career_shifts+1))] = true
@@ -113,11 +118,19 @@ func _spawn_price_check() -> void:
 	task_point.set_script(preload("res://scenes/interactions/interactable.gd"))
 	task_point.action_id = &"customer_price_check"
 	task_point.prompt = "Check shelf price"
+	task_point.selection_bias = -0.25
 	var product_node: Node3D = layout.product_nodes[target_product]
-	product_node.add_child(task_point)
-	task_point.position = Vector3(0,1.18,0.46)
+	# Keep the shelf tag attached to its product bay, while placing its interaction
+	# point in the open customer approach. A ray to a child of the shelf otherwise
+	# hits the shelf's own collision before reaching the tag.
+	world.add_child(task_point)
+	task_point.global_position = layout.product_points[target_product].global_position
 	task_point.used.connect(_on_price_check_used)
-	var panel := _box(task_point,Vector3.ZERO,Vector3(0.34,0.18,0.035),Color("d5c68b"))
+	price_tag_visual = Node3D.new()
+	price_tag_visual.name = "CustomerPriceTagVisual"
+	product_node.add_child(price_tag_visual)
+	price_tag_visual.position = Vector3(0,1.18,0.46)
+	var panel := _box(price_tag_visual,Vector3.ZERO,Vector3(0.34,0.18,0.035),Color("d5c68b"))
 	var label := Label3D.new()
 	label.text = _price_text(target_product)
 	label.position = Vector3(0,0,0.025)
@@ -125,7 +138,7 @@ func _spawn_price_check() -> void:
 	label.pixel_size = 0.0022
 	label.modulate = Color("2b3330")
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	task_point.add_child(label)
+	price_tag_visual.add_child(label)
 
 func _on_price_check_used(_action: StringName) -> void:
 	if not active or request_kind != &"price_check" or task_complete:
@@ -232,11 +245,16 @@ func _clear_all() -> void:
 	target_product = &""
 	target_pump = 0
 	request_label = ""
+	if is_instance_valid(world.pump_service):
+		world.pump_service._update_terminal_prompt()
 
 func _clear_task_point() -> void:
 	if is_instance_valid(task_point):
 		task_point.queue_free()
 	task_point = null
+	if is_instance_valid(price_tag_visual):
+		price_tag_visual.queue_free()
+	price_tag_visual = null
 
 func _clear_carried_prop() -> void:
 	if is_instance_valid(carried_prop):

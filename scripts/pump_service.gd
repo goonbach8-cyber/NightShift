@@ -91,6 +91,7 @@ func _build_ui() -> void:
 func _process(_delta: float) -> void:
 	if gameplay == null or not gameplay.active:
 		return
+	_update_terminal_prompt()
 	if not request_pending and requests_completed < max_requests and gameplay.elapsed >= next_request_at and world.can_start_interrupt(self):
 		_create_request()
 
@@ -249,13 +250,19 @@ func _refresh_ui() -> void:
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.pump_terminal):
 		return
+	var customer_receipt := false
+	if is_instance_valid(world.customer_requests):
+		var request: Node = world.customer_requests
+		customer_receipt = request.active and not request.task_complete and request.request_kind == &"fuel_receipt"
 	# The terminal shares the counter with the register. Keep it secondary while
-	# idle so checkout owns focus; an active request deliberately takes priority.
-	layout.pump_terminal.selection_bias = -0.35 if request_pending else 1.0
+	# idle so checkout owns focus; fuel authorization and receipt requests take priority.
+	layout.pump_terminal.selection_bias = -0.35 if request_pending or customer_receipt else 1.0
 	if fault_pending:
 		layout.pump_terminal.prompt = "Pump %02d fault · Reset outside" % fault_pump
 	elif request_pending:
 		layout.pump_terminal.prompt = "Pump %02d awaiting authorization" % request_pump
+	elif customer_receipt:
+		layout.pump_terminal.prompt = "Print Pump %02d receipt" % world.customer_requests.target_pump
 	else:
 		layout.pump_terminal.prompt = "Fuel pump control · No requests"
 

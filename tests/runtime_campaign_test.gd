@@ -88,10 +88,29 @@ func sell() -> void:
 	check(not game.active and loop.served == previous+1,"Physical checkout completes exactly one basket and releases focus")
 
 func prepare_shift_end() -> void:
-	await service_pending()
-	await walk(layout.operator_point.global_position)
-	player._update_interaction()
+	for attempt in 3:
+		await service_pending()
+		await walk(layout.operator_point.global_position)
+		player._update_interaction()
+		if not player.controls_locked and player.interaction_target == layout.checkout:
+			break
+	if player.controls_locked or player.interaction_target != layout.checkout:
+		print("SHIFT_END_DIAG locked=",player.controls_locked," target=",player.interaction_target.action_id if is_instance_valid(player.interaction_target) else "none")
+		for candidate in root.get_tree().get_nodes_in_group("interactable"):
+			if candidate.is_available() and candidate.global_position.distance_to(player.global_position) < 2.2:
+				print("SHIFT_END_CANDIDATE ",candidate.action_id," distance=",candidate.global_position.distance_to(player.global_position)," bias=",candidate.interaction_bias())
 	check(not player.controls_locked and player.interaction_target == layout.checkout,"Checkout remains selectable before closing the shift")
+
+func await_customer() -> bool:
+	var ready := await super.await_customer()
+	if not ready:
+		print("QUEUE_TIMEOUT night=",loop.career_shifts+1," served=",loop.served," spawned=",loop.spawned," departed=",loop.departed," lost=",loop.lost_sales," queue=",loop.queue.size())
+		for index in loop.queue.size():
+			var customer: Node3D = loop.queue[index]
+			var target_pos: Vector3 = customer.target.global_position if is_instance_valid(customer.target) else Vector3.INF
+			var horizontal_distance := Vector2(customer.global_position.x-target_pos.x,customer.global_position.z-target_pos.z).length()
+			print("QUEUE_HEAD ",index," state=",customer.state," pos=",customer.global_position," walking=",customer.walking," target=",customer.target.name if is_instance_valid(customer.target) else "none"," target_pos=",target_pos," hdist=",horizontal_distance," route=",customer.route.size()," retries=",customer.retry_time," stuck=",customer.stuck_time)
+	return ready
 
 func service_pending() -> void:
 	if world.phone_system.ringing:
