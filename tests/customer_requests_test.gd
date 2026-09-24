@@ -8,7 +8,13 @@ func run() -> void:
 	for night in [2,3,4,5]:
 		loop.career_shifts = night-1
 		requests.completed = false
-		check(requests.handle_checkout_use(),"Customer starts request in Night %d" % night)
+		player.global_position = world.layout.operator_point.global_position+Vector3.UP*0.05
+		await physics_frame
+		player._update_interaction()
+		check(player.interaction_target == world.layout.checkout,"Checkout is focused before Night %d request" % night)
+		if player.interaction_target == world.layout.checkout:
+			player.interaction_target.interact(player)
+		check(requests.active,"Customer starts request in Night %d through checkout interaction" % night)
 		check(actor.state == &"customer_request","Request holds customer at checkout")
 		match requests.request_kind:
 			&"wc_key":
