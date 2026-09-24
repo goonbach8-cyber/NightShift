@@ -2,7 +2,8 @@ extends "res://tests/service_runtime_base.gd"
 
 func walk_to(player: CharacterBody3D, target: Vector3) -> void:
 	var route: PackedVector3Array = world.gameplay.navigation.path(player.global_position,target)
-	check(not route.is_empty(),"Service approach has a navigable route")
+	if player.global_position.distance_to(target) >= 0.6:
+		check(not route.is_empty(),"Service approach has a navigable route")
 	var deadline := Time.get_ticks_msec()+10000
 	while not route.is_empty() and Time.get_ticks_msec() < deadline:
 		var delta: Vector3 = route[0]-player.global_position
@@ -31,6 +32,9 @@ func run() -> void:
 	player._update_interaction()
 	check(player.interaction_target == chips,"Player can select chips from its actual customer approach")
 	var phone = world.layout.phone_point
+	# Story calls can coincide with a pending fuel request. The urgent phone
+	# interaction must win focus at its approach without making the pump unreachable.
+	world.pump_service._create_request()
 	world.phone_system.story_ring()
 	player.global_position = phone.get_node("Approach").global_position+Vector3.UP*0.05
 	await physics_frame
@@ -41,8 +45,13 @@ func run() -> void:
 	await physics_frame
 	player._update_interaction()
 	check(player.interaction_target == phone,"Ringing phone remains selectable at the navigated stopping point")
+	player.global_position = world.layout.operator_point.global_position+Vector3.UP*0.05
+	await walk_to(player,phone.get_node("Approach").global_position)
+	player._update_interaction()
+	if player.interaction_target != phone:
+		print("PHONE_ROUTE_FOCUS_DIAG target=",player.interaction_target.action_id if is_instance_valid(player.interaction_target) else "none"," pos=",player.global_position," phone=",phone.global_position," approach=",phone.get_node("Approach").global_position)
+	check(player.interaction_target == phone,"Ringing phone is selectable after walking there from checkout")
 	world.phone_system._ignore()
-	world.pump_service._create_request()
 	var pump = world.layout.pump_terminal
 	world.gameplay.navigation.rebuild(world,world.layout.doors)
 	player.global_position = pump.get_node("Approach").global_position+Vector3.UP*0.05

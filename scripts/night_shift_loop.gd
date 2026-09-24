@@ -293,6 +293,9 @@ func checkout_text() -> String:
 func checkout_ready() -> bool:
 	if queue.is_empty() or not is_instance_valid(queue[0]): return false
 	var customer := queue[0]
+	# tree_exiting can emit inventory.changed before customer_removed erases the
+	# departing NPC from queue. Do not query a Node3D transform in that window.
+	if not customer.is_inside_tree(): return false
 	return not customer.walking and not customer.paid and customer.global_position.distance_to(layout.queue_points[0].global_position) <= 0.6
 
 func checkout() -> bool:

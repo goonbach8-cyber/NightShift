@@ -18,6 +18,12 @@ func run() -> void:
 	var customer = loop.customers[0]
 	var owner_id: int = customer.get_instance_id()
 	check(loop.inventory.reserve(owner_id,&"water",1) and loop.inventory.reserve(owner_id,&"chips",1),"Customer owns multiple reservations")
+	# Reproduce removal during the HUD's stock-change callback while this queued
+	# customer is still the checkout head. tree_exiting fires before queue cleanup.
+	customer.state = &"queued"
+	customer.walking = false
+	customer.global_position = world.layout.queue_points[0].global_position
+	loop.queue.append(customer)
 	customer.queue_free()
 	await create_timer(0.2).timeout
 	check(loop.inventory.reservations.is_empty() and loop.stock.reserved_units == 0 and loop.inventory.stocks.chips.reserved_units == 0,"Unexpected NPC removal releases every product")

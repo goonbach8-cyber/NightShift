@@ -433,7 +433,9 @@ func _refresh_ui() -> void:
 func _update_phone_display() -> void:
 	if not is_instance_valid(layout.phone_display):
 		return
-	layout.phone_point.selection_bias = -0.35 if ringing else 0.4
+	# A ringing story/work call temporarily outranks the adjacent pump terminal.
+	# Once answered or missed, the normal local priority is restored.
+	layout.phone_point.selection_bias = -1.1 if ringing else 0.4
 	if ringing:
 		layout.phone_display.text = "INCOMING\n"+incoming_number
 		layout.phone_display.modulate = Color("e1b36e")

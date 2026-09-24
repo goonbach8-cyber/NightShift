@@ -11,7 +11,10 @@ func run() -> void:
 		root.add_child(world)
 		world.gameplay.configure_night(preload("res://scripts/night_catalog.gd").for_night(night+1))
 		await create_timer(0.1).timeout
-		check(get_nodes_in_group("story_prop").size() == 1,"Exactly one event prop after scene load")
+		var props: Array[Node] = get_nodes_in_group("story_prop")
+		var checkout_displays := props.filter(func(prop: Node): return prop.name == "CheckoutDisplay")
+		var stockroom_parcels := props.filter(func(prop: Node): return prop.name == "LooseCarton")
+		check(props.size() == 2 and checkout_displays.size() == 1 and stockroom_parcels.size() == 1,"Each physical story prop is instantiated exactly once")
 		check(world.gameplay.events.triggered.get_connections().size() == 1,"Event presentation signal is connected once")
 		check(world.layout.story_areas.size() == 1,"One stockroom trigger per scene")
 		world.radio.toggle()
