@@ -18,7 +18,7 @@ var current_product: StringName
 var wait_seconds: float = 0
 var patience: float = 240
 var move_speed: float = 1.8
-var status_text: String = "Kunde"
+var status_text: String = "Customer"
 var abandoned: bool = false
 var profile_id: StringName = &"regular"
 var greeting: String = ""
@@ -37,11 +37,13 @@ var right_arm: MeshInstance3D
 var walk_phase := 0.0
 var basket_visual: Node3D
 var basket_items := 0
+var station_staff := false
 
 func _ready() -> void:
-	add_to_group("customer")
-	collision_layer = 4
-	collision_mask = 1|2|4
+	if not station_staff:
+		add_to_group("customer")
+	collision_layer = 0 if station_staff else 4
+	collision_mask = 1 if station_staff else 1|2|4
 	var collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.26
@@ -62,6 +64,11 @@ func _ready() -> void:
 	visual_sphere(visual_root,Vector3(0,1.22,0),0.18,Color("c9aa8c"))
 	# Small front badge gives the simple silhouette a readable facing direction.
 	visual_box(visual_root,Vector3(0,0.78,0.145),Vector3(0.17,0.12,0.018),Color("d5d0b1"))
+	if station_staff:
+		visual_box(visual_root,Vector3(0,0.97,0.143),Vector3(0.25,0.075,0.028),Color("9cb6a7"))
+		visual_sphere(visual_root,Vector3(0,1.31,-0.022),0.145,Color("443b34"))
+		for x in [-0.12,0.12]:
+			visual_box(visual_root,Vector3(x,0.064,0.055),Vector3(0.16,0.10,0.23),Color("273333"))
 	basket_visual = Node3D.new()
 	basket_visual.name = "ShoppingBasket"
 	basket_visual.position = Vector3(0.34,0.50,0.05)

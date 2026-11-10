@@ -259,11 +259,14 @@ func run() -> void:
 	for night in nights:
 		await create_timer(0.4).timeout
 		loop.navigation.rebuild(world,layout.doors)
+		if is_instance_valid(world.story_world.josh):
+			await walk(world.story_world.josh.global_position+Vector3(0.65,0,-0.35))
+			player._update_interaction()
+			check(player.interaction_target == world.story_world.josh.get_node("josh"),"Josh can be approached in the entrance aisle")
+			await use()
+			while loop.dialogue.active: await key(KEY_SPACE)
 		await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
 		await use()
-		if loop.dialogue.active:
-			while loop.dialogue.active: await key(KEY_SPACE)
-			await use()
 		while loop.preparing: await process_frame
 		check(loop.active and loop.career_shifts == night,"Configured night begins: %d" % (night+1))
 		if not loop.definition.handover.is_empty():

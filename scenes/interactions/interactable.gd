@@ -3,7 +3,7 @@ extends Node3D
 signal used(action_id: StringName)
 
 @export var action_id: StringName
-@export var prompt: String = "Untersuchen"
+@export var prompt: String = "Inspect"
 @export var available: bool = true
 @export var selection_bias: float = 0.0
 

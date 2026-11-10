@@ -89,7 +89,7 @@ func _ready() -> void:
 func objective_text() -> String:
 	var loop: Node = world.gameplay
 	if world.phase == world.Phase.NOT_STARTED:
-		return "Meet Josh at the staff notes" if not loop.definition.handover.is_empty() and not loop.story_flags.get(world.story_world.handover_flag(),false) else "Start your shift at the staff notes"
+		return "Meet Josh near the entrance" if not loop.definition.handover.is_empty() and not loop.story_flags.get(world.story_world.handover_flag(),false) else "Start your shift at the staff notes"
 	if world.phase == world.Phase.COMPLETE: return "Shift complete"
 	if loop.preparing: return "Preparing the shop…"
 	if loop.can_finish(): return "Finish at the staff notes"

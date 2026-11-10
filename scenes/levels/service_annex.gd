@@ -7,6 +7,8 @@ const PRODUCTS = {
 	&"coffee": preload("res://data/products/coffee.tres"),
 	&"snack": preload("res://data/products/snack.tres")
 }
+const EAST_WALL := 13.25
+const RACK_X := 12.65
 var stock = preload("res://scripts/shop_stock.gd").new()
 var reserve_units: int:
 	get: return stock.warehouse_units
@@ -53,7 +55,7 @@ func door(node_name: String, at: Vector3, width: float, turn: float, label: Stri
 	add_child(item)
 	item.get_node("Panel/Mesh").material_override = d.mat("65746a")
 	d.sign_text(label,Vector3(0,1.1,0.12),minf(1.6,maxf(0.4,label.length()*0.11)),item.get_node("Panel"))
-	item.blocked.connect(func(): get_node("../../")._say("Der Durchgang muss frei bleiben."))
+	item.blocked.connect(func(): get_node("../../")._say("Keep the doorway clear."))
 	doors.append(item)
 	return item
 
@@ -71,47 +73,69 @@ func build_rooms() -> void:
 	var opening_edge := -3.3
 	box(Vector3(bounds.end.x,1,(north+opening_edge)/2.0),Vector3(0.3,2,opening_edge-north),"a2a499",true)
 	box(Vector3(7,1,1.95),Vector3(0.3,2,6.1),"a2a499",true)
-	box(Vector3(9.5,-0.1,0),Vector3(5,0.2,10),"727b72",true)
-	box(Vector3(12,1,0),Vector3(0.2,2,10.2),"a2a499",true)
-	box(Vector3(9.5,0.35,5),Vector3(5.2,0.7,0.2),"65746a",true)
+	box(Vector3((7.0+EAST_WALL)/2.0,-0.1,0),Vector3(EAST_WALL-7.0,0.2,10),"727b72",true).material_override = d.floor_material
+	box(Vector3(EAST_WALL,1,0),Vector3(0.2,2,10.2),"a2a499",true)
+	box(Vector3((7.0+EAST_WALL)/2.0,0.35,5),Vector3(EAST_WALL-6.8,0.7,0.2),"65746a",true)
 	box(Vector3(7.8,1,-5),Vector3(1.6,2,0.2),"a2a499",true)
-	box(Vector3(11.1,1,-5),Vector3(1.8,2,0.2),"a2a499",true)
+	box(Vector3((10.2+EAST_WALL)/2.0,1,-5),Vector3(EAST_WALL-10.2,2,0.2),"a2a499",true)
 	# WC: 3 x 3.2 m, accessed from the stockroom, away from food handling surfaces.
 	box(Vector3(9,0.65,3.4),Vector3(0.15,1.3,3.2),"a2a499",true)
 	box(Vector3(8.225,0.65,1.8),Vector3(2.45,1.3,0.15),"a2a499",true)
-	box(Vector3(11.275,0.65,1.8),Vector3(1.45,1.3,0.15),"a2a499",true)
-	box(Vector3(10.5,0.006,3.4),Vector3(2.8,0.012,3.0),"8e9b94")
-	door("StoreDoor",Vector3(7,0,-2.2),2.2,PI/2,"LAGER")
+	box(Vector3((10.55+EAST_WALL)/2.0,0.65,1.8),Vector3(EAST_WALL-10.55,1.3,0.15),"a2a499",true)
+	box(Vector3((9.1+EAST_WALL)/2.0,0.006,3.4),Vector3(EAST_WALL-9.2,0.012,3.0),"8e9b94")
+	door("StoreDoor",Vector3(7,0,-2.2),2.2,PI/2,"STOCK")
 	door("WCEntry",Vector3(10,0,1.8),1.1,0,"WC")
-	door("DeliveryDoor",Vector3(9.4,0,-5),1.6,0,"ANLIEFERUNG")
-	d.sign_text("LAGER / SERVICE",Vector3(10,1.75,-4.85),2.2,self)
-	light(Vector3(9.5,2.5,-1.9),Color("e2dec5"),1.3,6)
+	door("DeliveryDoor",Vector3(9.4,0,-5),1.6,0,"DELIVERY")
+	box(Vector3(9.4,1.73,-4.86),Vector3(1.55,0.24,0.06),"173d40")
+	d.sign_text("STOCKROOM",Vector3(9.4,1.73,-4.825),1.22,self)
+	light(Vector3(10.2,2.5,-1.9),Color("e2dec5"),1.3,6)
 	light(Vector3(10.6,2.3,3.3),Color("deebdf"),0.45,3.5)
 
 func stockroom() -> void:
 	for z in [-3.4,-0.3]:
-		box(Vector3(11.4,0.75,z),Vector3(0.85,1.5,1.8),"344b4b",true)
+		box(Vector3(RACK_X,0.75,z),Vector3(0.85,1.5,1.8),"344b4b",true)
 		for y in [0.25,0.85,1.45]:
-			box(Vector3(11.38,y,z),Vector3(0.94,0.055,1.9),"8e9b94")
+			box(Vector3(RACK_X-0.02,y,z),Vector3(0.94,0.055,1.9),"8e9b94")
 			for dz in [-0.56,0.0,0.56]:
-				box(Vector3(11.3,y+0.20,z+dz),Vector3(0.68,0.34,0.43),"a18a61")
-				box(Vector3(10.951,y+0.20,z+dz),Vector3(0.014,0.13,0.22),"d9cba7")
-				box(Vector3(11.3,y+0.38,z+dz),Vector3(0.1,0.02,0.43),"d9cba7")
-				box(Vector3(11.3,y+0.20,z+dz+0.22),Vector3(0.25,0.12,0.01),"d9cba7")
+				box(Vector3(RACK_X-0.10,y+0.20,z+dz),Vector3(0.68,0.34,0.43),"a18a61")
+				box(Vector3(RACK_X-0.449,y+0.20,z+dz),Vector3(0.014,0.13,0.22),"d9cba7")
+				box(Vector3(RACK_X-0.10,y+0.38,z+dz),Vector3(0.1,0.02,0.43),"d9cba7")
+				box(Vector3(RACK_X-0.10,y+0.20,z+dz+0.22),Vector3(0.25,0.12,0.01),"d9cba7")
 	for z in [-4.1,0.7]:
 		box(Vector3(8.0,0.18,z),Vector3(0.95,0.36,0.62),"286663",true)
 		for i in 4:
 			d.bottle(Vector3(7.68+i*0.21,0.4,z),"7d9670",self,0.7)
+	# Worktop in the gap between the racks, clear of the washroom wall in the game camera.
+	var desk := Node3D.new()
+	desk.name = "ReportDesk"
+	desk.position = Vector3(12.26,0,-1.85)
+	add_child(desk)
+	d.solid(Vector3(0,0.45,0),Vector3(1.40,0.9,0.74),desk)
+	d.box(Vector3(0,0.915,0),Vector3(1.50,0.07,0.78),"a3aaa0",desk)
+	d.box(Vector3(0.48,0.45,0),Vector3(0.38,0.86,0.65),"52625c",desk)
+	d.box(Vector3(-0.63,0.44,0),Vector3(0.08,0.87,0.66),"52625c",desk)
+	d.box(Vector3(-0.03,0.83,-0.30),Vector3(1.10,0.17,0.06),"52625c",desk)
+	d.box(Vector3(0.25,0.995,-0.18),Vector3(0.27,0.09,0.24),"344b4b",desk)
+	d.box(Vector3(0.25,1.055,-0.18),Vector3(0.21,0.03,0.19),"b8ad93",desk)
+	var report := Marker3D.new()
+	report.name = "ReportSurface"
+	report.position = Vector3(-0.39,0.965,0.01)
+	desk.add_child(report)
+	var clipping := Marker3D.new()
+	clipping.name = "ClippingSurface"
+	clipping.position = Vector3(RACK_X-0.485,1.3,-3.4)
+	add_child(clipping)
 	var supply := Node3D.new()
 	supply.name = "Supply"
 	supply.set_script(INTERACTABLE)
 	supply.action_id = &"supply"
-	supply.prompt = "Getränkekiste nehmen (8 Flaschen)"
+	supply.prompt = "Choose warehouse stock"
 	supply.position = Vector3(8,0,-4.1)
 	add_child(supply)
-	d.sign_text("NACHFÜLLWARE",Vector3(8,0.83,-4.1),1.15,self)
+	box(Vector3(8,0.20,-3.78),Vector3(0.81,0.14,0.026),"173d40")
+	d.sign_text("STOCK",Vector3(8,0.20,-3.762),0.63,self)
 	box(Vector3(7.7,0.8,3.6),Vector3(0.8,1.6,0.7),"52625c",true)
-	d.sign_text("REINIGUNG",Vector3(7.7,1.35,3.97),0.7,self)
+	d.sign_text("CLEANING",Vector3(7.7,1.35,3.97),0.7,self)
 	box(Vector3(8.4,0.85,4.25),Vector3(0.045,1.65,0.045),"a18a61")
 	box(Vector3(8.4,0.07,4.25),Vector3(0.5,0.12,0.15),"344b4b")
 	d.cylinder(Vector3(8.15,0.18,4.5),0.2,0.36,"8e9b94",self)
@@ -137,7 +161,7 @@ func washroom() -> void:
 	box(Vector3(9.55,1.10,4.43),Vector3(0.05,0.04,0.18),"8e9b94")
 	box(Vector3(9.55,1.45,4.78),Vector3(0.68,0.60,0.035),"8e9b94")
 	box(Vector3(10.1,1.0,4.75),Vector3(0.15,0.27,0.10),"ddd4b3")
-	d.cylinder(Vector3(11.8,0.72,2.7),0.09,0.17,"ddd4b3",self).rotation.z = PI/2
+	d.cylinder(Vector3(11.65,0.72,2.2),0.09,0.17,"ddd4b3",self).rotation.z = PI/2
 
 func delivery_yard() -> void:
 	box(Vector3(9.5,-0.12,-6.5),Vector3(5,0.24,3),"3c4849",true)
@@ -175,7 +199,7 @@ func forecourt() -> void:
 	# Roadside price pylon sits outside the forecourt traffic lanes.
 	box(Vector3(6.15,1.35,12.15),Vector3(0.95,2.7,0.18),"173d40",true)
 	d.sign_text("NIGHTSHIFT",Vector3(6.15,2.30,12.25),0.84,self)
-	d.sign_text("BENZIN  1.879",Vector3(6.15,1.78,12.25),0.72,self)
+	d.sign_text("PETROL  1.879",Vector3(6.15,1.78,12.25),0.72,self)
 	d.sign_text("DIESEL  1.829",Vector3(6.15,1.40,12.25),0.72,self)
 	d.sign_text("SHOP / 24 H",Vector3(6.15,0.92,12.25),0.64,self)
 

@@ -139,9 +139,13 @@ func _ready() -> void:
 	var model = preload("res://scripts/product_display.gd").new()
 	radio_point.add_child(model)
 	model.box(model,Vector3(0,1.05,0),Vector3(0.55,0.32,0.20),Color("283b3c"))
-	model.box(model,Vector3(0,0.85,0),Vector3(0.75,0.05,0.45),Color("80867b"))
+	model.box(model,Vector3(0,0.86,0),Vector3(0.78,0.06,0.47),Color("80867b"))
+	for x in [-0.34,0.34]:
+		model.box(model,Vector3(x,0.42,0),Vector3(0.08,0.84,0.40),Color("52625c"))
+	model.box(model,Vector3(0,0.43,-0.16),Vector3(0.62,0.76,0.08),Color("344b4b"))
 	model.box(model,Vector3(-0.12,1.05,0.11),Vector3(0.22,0.23,0.01),Color("101d22"))
 	model.box(model,Vector3(0.15,1.09,0.11),Vector3(0.17,0.06,0.01),Color("b8cf90"))
+	model.box(model,Vector3(0,0.62,0.224),Vector3(0.62,0.32,0.04),Color("52625c"))
 	marker(radio_point,"Approach",Vector3(0,0,1))
 	inventory.changed.connect(sync_products)
 	sync_products()
@@ -176,9 +180,9 @@ func _ready() -> void:
 	prop.target_id = &"stockroom_parcel"
 	prop.settled_roll = 1.0
 	warehouse.get_node("Supply").add_child(prop)
-	prop.position = Vector3(0.7,1.05,0.6)
-	model.box(prop,Vector3.ZERO,Vector3(0.38,0.36,0.36),Color("b59a73"))
-	model.box(prop,Vector3(0,0.185,0),Vector3(0.07,0.01,0.36),Color("e0cc9f"))
+	prop.position = Vector3(0.89,0.02,0.04)
+	model.box(prop,Vector3(0,0.22,0),Vector3(0.38,0.36,0.36),Color("b59a73"))
+	model.box(prop,Vector3(0,0.405,0),Vector3(0.07,0.01,0.36),Color("e0cc9f"))
 	# A small loaded service rack tips with the parcel; its state remains visible.
 	for x in [-0.32,0.32]:
 		model.box(prop,Vector3(x,0.28,0),Vector3(0.035,0.58,0.36),Color("798581"))
@@ -230,6 +234,13 @@ func setup_carried_visual() -> void:
 	band_material.albedo_color = Color("d0bc91")
 	band.material_override = band_material
 	carried_visual.add_child(band)
+	var details = preload("res://scripts/product_display.gd").new()
+	carried_visual.add_child(details)
+	for x in [-0.16,0.16]:
+		details.box(carried_visual,Vector3(x,0.158,0),Vector3(0.096,0.027,0.318),Color("b8a682"))
+	details.box(carried_visual,Vector3(0,-0.008,0.162),Vector3(0.185,0.104,0.008),Color("ded3b8"))
+	for y in [-0.036,0,0.029]:
+		details.box(carried_visual,Vector3(0,y,0.168),Vector3(0.115,0.009,0.004),Color("706b55"))
 	carried_visual.hide()
 
 func set_carry_state(delivery: bool, product: StringName) -> void:
@@ -331,7 +342,7 @@ func setup_customer_service_key() -> void:
 	customer_service_key.available = false
 	warehouse.add_child(customer_service_key)
 	# The key board hangs on the accessible stock shelf, not in the sealed WC alcove.
-	customer_service_key.position = Vector3(10.88,0,-0.3)
+	customer_service_key.position = Vector3(warehouse.RACK_X-0.52,0,-0.3)
 	marker(customer_service_key,"Approach",Vector3(-0.68,0,0))
 	marker(customer_service_key,"PlayerInteraction",Vector3(-0.12,0,0))
 	var model := preload("res://scripts/product_display.gd").new()

@@ -38,6 +38,10 @@ func run() -> void:
 	await walk(layout.operator_point.global_position)
 	await key(KEY_T)
 	check(not world.radio.enabled,"Radio cannot be operated remotely")
+	# Night 5 makes the archived notice selectable, but not from the radio controls.
+	loop.career_shifts = 4
+	await create_timer(0.08).timeout
+	check(world.story_world.get_node("redwater").available,"The archived notice is enabled for the radio focus regression")
 	await walk(layout.radio_point.get_node("Approach").global_position)
 	check(player.interaction_target == layout.radio_point,"Physical radio selects its own prompt")
 	await use()

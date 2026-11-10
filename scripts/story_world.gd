@@ -96,7 +96,9 @@ func setup(owner_world: Node3D) -> void:
 		model.box(construction,Vector3(x,0.56,0.55),Vector3(1.55,0.12,0.10),Color("d7c9aa"))
 		model.box(construction,Vector3(x,0.56,0.61),Vector3(0.34,0.12,0.11),Color("c66c32"))
 	point(construction,"construction",Vector3(-2.75,0,-0.75),"Read construction notice")
-	branding = label(self,"REDWOOD SERVICE",to_local(layout.entrance.global_position)+Vector3(2,1.1,-0.15),30)
+	var nameplate_at := to_local(layout.entrance.global_position)+Vector3(2.45,1.12,-0.09)
+	model.box(self,nameplate_at,Vector3(1.85,0.46,0.05),Color("173d40"))
+	branding = label(self,"REDWOOD SERVICE",nameplate_at+Vector3(0,0,0.027),26)
 	alternate = Node3D.new()
 	alternate.name = "RedwaterDetails"
 	add_child(alternate)
@@ -108,8 +110,8 @@ func setup(owner_world: Node3D) -> void:
 	add_child(overlap_echo)
 	overlap_echo.hide()
 	var sign_at := to_local(layout.radio_point.global_position)
-	label(intrusions,"REDWATER\n14 SERVICE ROAD",sign_at+Vector3(-0.8,1.6,0),28)
-	model.box(intrusions,sign_at+Vector3(-0.8,1.3,0),Vector3(0.8,0.12,0.25),Color("547c85"))
+	model.box(intrusions,sign_at+Vector3(-0.14,1.57,-0.65),Vector3(0.95,0.39,0.05),Color("547c85"))
+	label(intrusions,"REDWATER\n14 SERVICE ROAD",sign_at+Vector3(-0.14,1.57,-0.62),22)
 	# Redwater is a normal alternate town, not an "evil" filter: recognizable footprint,
 	# but different civic furniture, road geometry and nearby structures.
 	model.box(alternate,forecourt+Vector3(-2,-0.03,3.6),Vector3(8,0.04,1.8),Color("455658"))
@@ -128,33 +130,33 @@ func setup(owner_world: Node3D) -> void:
 	label(alternate,"REDWATER BUS",shelter_at+Vector3(0,1.55,0.39),22)
 	# Different roadside utility cabinet and municipal sign are visible from the forecourt.
 	model.box(alternate,forecourt+Vector3(-5.6,0.65,4.2),Vector3(0.9,1.3,0.65),Color("52635f"))
-	label(alternate,"R-14",forecourt+Vector3(-5.6,1.15,3.86),20)
+	label(alternate,"R-14",forecourt+Vector3(-5.6,1.15,3.873),20).rotation.y = PI
 	model.box(alternate,forecourt+Vector3(5.3,0.85,4.5),Vector3(0.10,1.7,0.10),Color("78837c"))
 	model.box(alternate,forecourt+Vector3(5.3,1.65,4.5),Vector3(1.25,0.52,0.07),Color("557983"))
-	label(alternate,"REDWATER",forecourt+Vector3(5.3,1.67,4.44),20)
+	label(alternate,"REDWATER",forecourt+Vector3(5.3,1.67,4.463),20).rotation.y = PI
 
 	# At 03:17 a few Redwood objects coexist briefly with the Redwater set.
 	var echo_at := to_local(layout.entrance.global_position)+Vector3(-2.8,0,6.4)
 	model.box(overlap_echo,echo_at+Vector3(0,0.8,0),Vector3(0.09,1.6,0.09),Color("6d7772"))
 	model.box(overlap_echo,echo_at+Vector3(0,1.55,0),Vector3(1.5,0.55,0.08),Color("334d4d"))
-	label(overlap_echo,"REDWOOD\nSERVICE ROAD",echo_at+Vector3(0,1.58,-0.05),22)
+	label(overlap_echo,"REDWOOD\nSERVICE ROAD",echo_at+Vector3(0,1.58,-0.043),22).rotation.y = PI
 	for x in [-1.4,1.4]:
 		model.box(overlap_echo,echo_at+Vector3(x,0.12,1.25),Vector3(1.9,0.16,0.22),Color("73786d"))
-	label(intrusions,"RIVERLINE DRINKS",to_local(layout.product_nodes[&"energy"].global_position)+Vector3(0,1.8,0.3),28)
-	label(intrusions,"REDWATER DISTRIBUTION",to_local(layout.warehouse.global_position)+Vector3(9,1.7,-4),28)
-	# Optional clues now live on surfaces that already belong in the shop instead of four random freestanding stands.
-	var sites = [layout.checkout,layout.product_nodes[&"chips"],layout.warehouse.get_node("Supply"),layout.radio_point]
-	var ids: Array[StringName] = [&"accident",&"map",&"missing",&"redwater"]
-	var offsets := [
-		Vector3(-0.72,1.10,-0.08), # local paper at the till
-		Vector3(0.05,1.20,1.15),   # local paper on the snack end
-		Vector3(1.05,0.82,0.18),   # stockroom delivery paperwork
-		Vector3(-0.52,0.90,0.02)   # clipping beside the radio
-	]
-	for i in ids.size():
-		var reader := point(self,ids[i],to_local(sites[i].global_position)+offsets[i],"Read "+preload("res://scripts/clue_catalog.gd").ENTRIES[ids[i]].title)
-		model.box(reader,Vector3.ZERO,Vector3(0.32,0.018,0.24),Color("d0c9ad"))
-		model.box(reader,Vector3(0,0.012,-0.07),Vector3(0.24,0.006,0.018),Color("66706a"))
+	var cooler_sign := to_local(layout.product_nodes[&"energy"].global_position)+Vector3(0,1.67,0.52)
+	model.box(intrusions,cooler_sign,Vector3(1.42,0.17,0.027),Color("355768"))
+	label(intrusions,"RIVERLINE DRINKS",cooler_sign+Vector3(0,0,0.016),22)
+	var stock_sign := to_local(layout.warehouse.to_global(Vector3(11.6,1.5,-4.87)))
+	model.box(intrusions,stock_sign,Vector3(1.73,0.25,0.04),Color("355768"))
+	label(intrusions,"REDWATER DISTRIBUTION",stock_sign+Vector3(0,0,0.023),21)
+	var report: Node3D = layout.warehouse.get_node("ReportDesk/ReportSurface")
+	document(&"accident",to_local(report.global_position),Vector3(-0.52,-0.42,0))
+	var snacks: Node3D = layout.product_nodes[&"chips"]
+	document(&"map",to_local(snacks.to_global(Vector3(-0.38,1.23,0.55))),Vector3(-0.28,-0.58,0))
+	var clipping: Node3D = layout.warehouse.get_node("ClippingSurface")
+	document(&"missing",to_local(clipping.global_position),Vector3(-0.32,-0.62,0),Vector3(0,0,PI/2))
+	var notice := to_local(station.to_global(Vector3(0.85,0.78,station.shop_bounds.position.y+0.21)))
+	model.box(self,notice,Vector3(0.58,0.39,0.08),Color("344b4b"))
+	document(&"redwater",notice+Vector3(0,0,0.051),Vector3(0,-0.34,0.55),Vector3(PI/2,0,0))
 	depot = Node3D.new()
 	depot.name = "Depot"
 	depot.position = Vector3(24,0,0)
@@ -187,7 +189,6 @@ func label(parent: Node3D, text: String, at: Vector3, size: int) -> Label3D:
 	sign.position = at
 	sign.font_size = size
 	sign.pixel_size = 0.004
-	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	parent.add_child(sign)
 	return sign
 
@@ -213,6 +214,22 @@ func point(parent: Node3D, id: StringName, at: Vector3, prompt: String) -> Node3
 	node.used.connect(interact)
 	return node
 
+func document(id: StringName, at: Vector3, approach: Vector3, rotation_offset := Vector3.ZERO) -> void:
+	var reader := point(self,id,at,"Read "+preload("res://scripts/clue_catalog.gd").ENTRIES[id].title)
+	reader.selection_bias = 0.16
+	var anchor := Marker3D.new()
+	anchor.name = "PlayerInteraction"
+	anchor.position = approach
+	reader.add_child(anchor)
+	var paper := Node3D.new()
+	paper.rotation = rotation_offset
+	reader.add_child(paper)
+	model.box(paper,Vector3(0,-0.006,0),Vector3(0.32,0.015,0.24),Color("967b54"))
+	model.box(paper,Vector3(0,0.005,0.01),Vector3(0.285,0.01,0.204),Color("dfd6b8"))
+	model.box(paper,Vector3(0,0.014,-0.095),Vector3(0.10,0.014,0.027),Color("8e9b94"))
+	for z in [-0.055,-0.022,0.011,0.044,0.077]:
+		model.box(paper,Vector3(-0.015,0.012,z),Vector3(0.18,0.003,0.008),Color("626d67"))
+
 func person(parent: Node3D, at: Vector3) -> Node3D:
 	var node := Node3D.new()
 	node.position = at
@@ -230,14 +247,21 @@ func apply_night() -> void:
 		if step.get("actor",false):
 			var board: Node3D = world.get_node("Station/ShiftBoard")
 			chapter_actor = person(self,to_local(board.global_position)+Vector3(0.65,0,-0.25))
-			label(chapter_actor,step.speaker,Vector3(0,1.45,0),24)
 			chapter_actor.hide()
 			break
 	if not loop.definition.handover.is_empty() and not loop.story_flags.get(handover_flag(),false):
-		# Meet Mike near his arrival position, clear of stock and checkout prompts.
-		josh = person(self,to_local(world.player.global_position)+Vector3(1.4,0,-0.3))
+		# The entrance aisle provides a clear first sightline even after a layout move.
+		var at: Vector3 = to_local(layout.entrance.to_global(Vector3(-1.2,0,-3.90)))
+		josh = preload("res://scripts/customer.gd").new()
+		josh.name = "Josh"
+		josh.station_staff = true
+		josh.state = &"staff"
+		josh.clothing_color = Color("547a7b")
+		josh.move_speed = 1.75
+		josh.position = at
+		add_child(josh)
+		josh.visual_root.look_at(Vector3(world.player.global_position.x,josh.global_position.y,world.player.global_position.z),Vector3.UP,true)
 		point(josh,&"josh",Vector3.ZERO,"Talk to Josh")
-		label(josh,"Josh",Vector3(0,1.45,0),24)
 
 func handover_flag() -> StringName:
 	return StringName("josh_handover_%d" % configured_night)
@@ -266,10 +290,10 @@ func dialogue_changed() -> void:
 		if is_instance_valid(josh):
 			josh.get_node("josh").available = false
 			loop.navigation.rebuild(world,layout.doors)
-			var path: PackedVector3Array = loop.navigation.path(josh.global_position,layout.spawn_point.global_position)
-			var motion := create_tween()
-			for position in path: motion.tween_property(josh,"global_position",position,0.15)
-			motion.tween_callback(josh.queue_free)
+			josh.navigation = loop.navigation
+			josh.doors = layout.doors
+			josh.arrived.connect(func(actor: CharacterBody3D): actor.queue_free(),CONNECT_ONE_SHOT)
+			josh.go_to(layout.spawn_point)
 
 func interact_chapter(location: StringName) -> bool:
 	if world.phase != world.Phase.ACTIVE or world.has_interaction_focus() or trip_busy:

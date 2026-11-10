@@ -128,7 +128,7 @@ func refresh() -> void:
 		row.add_theme_color_override("font_color",STYLE.ACCENT if i == selection else STYLE.MUTED)
 	indicator.text = "↑ ↓  Choose   ·   Enter / E  Confirm" if has_answers() else "Space / Enter  " + ("▼" if session.index+1 < session.lines.size() else "Close")
 	# Containers expand for long lines; the bottom stays inside the safe area.
-	frame.offset_top = -maxf(218,frame.get_combined_minimum_size().y)
+	frame.offset_top = -28-maxf(218,frame.get_combined_minimum_size().y)
 
 func handle(event: InputEvent) -> bool:
 	if not session.active or not event is InputEventKey or not event.pressed or event.echo: return false

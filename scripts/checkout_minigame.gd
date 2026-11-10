@@ -385,6 +385,8 @@ func _product_visual(id: StringName) -> Node3D:
 	root.name = "Current_"+String(id)
 	var material := StandardMaterial3D.new()
 	material.roughness = 0.72
+	var model = preload("res://scripts/product_display.gd").new()
+	root.add_child(model)
 	var barcode_radius := 0.09
 	var barcode_y := 0.0
 	match id:
@@ -392,43 +394,39 @@ func _product_visual(id: StringName) -> Node3D:
 			var mesh := CylinderMesh.new()
 			mesh.top_radius = 0.065
 			mesh.bottom_radius = 0.08
-			mesh.height = 0.36
-			mesh.radial_segments = 12
-			var visual := MeshInstance3D.new()
-			visual.mesh = mesh
-			visual.position.y = 0.18
-			material.albedo_color = Color("7d9670")
-			visual.material_override = material
-			root.add_child(visual)
-			current_barcode_angle = PI
-			barcode_radius = 0.082
-			barcode_y = 0.18
-		&"energy":
-			var mesh := CylinderMesh.new()
-			mesh.top_radius = 0.075
-			mesh.bottom_radius = 0.075
 			mesh.height = 0.25
 			mesh.radial_segments = 12
 			var visual := MeshInstance3D.new()
 			visual.mesh = mesh
 			visual.position.y = 0.125
-			material.albedo_color = Color("439d8d")
+			material.albedo_color = Color("7d9670")
 			visual.material_override = material
 			root.add_child(visual)
+			var neck := CylinderMesh.new()
+			neck.top_radius = 0.038
+			neck.bottom_radius = 0.064
+			neck.height = 0.075
+			neck.radial_segments = 12
+			model.part(root,neck,Vector3(0,0.286,0),Color("7d9670"))
+			var cap := CylinderMesh.new()
+			cap.top_radius = 0.044
+			cap.bottom_radius = 0.044
+			cap.height = 0.033
+			cap.radial_segments = 12
+			model.part(root,cap,Vector3(0,0.335,0),Color("d7ddbe"))
+			model.box(root,Vector3(0,0.15,0.066),Vector3(0.099,0.08,0.014),Color("d0d7b5"))
+			current_barcode_angle = PI
+			barcode_radius = 0.082
+			barcode_y = 0.18
+		&"energy":
+			model.energy_can(root,Vector3(0,0.132,0))
 			current_barcode_angle = PI/2.0
-			barcode_radius = 0.078
+			barcode_radius = 0.081
 			barcode_y = 0.12
 		&"chips":
-			var mesh := PrismMesh.new()
-			mesh.size = Vector3(0.24,0.31,0.17)
-			var visual := MeshInstance3D.new()
-			visual.mesh = mesh
-			visual.position.y = 0.155
-			material.albedo_color = Color("c97435")
-			visual.material_override = material
-			root.add_child(visual)
+			model.chip_packet(root,Vector3(0,0.164,0))
 			current_barcode_angle = 0.0
-			barcode_radius = 0.09
+			barcode_radius = 0.093
 			barcode_y = 0.15
 		_:
 			var mesh := BoxMesh.new()

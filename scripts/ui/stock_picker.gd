@@ -28,7 +28,10 @@ func _ready() -> void:
 	list.hide_root = true
 	list.select_mode = Tree.SELECT_ROW
 	list.custom_minimum_size.y = 164
-	list.add_theme_font_size_override("font_size",17)
+	list.add_theme_font_size_override("font_size",18)
+	list.add_theme_constant_override("v_separation",7)
+	list.add_theme_color_override("title_button_color",STYLE.ACCENT)
+	list.add_theme_color_override("font_color",STYLE.PAPER)
 	column.add_child(list)
 	for i in list.columns:
 		list.set_column_title(i,["Product","In storage","On shelf","Free slots"][i])

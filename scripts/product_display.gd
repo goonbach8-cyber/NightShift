@@ -13,27 +13,44 @@ func bind(item: Resource, kind: String, count: int, origin: Vector3, spacing: Ve
 		slots.append(slot)
 		match kind:
 			"can":
-				var can := CylinderMesh.new()
-				can.top_radius = 0.075
-				can.bottom_radius = 0.075
-				can.height = 0.25
-				can.radial_segments = 12
-				part(slot, can, Vector3.ZERO, Color("439d8d"))
-				for y in [-0.125, 0.125]:
-					var rim := CylinderMesh.new()
-					rim.top_radius = 0.08
-					rim.bottom_radius = 0.08
-					rim.height = 0.012
-					part(slot, rim, Vector3(0,y,0), Color("b8c8c4"))
-				box(slot, Vector3(0,0,0.075), Vector3(0.06,0.16,0.01), Color("f0d461"))
+				energy_can(slot,Vector3.ZERO)
 			"bag":
-				var bag := PrismMesh.new()
-				bag.size = Vector3(0.26,0.31,0.18)
-				part(slot, bag, Vector3.ZERO, Color("c97435"))
-				for y in [-0.15,0.15]: box(slot, Vector3(0,y,0), Vector3(0.28,0.025,0.1), Color("e9b356"))
-				box(slot, Vector3(0,-0.015,0.095), Vector3(0.18,0.10,0.01), Color("f2db9b"))
+				chip_packet(slot,Vector3.ZERO)
 	stock.changed.connect(sync)
 	sync()
+
+func energy_can(parent: Node3D, at: Vector3) -> void:
+	var can := CylinderMesh.new()
+	can.top_radius = 0.075
+	can.bottom_radius = 0.075
+	can.height = 0.25
+	can.radial_segments = 12
+	part(parent,can,at,Color("439d8d"))
+	var rim := CylinderMesh.new()
+	rim.top_radius = 0.08
+	rim.bottom_radius = 0.08
+	rim.height = 0.012
+	for y in [-0.125,0.125]:
+		part(parent,rim,at+Vector3(0,y,0),Color("b8c8c4"))
+	box(parent,at+Vector3(0,0.133,0.012),Vector3(0.038,0.006,0.051),Color("6e807b"))
+	box(parent,at+Vector3(0,0,0.073),Vector3(0.061,0.156,0.014),Color("e1c760"))
+	box(parent,at+Vector3(0,0.026,0.081),Vector3(0.045,0.021,0.003),Color("224941"))
+	box(parent,at+Vector3(0,-0.047,0.081),Vector3(0.036,0.009,0.003),Color("224941"))
+
+func chip_packet(parent: Node3D, at: Vector3) -> void:
+	var bag := CapsuleMesh.new()
+	bag.radius = 0.13
+	bag.height = 0.30
+	bag.radial_segments = 8
+	bag.rings = 3
+	part(parent,bag,at,Color("bd6636")).scale.z = 0.62
+	for y in [-0.152,0.152]:
+		box(parent,at+Vector3(0,y,0),Vector3(0.255,0.024,0.092),Color("e5ad52"))
+	for side in [-1,1]:
+		box(parent,at+Vector3(side*0.108,0,0),Vector3(0.036,0.285,0.068),Color("bd6636"))
+	box(parent,at+Vector3(0,0.011,0.074),Vector3(0.152,0.127,0.024),Color("e5ad52"))
+	box(parent,at+Vector3(0,0.032,0.088),Vector3(0.116,0.036,0.004),Color("773c2d"))
+	box(parent,at+Vector3(0,-0.022,0.088),Vector3(0.068,0.028,0.004),Color("efda9a"))
 
 func sync() -> void:
 	for i in slots.size(): slots[i].visible = i < stock.shelf_units

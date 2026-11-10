@@ -353,7 +353,7 @@ func _on_used(action: StringName) -> void:
 			_say("Night complete. Your summary is ready.",8)
 		elif phase == Phase.NOT_STARTED:
 			if get_tree().get_meta("nightshift_menu_session",false) and not gameplay.definition.handover.is_empty() and not gameplay.story_flags.get(story_world.handover_flag(),false):
-				story_world.interact(&"josh")
+				_say("Talk to Josh near the entrance before starting.")
 				return
 			phase = Phase.ACTIVE
 			gameplay.start()
