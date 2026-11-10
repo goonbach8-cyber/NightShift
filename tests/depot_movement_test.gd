@@ -6,6 +6,8 @@ func run() -> void:
 	bind_world()
 	loop.career_shifts = 3
 	loop.configure_night(preload("res://scripts/night_catalog.gd").for_night(4))
+	world.phase = world.Phase.ACTIVE
+	loop.active = true
 	await create_timer(0.1).timeout
 	var story = world.story_world
 	loop.navigation.rebuild(world,layout.doors)
@@ -31,6 +33,8 @@ func run() -> void:
 	await walk(story.depot.get_node("depot_clerk").global_position)
 	await use()
 	check(loop.dialogue.active,"Clerk remains reachable with solid counter")
+	while loop.dialogue.active: await key(KEY_SPACE)
+	await use()
 	while loop.dialogue.active: await key(KEY_SPACE)
 	await walk(story.depot.get_node("return").global_position)
 	await use()

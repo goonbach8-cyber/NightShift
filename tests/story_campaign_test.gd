@@ -38,6 +38,8 @@ func run() -> void:
 			check(story.road.visible and story.crack.visible,"Night 3 creates real road and crack geometry")
 			loop.lost_sales = 0
 		if night == 4:
+			world.phase = world.Phase.ACTIVE
+			loop.active = true
 			check(story.road.visible,"Road remains in Night 4")
 			story.interact(&"route")
 			while story.trip_busy: await create_timer(0.1).timeout
@@ -49,6 +51,11 @@ func run() -> void:
 			check(loop.dialogue.lines[1].contains("years"),"Depot clerk treats route as established")
 			while loop.dialogue.active: await key(KEY_SPACE)
 			story.interact(&"return")
+			check(story.in_depot and not story.trip_busy,"The depot cannot be left before hearing Lea")
+			story.interact(&"depot_clerk")
+			check(loop.dialogue.speaker.begins_with("Lea"),"The second depot interaction is Lea's call")
+			while loop.dialogue.active: await key(KEY_SPACE)
+			story.interact(&"return")
 			while story.trip_busy: await create_timer(0.1).timeout
 			check(not story.in_depot and loop.tasks.has(&"depot"),"Depot task allows return to station")
 		if night == 5:
@@ -56,7 +63,11 @@ func run() -> void:
 			check(story.intrusions.visible and not story.alternate.visible,"Small Redwater intrusions precede the alternate world")
 			story.interact(&"construction")
 			check(loop.dialogue.lines[1].contains("Redwater"),"Construction notice contains contradictory map name")
+			loop.dialogue.close()
+			check(not loop.story_flags.get(&"construction_read",false),"Closing the notice early does not unlock the next event")
+			story.interact(&"construction")
 			while loop.dialogue.active: await key(KEY_SPACE)
+			check(loop.story_flags.get(&"construction_read",false),"Finishing the notice unlocks the next event")
 		if night == 6:
 			check(story.alternate.visible and story.branding.text.contains("REDWATER"),"Night 6 changes physical station branding")
 			story.interact(&"josh")

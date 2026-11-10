@@ -276,10 +276,22 @@ func run() -> void:
 			await walk(world.story_world.depot.get_node("depot_clerk").global_position)
 			await use()
 			while loop.dialogue.active: await key(KEY_SPACE)
+			await use()
+			while loop.dialogue.active: await key(KEY_SPACE)
+			check(loop.story_flags.get(&"heard_lea_at_depot",false),"Night 4 first conversation with Lea is completed at the depot")
 			await walk(world.story_world.depot.get_node("return").global_position)
 			await use()
 			while world.story_world.trip_busy: await process_frame
 			check(loop.tasks.has(&"depot") and not world.story_world.in_depot,"Depot collection and return complete")
+		if night == 4:
+			await walk(world.story_world.construction.get_node("construction").global_position)
+			await use()
+			while loop.dialogue.active: await key(KEY_SPACE)
+			check(loop.story_flags.get(&"construction_read",false),"Night 5 construction notice is read in the world")
+		if night == 5:
+			await use()
+			while loop.dialogue.active: await key(KEY_SPACE)
+			check(loop.story_flags.get(&"met_lea",false),"Night 6 encounter with Lea is completed in Redwater")
 		await walk(layout.radio_point.get_node("Approach").global_position)
 		await key(KEY_T)
 		check(world.radio.enabled,"Radio toggles through real key input")
@@ -355,6 +367,24 @@ func run() -> void:
 		if not has_method("prepare_shift_end") or player.interaction_target == layout.checkout:
 			await use()
 		check(world.phase == world.Phase.ACTIVE,"Checkout does not end the night")
+		var step: Dictionary = loop.chapter_step()
+		if not step.is_empty():
+			check(not loop.can_finish(),"Night %d cannot end before the remaining chapter step" % (night+1))
+			var chapter_deadline := Time.get_ticks_msec()+25000
+			while not loop.chapter_step_ready(step) and Time.get_ticks_msec() < chapter_deadline:
+				await process_frame
+			check(loop.chapter_step_ready(step),"Night %d chapter action is available after its prerequisites" % (night+1))
+			if step.location == &"route":
+				await physics_frame
+				loop.navigation.rebuild(world,layout.doors)
+				await walk(world.story_world.get_node("route").global_position)
+			else:
+				await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
+			await use()
+			while loop.dialogue.active: await key(KEY_SPACE)
+			check(loop.story_flags.get(step.id,false),"Night %d completes the chapter through its world interaction" % (night+1))
+			if night == 4: check(world.story_world.alternate.visible,"Night 5 crosses into Redwater before saving")
+			if night == 5: check(not world.story_world.alternate.visible,"Night 6 returns before the ending")
 		await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
 		await use()
 		check(world.phase == world.Phase.COMPLETE,"Night can finish")
@@ -367,6 +397,8 @@ func run() -> void:
 			check(saved.shifts == 6 and saved.revenue == 18910,"Six-night saved totals are exact: CHF 189.10")
 			for number in range(1,7):
 				check(saved.events.has("night_%d_main" % number),"Saved main-event history includes Night %d" % number)
+			for id in [&"mike_first_note",&"mike_checked_contradiction",&"josh_confessed",&"heard_lea_at_depot",&"entered_redwater",&"met_lea",&"returned_redwood"]:
+				check(saved.flags.get(id,false),"Saved chapter milestone: "+String(id))
 			world.menu.close()
 			break
 		bind_world()

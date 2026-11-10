@@ -1,6 +1,6 @@
 # NightShift / 03:17 — playable prototype
 
-Updated 17 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. Six connected prototype nights reach the ending; these short test shifts are not five hours of finished story.
+Updated 10 November 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. The six playable chapters now incorporate the Mike, Josh and Lea story foundation. The shifts are still short.
 
 ## Playing
 
@@ -18,14 +18,23 @@ Updated 17 September 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJEC
 - **ESC** pauses; Resume, Settings and Main Menu are available. Pause freezes gameplay, customer patience and dialogue input. Resume clears held movement actions.
 - At completion, the transition shows customers, items, revenue, lost customers and tasks. Continue writes the safe boundary checkpoint and loads the next night. Returning mid-shift does not save active customers.
 
-## Nights and story prototypes
+## Campaign chapters
 
-- Night 1: physical Josh handover before the first shift; the exact 03:17 warning. Six customers, routine tasks, checkout mystery and a two-answer conversation.
-- Night 2: Josh sincerely denies the warning. Eight customers, waste task, radio event and a follow-up responding to the saved answer.
-- Night 3: seven customers, WC task, a small loaded rack tips beside Mike in the stockroom and stays tipped. Required presentation blocks premature shift completion. A crack and inaccessible road appear later; lost sales cannot block the physical story prerequisites.
-- Night 4: six customers and a required depot collection. The physical navigation point starts a compact fade/travel transition; walk to the clerk and ledger, then use the return point. The small depot has floor, bounded yard, counter, clerk and lighting, not a driving simulation.
-- Night 5: construction notice with an alternate map and Redwater name, radio announcement, address/company intrusions and routine customer references.
-- Night 6: changed station branding, additional road/building geometry, familiar and different customer profiles, and Redwater-Josh's ordinary recognition of Mike without special knowledge. The 03:17 main event changes the sign; completion restores familiar surroundings with a remaining Redwater sign.
+Each night uses the same work loop and has a separate personal objective. The shift board advances the next available story interaction or closes the night once work and all required story interactions are complete. Closing a story dialogue early leaves it available. The HUD lists remaining work separately from Mike's goal.
+
+- Night 1: Josh warns Mike, the counter phone rings at the staffed till, and Mike records what happened at the shift board. Answering, declining or missing the call all allow the follow-up.
+- Night 2: Josh denies the warning. Hear the local broadcast, then record the discrepancy at the shift board.
+- Night 3: Witness the checkout and stockroom changes, then hear Josh's confession about Lea. Required events depend on presentation, and no successful sale is needed to reach the confession.
+- Night 4: Take the existing road to the depot, collect the replacement stock and use the clerk's desk again for Lea's call. Then return to the station.
+- Night 5: Read the construction notice through to the end, hear the broadcast and complete the work before following the route into Redwater.
+- Night 6: Meet Lea at the staff notes. After the overlap and the remaining work, use the access road to confirm the return. The original shift board leads to the ending and its optional Josh call.
+
+Chapter milestones use the existing story flags in between-night checkpoints. These scenes are short foundations for the psychological-horror campaign. They do not represent its eventual length or final presentation.
+
+## Existing story-world systems
+
+- Existing customer counts, orders and work schedules remain in use. Night 2 adds waste-bin service and Night 3 adds a physical WC check. The depot retains its compact fade/travel transition and bounded, walkable yard.
+- The construction notice, branding, road geometry and Redwater customer profiles remain. The route uses the existing road in both directions. Josh and Lea's added chapter conversations reuse the existing dialogue and placeholder character models.
 - Five physical optional readings are introduced across the nights. Only completed reading counts. Four of five unlock a brief extra Josh call after the normal ending. No visible clue counter and no explanatory lore.
 - Interrupted handovers, document readings, depot conversation and consequence dialogue remain available. Completed dialogue consequences are recorded once.
 - Events support time, sales, prior event, story flag, task and player-area prerequisites. Configurable spacing prevents simultaneous unrelated events. Text waits for a relevant location; active dialogue postpones presentation and preserves reading time.
@@ -43,6 +52,7 @@ Run with Godot 4.7.2 CLI, e.g. `godot --headless --path . --script res://tests/c
 
 - `campaign_test.gd -- --six-nights --shift-layout`: New Game through all six nights to ending on translated map, physical depot interactions, presented main events, boundary saves and customer/reservation cleanup.
 - `story_continuity_test.gd`: both answer branches through Save/Load, F conversation, real Area3D, persistent prop displacement and WC interaction.
+- `chapter_progress_test.gd`: required story gates, a missed 03:17 call, interrupted dialogue and a stock check when every shelf is already full.
 - `campaign_process_test.gd`: stages 1, 2, 3 in separate processes, sharing a unique `--checkpoint=user://campaign_process_<id>.json` and `--stage=N`.
 - `six_process_test.gd`: stages 1 through 7 in separate processes, sharing `--checkpoint=user://six_process_<unique>.json`; boundary fixtures verify stocks, flags, clues, event history and world reconstruction, separately from the full gameplay test.
 - `story_campaign_test.gd`, `ending_save_test.gd`: authored sequence, interrupted-reading guards, required Night 3 presentation, low/high clue ending branches and save/load.

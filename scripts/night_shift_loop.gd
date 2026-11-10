@@ -1,7 +1,7 @@
 extends Node
 signal changed
 signal notice(text: String)
-const TASK_LABELS := {&"cooler":"Check refrigeration", &"restock":"Refill a display", &"delivery":"Store delivery", &"service":"Empty waste bin", &"wc":"Check WC", &"depot":"Collect depot order"}
+const TASK_LABELS := {&"cooler":"Check refrigeration", &"restock":"Check or refill stock", &"delivery":"Store delivery", &"service":"Empty waste bin", &"wc":"Check WC", &"depot":"Collect depot order"}
 const CUSTOMER = preload("res://scripts/customer.gd")
 var layout: Node
 var navigation: Node
@@ -393,7 +393,11 @@ func fill_shelf(id: StringName) -> void:
 		if carried != &"" and carried != id:
 			notice.emit("Wrong shelf · Carrying %s, needs %s." % [inventory.products[carried].display_name,inventory.products[id].display_name])
 		elif inventory.stocks[id].shelf_units >= inventory.stocks[id].capacity:
-			notice.emit("This display is already full.")
+			if inventory.stocks.values().all(func(stock): return stock.shelf_units >= stock.capacity):
+				tasks[&"restock"] = true
+				notice.emit("Stock checked. All displays are full.")
+			else:
+				notice.emit("This display is already full.")
 		else:
 			notice.emit("Collect matching stock in the warehouse. [TAB] selects a product there.")
 
@@ -464,8 +468,28 @@ func accept_delivery(actual_manifest: Dictionary = {}) -> bool:
 	changed.emit()
 	return true
 
+func work_complete() -> bool:
+	return served+lost_sales == customer_count and departed == customer_count and required_tasks.all(func(id): return tasks.has(id))
+
+func was_presented(id: StringName) -> bool:
+	return story_flags.get(StringName("presented_"+String(id)),false)
+
+func chapter_step() -> Dictionary:
+	for step in definition.chapter_steps:
+		if not story_flags.get(step.id,false):
+			return step
+	return {}
+
+func chapter_step_ready(step: Dictionary) -> bool:
+	if step.is_empty():
+		return false
+	var event: StringName = step.get("after_event",&"")
+	var flag: StringName = step.get("after_flag",&"")
+	var task: StringName = step.get("after_task",&"")
+	return (event == &"" or was_presented(event)) and (flag == &"" or story_flags.get(flag,false)) and (task == &"" or tasks.has(task)) and (not step.get("after_work",false) or work_complete())
+
 func can_finish() -> bool:
-	return served+lost_sales == customer_count and departed == customer_count and required_tasks.all(func(id): return tasks.has(id)) and definition.required_story.all(func(id): return story_flags.get(StringName("presented_"+String(id)),false))
+	return work_complete() and chapter_step().is_empty() and definition.required_story.all(was_presented)
 
 func talk() -> void:
 	if not checkout_ready(): return
@@ -493,7 +517,7 @@ func status_text() -> String:
 	elif carried != &"": lines.append("Carrying %s ×%d → matching display" % [inventory.products[carried].display_name,inventory.stocks[carried].carried_units])
 	elif delivery_ready: lines.append("Delivery waiting in the yard")
 	if can_finish(): lines.append("Finish at the staff shift notes")
-	elif served+lost_sales == customer_count and definition.required_story.any(func(id): return not story_flags.get(StringName("presented_"+String(id)),false)): lines.append("Check the stockroom before leaving")
+	elif not chapter_step().is_empty(): lines.append(definition.personal_goal)
 	if "--dev-debug" in OS.get_cmdline_user_args():
 		for id in inventory.stocks:
 			var item: Resource = inventory.stocks[id]

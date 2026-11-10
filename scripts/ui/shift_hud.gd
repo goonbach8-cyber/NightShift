@@ -93,6 +93,10 @@ func objective_text() -> String:
 	if world.phase == world.Phase.COMPLETE: return "Shift complete"
 	if loop.preparing: return "Preparing the shop…"
 	if loop.can_finish(): return "Finish at the staff notes"
+	var step: Dictionary = loop.chapter_step()
+	if world.story_world.in_depot:
+		if loop.chapter_step_ready(step): return step.prompt
+		return "Return to the station" if loop.story_flags.get(&"heard_lea_at_depot",false) else "Check in with the depot clerk"
 	if loop.delivery_carried: return "Store the delivery in the warehouse"
 	if is_instance_valid(world.customer_requests) and world.customer_requests.active:
 		return world.customer_requests.objective_text()
@@ -111,11 +115,18 @@ func objective_text() -> String:
 	if is_instance_valid(world.cctv_system) and world.cctv_system.motion_pending: return "Review the CCTV motion alert"
 	var carried: StringName = loop.inventory.carried_product()
 	if carried != &"": return "Restock "+String(loop.inventory.products[carried].display_name)
-	if loop.served+loop.lost_sales == loop.customer_count and loop.definition.required_story.any(func(id): return not loop.story_flags.get(StringName("presented_"+String(id)),false)):
-		return "Check the stockroom before leaving"
+	if loop.chapter_step_ready(step): return step.prompt
+	if loop.career_shifts == 2 and loop.was_presented(&"night_3_main") and not loop.was_presented(&"night_3_store_parcel"):
+		return "Check the stockroom"
+	if loop.career_shifts == 4 and not loop.story_flags.get(&"construction_read",false):
+		return "Read the notice by the access road"
 	if loop.checkout_ready(): return "Serve the customer at the till"
 	for task in loop.required_tasks:
 		if not loop.tasks.has(task): return loop.TASK_LABELS.get(task,String(task).capitalize())
+	if not step.is_empty() and loop.departed == loop.customer_count:
+		return step.get("wait",loop.definition.personal_goal)
+	if loop.work_complete():
+		return "Listen for the depot route confirmation"
 	return "Keep the shop ready" if loop.served+loop.lost_sales < loop.customer_count else "Wait for the last customer to leave"
 
 func update() -> void:
@@ -133,6 +144,12 @@ func update() -> void:
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
+	if world.phase == world.Phase.ACTIVE:
+		var tasks_left := PackedStringArray()
+		for task in loop.required_tasks:
+			if not loop.tasks.has(task): tasks_left.append(loop.TASK_LABELS.get(task,String(task).capitalize()))
+		if not tasks_left.is_empty(): progress.text += "\nWork: "+", ".join(tasks_left)
+		if not loop.chapter_step().is_empty(): progress.text += "\nMike: "+loop.definition.personal_goal
 	progress.visible = world.phase == world.Phase.ACTIVE
 	objective_panel.visible = not modal
 	var assistance_blocking: bool = is_instance_valid(world.customer_assistance) and world.customer_assistance.request_active and loop.checkout_ready() and not loop.queue.is_empty() and loop.queue[0] == world.customer_assistance.request_customer

@@ -26,6 +26,7 @@ func run() -> void:
 	check(loop.checkout() and loop.scanned_units == 2 and loop.stock.shelf_units == 2,"Second article scans without decrementing shelf")
 	check(loop.checkout_details().subtotal == 510 and loop.checkout_text().contains("Accept payment"),"Complete basket exposes exact total and payment action")
 	loop.event_history[&"prototype"] = true
+	loop.story_flags[&"presented_night_1_main"] = true
 	loop.talk()
 	check(loop.dialogue.active and loop.dialogue.choices.size() == 2,"Checkout selects authored dialogue from separate content catalog")
 	check(not loop.checkout() and loop.revenue_rappen == 0,"Dialogue prevents accidental payment")

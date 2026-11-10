@@ -5,6 +5,8 @@ extends Resource
 @export var world_states: Array[StringName] = []
 @export var handover: PackedStringArray = []
 @export var required_story: Array[StringName] = []
+@export var personal_goal: String
+@export var chapter_steps: Array[Dictionary] = []
 @export var customers: int = 6
 @export var spawn_seconds: float = 8
 @export var orders: Array[Dictionary] = []

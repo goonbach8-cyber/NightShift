@@ -194,6 +194,8 @@ func run() -> void:
 	check(world.phase == world.Phase.ACTIVE,"Checkout does not end the night")
 	await walk(world.get_node("Station/ShiftBoard").global_position+Vector3(0,0,1))
 	await use()
+	while loop.dialogue.active: await key(KEY_SPACE)
+	await use()
 	check(world.phase == world.Phase.COMPLETE,"Complete loop ends the shift")
 	await capture("shift-complete")
 	var restart := InputEventAction.new()

@@ -47,4 +47,23 @@ func run() -> void:
 	key(phone,KEY_1)
 	await create_timer(0.75).timeout
 	check(loop.story_flags.get(&"dispatch_gate_confirmed",false) and phone.work_call_done and not phone.active,"Work call choice completes without lingering lock")
+	loop.story_flags[&"dispatch_gate_delayed"] = true
+	loop.career_shifts = 2
+	phone._queue_work_call()
+	phone.begin()
+	key(phone,KEY_E)
+	key(phone,KEY_1)
+	await create_timer(0.75).timeout
+	check(phone.work_call_done,"An old dispatch choice does not reschedule a maintenance call")
+	phone._queue_work_call()
+	phone.begin()
+	key(phone,KEY_E)
+	key(phone,KEY_1)
+	key(phone,KEY_ESCAPE)
+	phone.begin()
+	phone.dial_buffer = "4417"
+	key(phone,KEY_ENTER)
+	await create_timer(0.75).timeout
+	check(phone.active and phone.incoming_caller == "Riverline Dispatch","An earlier reply cannot hang up a newer call")
+	key(phone,KEY_ESCAPE)
 	await finish()

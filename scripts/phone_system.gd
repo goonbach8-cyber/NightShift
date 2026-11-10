@@ -22,6 +22,9 @@ var call_choices: Array[Dictionary] = []
 var dial_buffer := ""
 var call_log: Array[Dictionary] = []
 var work_call_done := false
+var work_retry_used := false
+var retry_requested := false
+var call_revision := 0
 var next_work_call_at := 62.0
 
 var panel: PanelContainer
@@ -136,6 +139,7 @@ func _queue_work_call() -> void:
 	_start_incoming(&"work",caller,number,lines,choices)
 
 func _start_incoming(kind: StringName, caller: String, number: String, lines: PackedStringArray, choices: Array[Dictionary]) -> void:
+	call_revision += 1
 	incoming_kind = kind
 	incoming_caller = caller
 	incoming_number = number
@@ -271,6 +275,7 @@ func _ignore() -> void:
 	call_log.push_front({"caller":incoming_caller,"number":incoming_number,"result":"ignored"})
 	if incoming_kind == &"0317":
 		gameplay.story_flags[&"ignored_0317"] = true
+		gameplay.story_flags[&"phone_0317_resolved"] = true
 	else:
 		work_call_done = true
 	_clear_incoming()
@@ -284,6 +289,7 @@ func _miss_call() -> void:
 	call_log.push_front({"caller":incoming_caller,"number":incoming_number,"result":"missed"})
 	if incoming_kind == &"0317":
 		gameplay.story_flags[&"missed_0317"] = true
+		gameplay.story_flags[&"phone_0317_resolved"] = true
 	else:
 		work_call_done = true
 	_clear_incoming()
@@ -309,23 +315,29 @@ func _choose(index: int) -> void:
 	var flag: StringName = choice.get("flag",&"")
 	if flag != &"":
 		gameplay.story_flags[flag] = true
+	retry_requested = incoming_kind == &"work" and flag == &"dispatch_gate_delayed"
 	var reply := String(choice.get("reply",""))
 	call_choices.clear()
 	if not reply.is_empty():
 		call_lines = PackedStringArray([reply])
 		call_index = 0
 		_refresh_ui()
+		var revision := call_revision
 		await get_tree().create_timer(0.65).timeout
+		if revision != call_revision or not active or mode != &"call":
+			return
 	_end_call(true)
 
 func _end_call(completed: bool) -> void:
 	if incoming_kind == &"work":
 		work_call_done = true
-		if gameplay.story_flags.get(&"dispatch_gate_delayed",false):
+		if retry_requested and not work_retry_used:
+			work_retry_used = true
 			work_call_done = false
 			next_work_call_at = gameplay.elapsed+38.0
-	if incoming_kind == &"0317" and completed:
-		gameplay.story_flags[&"completed_0317_call"] = true
+	if incoming_kind == &"0317":
+		gameplay.story_flags[&"phone_0317_resolved"] = true
+		if completed: gameplay.story_flags[&"completed_0317_call"] = true
 	_clear_incoming()
 	_lift_handset(false)
 	active = false
@@ -381,6 +393,8 @@ func _begin_outgoing(caller: String, number: String, lines: PackedStringArray) -
 	_refresh_ui()
 
 func _clear_incoming() -> void:
+	call_revision += 1
+	retry_requested = false
 	ringing = false
 	ring_player.stop()
 	ring_elapsed = 0.0

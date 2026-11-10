@@ -10,12 +10,14 @@ func run() -> void:
 	if "--write" in OS.get_cmdline_user_args():
 		loop.customer_count = 0
 		loop.tasks = {&"cooler":true,&"restock":true,&"delivery":true}
+		loop.story_flags[&"presented_night_1_main"] = true
+		loop.story_flags[&"mike_first_note"] = true
 		loop.revenue_rappen = 4321
 		loop.stock.warehouse_units = 9
 		loop.event_history[&"process_test"] = true
 		ok = saver.write_checkpoint(loop)
 	else:
-		ok = saver.load_checkpoint(loop) and loop.career_revenue == 4321 and loop.stock.warehouse_units == 9 and loop.event_history.has(&"process_test")
+		ok = saver.load_checkpoint(loop) and loop.career_revenue == 4321 and loop.stock.warehouse_units == 9 and loop.event_history.has(&"process_test") and loop.story_flags.get(&"mike_first_note",false)
 		for suffix in ["",".tmp",".bak"]:
 			if FileAccess.file_exists(saver.path+suffix): DirAccess.remove_absolute(saver.path+suffix)
 	print(("PASS" if ok else "FAIL")+": Separate-process save/load")

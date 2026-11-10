@@ -28,7 +28,7 @@ func advance(seconds: float, sales: int, tasks: Dictionary = {}) -> void:
 		if seconds < event.after_seconds or sales < event.after_sales: continue
 		if event.required_flag != &"" and not flags.get(event.required_flag,false): continue
 		if event.required_task != &"" and not tasks.get(event.required_task,false): continue
-		if event.required_event != &"" and not history.get(event.required_event,false): continue
+		if event.required_event != &"" and not flags.get(StringName("presented_"+String(event.required_event)),false): continue
 		if event.required_area != &"" and not occupied_areas.has(event.required_area): continue
 		attempted[event.event_id] = true
 		if event.main_event or rng.randf() < event.probability:

@@ -108,6 +108,9 @@ func _run() -> void:
 	await use()
 	check(world.get_node("Station").restock_items.all(func(item): return not item.visible), "Shelf cannot be filled before shift begins")
 	await place(Vector3(5.9, 0.05, 0.2))
+	# The zero-customer fixture exercises the work loop; chapter_progress_test covers the story gate.
+	world.gameplay.definition.required_story.clear()
+	world.gameplay.definition.chapter_steps.clear()
 	check(player.interaction_target == world.get_node("Station/ShiftBoard"), "Nearby shift board selected")
 	await use()
 	check(world.phase == 1, "E key begins shift")

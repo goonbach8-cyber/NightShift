@@ -16,6 +16,8 @@ func run() -> void:
 		loop.configure_night(preload("res://scripts/night_catalog.gd").for_night(6))
 		loop.customer_count = 0
 		for task in loop.required_tasks: loop.tasks[task] = true
+		for id in loop.definition.required_story: loop.story_flags[StringName("presented_"+String(id))] = true
+		for step in loop.definition.chapter_steps: loop.story_flags[step.id] = true
 		var ids: Array = preload("res://scripts/clue_catalog.gd").ENTRIES.keys()
 		for i in count: loop.story_flags[StringName("clue_"+String(ids[i]))] = true
 		world.phase = world.Phase.COMPLETE

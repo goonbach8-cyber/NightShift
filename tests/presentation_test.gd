@@ -12,14 +12,10 @@ func run() -> void:
 	await walk(layout.product_points[&"water"].global_position)
 	while loop.elapsed < 23: await process_frame
 	check(loop.event_history.has(&"night_1_main"),"Night 1 main event triggers after 22 seconds")
-	check(not loop.story_flags.get(&"noticed_call",false) and not world.pending_events.is_empty(),"Off-camera main event waits for staffed checkout")
+	check(not loop.story_flags.get(&"noticed_call",false) and not world.pending_events.is_empty(),"Off-camera main event waits for the player at the counter")
 	await walk(layout.operator_point.global_position)
-	if not await await_customer():
-		await finish()
-		return
 	await create_timer(0.2).timeout
 	check(world.story_label.visible and world.story_time > 10,"Guaranteed main caption is clearly displayed for a long reading window")
-	check(world.hud.secondary.text.contains("[F] Talk"),"Special talk control appears at checkout")
 	var story: String = world.story_label.text
 	world._say("Ordinary delivery notification")
 	await process_frame
@@ -30,6 +26,10 @@ func run() -> void:
 	await create_timer(0.5).timeout
 	check(is_equal_approx(world.story_time,remaining),"Pause preserves event reading time")
 	world.menu.close()
+	if not await await_customer():
+		await finish()
+		return
+	check(world.hud.secondary.text.contains("[F] Talk"),"Special talk control appears at checkout")
 	await key(KEY_F)
 	check(loop.dialogue.active,"F opens the discoverable special conversation")
 	await key(KEY_SPACE)

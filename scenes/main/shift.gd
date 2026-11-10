@@ -147,13 +147,12 @@ func _on_event(event: Resource) -> void:
 	pending_events.append(event)
 
 func _process(delta: float) -> void:
-	var customer_ready: bool = gameplay.checkout_ready()
 	story_cooldown = maxf(0,story_cooldown-delta)
 	var ready_event := -1
 	for i in pending_events.size():
 		var candidate: Resource = pending_events[i]
 		var in_area: bool = candidate.required_area == &"" or gameplay.events.occupied_areas.has(candidate.required_area)
-		if in_area and (not candidate.at_checkout or (layout.at_operator(player) and customer_ready)):
+		if in_area and (not candidate.at_checkout or layout.at_operator(player)):
 			ready_event = i
 			break
 	var checkout_busy: bool = is_instance_valid(checkout_minigame) and checkout_minigame.active
@@ -192,7 +191,16 @@ func _process(delta: float) -> void:
 	if not gameplay.dialogue.active:
 		story_time = maxf(0, story_time-delta)
 	story_label.visible = story_time > 0 and not gameplay.dialogue.active
-	get_node("Station/ShiftBoard").prompt = "Finish shift" if phase == Phase.ACTIVE and gameplay.can_finish() else "Shift notes / Start night"
+	var board_prompt := "Shift notes / Start night"
+	if phase == Phase.ACTIVE:
+		var step: Dictionary = gameplay.chapter_step()
+		if gameplay.can_finish():
+			board_prompt = "Finish shift"
+		elif step.get("location") == &"board" and gameplay.chapter_step_ready(step):
+			board_prompt = step.prompt
+		else:
+			board_prompt = "Check shift progress"
+	get_node("Station/ShiftBoard").prompt = board_prompt
 	message_time = maxf(0,message_time-delta)
 	hud.update()
 	radio.globally_muted = muted
@@ -348,7 +356,8 @@ func _on_used(action: StringName) -> void:
 			phase = Phase.ACTIVE
 			gameplay.start()
 		else:
-			_say("Serve customers, restock products and complete the shift tasks.")
+			if not story_world.interact_chapter(&"board"):
+				_say(hud.objective_text())
 	elif phase == Phase.NOT_STARTED:
 		_say("First read the shift notes behind the counter.")
 	elif not gameplay.preparing:

@@ -8,6 +8,7 @@ func run() -> void:
 		current_scene = world
 		bind_world()
 		loop.event_history[&"night_1_main"] = true
+		loop.story_flags[&"presented_night_1_main"] = true
 		var content = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags)
 		loop.dialogue.begin(1,content.lines,content.choices,loop.story_flags)
 		loop.dialogue.advance()
@@ -42,6 +43,8 @@ func run() -> void:
 		while loop.dialogue.active: await key(KEY_SPACE)
 		loop.talk()
 		check(loop.dialogue.lines.has("Evening. Long shift?"),"Completed follow-up gives way to routine conversation")
+		var later = preload("res://scripts/dialogue_catalog.gd").for_context(loop.event_history,loop.story_flags,3)
+		check(later.get("routine",false),"A completed phone follow-up does not replay on later nights")
 		world.queue_free()
 		await process_frame
 	check(branches[0] != branches[1],"Saved answers produce distinct playable dialogue")
@@ -54,6 +57,7 @@ func run() -> void:
 	check(loop.customer_count == 7 and loop.spawn_interval == 9,"Night 3 has independent pacing")
 	loop.events.setup(loop.definition.events,loop.event_history,loop.story_flags)
 	loop.event_history[&"night_3_main"] = true
+	loop.story_flags[&"presented_night_3_main"] = true
 	player.global_position = layout.operator_point.global_position
 	await create_timer(0.1).timeout
 	loop.navigation.rebuild(world,layout.doors)

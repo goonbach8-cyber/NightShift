@@ -26,6 +26,8 @@ func run() -> void:
 	if stage < 3:
 		loop.customer_count = 0
 		for task in loop.required_tasks: loop.tasks[task] = true
+		for id in loop.definition.required_story: loop.story_flags[StringName("presented_"+String(id))] = true
+		for step in loop.definition.chapter_steps: loop.story_flags[step.id] = true
 		loop.revenue_rappen = 1000
 		loop.stock.warehouse_units = 20-stage
 		loop.story_flags[&"asked_about_call"] = true

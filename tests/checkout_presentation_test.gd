@@ -80,9 +80,9 @@ func run() -> void:
 	loop.configure_night(preload("res://scripts/night_catalog.gd").for_night(3))
 	loop.served = loop.customer_count
 	loop.lost_sales = 0
-	check(loop.status_text().contains("Check the stockroom before leaving"),"Unpresented required story supplies the relevant departure hint")
+	check(loop.status_text().contains("ask Josh"),"Required story supplies a personal objective")
 	for id in loop.definition.required_story: loop.story_flags[StringName("presented_"+String(id))] = true
-	check(not loop.status_text().contains("Check the stockroom before leaving") and loop.status_text().contains("Check WC"),"Presented story stops sending player back to stockroom while another task remains")
+	check(loop.status_text().contains("Check WC") and not loop.can_finish(),"Work remains visible and an uncompleted chapter still gates shift end")
 	var removed := Node3D.new()
 	world.add_child(removed)
 	player.interaction_target = removed

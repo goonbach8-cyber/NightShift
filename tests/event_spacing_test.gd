@@ -47,6 +47,9 @@ func run() -> void:
 	history[&"first"] = true
 	flags[&"permission"] = true
 	director.set_area(&"stockroom",true)
+	director.advance(0,1,{&"cooler":true})
+	check(not history.has(gated.event_id),"Queued prerequisite does not unlock a dependent event")
+	flags[&"presented_first"] = true
 	director.advance(0,1)
 	check(not history.has(gated.event_id),"Area and story prerequisites still require the task")
 	director.advance(0,1,{&"cooler":true})

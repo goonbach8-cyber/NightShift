@@ -13,6 +13,8 @@ func run() -> void:
 	check(not saver.load_checkpoint(loop),"No save returns safely")
 	loop.customer_count = 0
 	loop.tasks = {&"cooler":true,&"restock":true,&"delivery":true}
+	loop.story_flags[&"presented_night_1_main"] = true
+	loop.story_flags[&"mike_first_note"] = true
 	loop.revenue_rappen = 1234
 	loop.stock.shelf_units = 3
 	loop.stock.warehouse_units = 17
@@ -32,6 +34,7 @@ func run() -> void:
 	check(loop.career_shifts == 1 and loop.career_revenue == 1234 and loop.customer_count == 8,"Load configures next night and correct statistics")
 	check(loop.stock.shelf_units == 3 and loop.stock.warehouse_units == 17,"Shelf and warehouse quantities persist independently")
 	check(loop.story_flags.get(&"asked_about_call",false) and loop.event_history.get(&"night_1_main",false),"Choices and experienced main events persist")
+	check(loop.story_flags.get(&"mike_first_note",false),"Chapter completion survives loading")
 	check(loop.required_tasks.has(&"service"),"Night two adds service task through configuration")
 	var file := FileAccess.open(saver.path,FileAccess.WRITE)
 	file.store_string("broken checkpoint")

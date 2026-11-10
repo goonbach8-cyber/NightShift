@@ -62,7 +62,7 @@ func run() -> void:
 	while loop.dialogue.index < loop.dialogue.lines.size()-1: loop.dialogue.advance()
 	await key(KEY_ENTER)
 	check(not loop.dialogue.active and not player.controls_locked,"Enter closes handover and releases movement lock")
-	var content = preload("res://scripts/dialogue_catalog.gd").for_context({&"night_1_main":true},{},1)
+	var content = preload("res://scripts/dialogue_catalog.gd").for_context({&"night_1_main":true},{&"presented_night_1_main":true},1)
 	loop.dialogue.begin(123,content.lines,content.choices,loop.story_flags)
 	while loop.dialogue.index < loop.dialogue.lines.size()-1: loop.dialogue.advance()
 	await settle()

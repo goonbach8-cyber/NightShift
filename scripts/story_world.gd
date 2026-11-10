@@ -13,6 +13,9 @@ var intrusions: Node3D
 var overlap_echo: Node3D
 var depot: Node3D
 var josh: Node3D
+var chapter_actor: Node3D
+var pending_chapter: StringName
+var pending_construction := false
 var configured_night := 0
 var pending_read: StringName
 var pending_handover := false
@@ -220,6 +223,15 @@ func person(parent: Node3D, at: Vector3) -> Node3D:
 func apply_night() -> void:
 	configured_night = loop.career_shifts+1
 	if is_instance_valid(josh): josh.queue_free()
+	if is_instance_valid(chapter_actor): chapter_actor.queue_free()
+	chapter_actor = null
+	for step in loop.definition.chapter_steps:
+		if step.get("actor",false):
+			var board: Node3D = world.get_node("Station/ShiftBoard")
+			chapter_actor = person(self,to_local(board.global_position)+Vector3(0.65,0,-0.25))
+			label(chapter_actor,step.speaker,Vector3(0,1.45,0),24)
+			chapter_actor.hide()
+			break
 	if not loop.definition.handover.is_empty() and not loop.story_flags.get(handover_flag(),false):
 		# Meet Mike near his arrival position, clear of stock and checkout prompts.
 		josh = person(self,to_local(world.player.global_position)+Vector3(1.4,0,-0.3))
@@ -231,6 +243,14 @@ func handover_flag() -> StringName:
 
 func dialogue_changed() -> void:
 	if loop.dialogue.active: return
+	if pending_chapter != &"":
+		if loop.dialogue.completed:
+			loop.story_flags[pending_chapter] = true
+		pending_chapter = &""
+	if pending_construction:
+		if loop.dialogue.completed:
+			loop.story_flags[&"construction_read"] = true
+		pending_construction = false
 	if pending_read != &"":
 		if loop.dialogue.completed:
 			loop.story_flags[StringName("clue_"+String(pending_read))] = true
@@ -250,6 +270,16 @@ func dialogue_changed() -> void:
 			for position in path: motion.tween_property(josh,"global_position",position,0.15)
 			motion.tween_callback(josh.queue_free)
 
+func interact_chapter(location: StringName) -> bool:
+	if world.phase != world.Phase.ACTIVE or world.has_interaction_focus() or trip_busy:
+		return false
+	var step: Dictionary = loop.chapter_step()
+	if step.get("location") != location or not loop.chapter_step_ready(step):
+		return false
+	pending_chapter = step.id
+	var choices: Array[Dictionary] = []
+	return loop.dialogue.begin(-70,PackedStringArray(step.lines),choices,loop.story_flags,{"speaker":step.speaker})
+
 func interact(id: StringName) -> void:
 	if loop.dialogue.active or trip_busy: return
 	var choices: Array[Dictionary] = []
@@ -263,19 +293,22 @@ func interact(id: StringName) -> void:
 		pending_handover = true
 		loop.dialogue.begin(-10,loop.definition.handover,choices,loop.story_flags,{"speaker":"Josh"})
 	elif id == &"construction" and construction.visible:
+		pending_construction = true
 		loop.dialogue.begin(-30,PackedStringArray(["Construction of new access road — works begin today.","The map says Redwater. Its road bends behind a building that isn't on Mike's map."]),choices,loop.story_flags,{"kind":&"document","title":"Construction of new access road"})
-		loop.story_flags[&"construction_read"] = true
 	elif id == &"route":
-		if configured_night == 4: travel(true)
-		elif road.visible: world._say("The access is closed.")
+		if configured_night == 4 and world.phase == world.Phase.ACTIVE: travel(true)
+		elif road.visible and not interact_chapter(&"route"): world._say("The access is closed.")
 	elif id == &"depot_clerk" and in_depot:
+		if interact_chapter(&"depot"): return
+		if loop.tasks.has(&"depot"): return
 		pending_depot = true
 		loop.dialogue.begin(-40,PackedStringArray(["Depot clerk: The station collection? It's ready, same as every week.","Take the usual road back. Your delivery account has been here for years."]),choices,loop.story_flags,{"speaker":"Depot Worker"})
 	elif id == &"depot_ledger" and in_depot:
 		loop.dialogue.begin(-41,PackedStringArray(["Station 14 — weekly collection route.","The first dated entry is eleven years old. The road name is the same one the navigation unit used tonight."]),choices,loop.story_flags,{"kind":&"document","title":"Depot route ledger"})
 		loop.story_flags[&"depot_ledger_read"] = true
 	elif id == &"return" and in_depot:
-		if loop.tasks.has(&"depot"): travel(false)
+		if loop.story_flags.get(&"heard_lea_at_depot",false): travel(false)
+		elif loop.tasks.has(&"depot"): world._say("There's still a call waiting at the depot desk.")
 		else: world._say("Collect the delivery from the clerk first.")
 
 func travel(outbound: bool) -> void:
@@ -321,25 +354,34 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(loop): return
 	overlap_remaining = maxf(0.0,overlap_remaining-delta)
 	if configured_night != loop.career_shifts+1: apply_night()
+	var step: Dictionary = loop.chapter_step()
+	var step_ready: bool = world.phase == world.Phase.ACTIVE and loop.chapter_step_ready(step)
+	if is_instance_valid(chapter_actor):
+		chapter_actor.visible = step_ready and step.get("actor",false)
 	if configured_night == 3 and loop.story_flags.get(&"presented_night_3_store_parcel",false):
 		# The crack appears first; the road follows only after more of the shift has passed.
 		loop.story_flags[&"crack_exists"] = true
-		if loop.served+loop.lost_sales >= 5:
+		if loop.served+loop.lost_sales >= mini(5,loop.customer_count):
 			loop.story_flags[&"road_exists"] = true
 	road.visible = loop.story_flags.get(&"road_exists",false) or loop.definition.world_states.has(&"road")
-	# Night 4 uses the route; Night 5 construction closes it again; Redwater treats it as normal.
-	road.set_open(configured_night == 4 or configured_night == 6)
+	var crossed: bool = configured_night == 5 and loop.story_flags.get(&"entered_redwater",false)
+	var returned: bool = configured_night == 6 and loop.story_flags.get(&"returned_redwood",false)
+	var route_ready: bool = step_ready and step.get("location") == &"route"
+	road.set_open(configured_night == 4 or configured_night == 6 or crossed or route_ready)
 	crack.visible = loop.story_flags.get(&"crack_exists",false) or loop.definition.world_states.has(&"crack")
-	construction.visible = loop.definition.world_states.has(&"construction")
-	var redwater: bool = loop.definition.reality == &"redwater" and not ending_started
+	construction.visible = loop.definition.world_states.has(&"construction") and not crossed
+	var redwater: bool = (loop.definition.reality == &"redwater" or crossed) and not returned and not ending_started
 	alternate.visible = redwater
-	intrusions.visible = configured_night >= 5 and not ending_started
+	intrusions.visible = configured_night >= 5 and not returned and not ending_started
 	branding.text = "REDWATER SERVICE" if redwater or ending_started else "REDWOOD SERVICE"
 	if is_instance_valid(overlap_echo):
-		overlap_echo.visible = overlap_remaining > 0 and not ending_started
-	if overlap_remaining > 0 and not ending_started:
+		overlap_echo.visible = (overlap_remaining > 0 or (configured_night == 6 and route_ready)) and not returned and not ending_started
+	if overlap_remaining > 0 and not returned and not ending_started:
 		branding.text = "REDWOOD / REDWATER\n03:17"
-	get_node("route").available = road.visible and not in_depot and configured_night >= 3 and configured_night <= 5
+	var route = get_node("route")
+	route.available = road.visible and not in_depot and (configured_night == 4 or route_ready)
+	route.prompt = step.prompt if route_ready else "Navigation / Depot collection"
+	depot.get_node("depot_clerk").prompt = step.prompt if step_ready and step.get("location") == &"depot" else "Talk to depot clerk"
 	for child in depot.get_children():
 		if child.has_method("is_available"): child.available = in_depot
 	for child in construction.get_children():
