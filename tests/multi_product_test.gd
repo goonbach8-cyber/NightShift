@@ -11,20 +11,6 @@ func sell() -> void:
 	await use()
 	check(loop.served == previous+1,"Payment completes exactly one basket")
 
-func choose(id: StringName) -> void:
-	for i in loop.inventory.products.size():
-		if loop.selected_product() == id:
-			return
-		var event := InputEventKey.new()
-		event.physical_keycode = KEY_TAB
-		event.pressed = true
-		Input.parse_input_event(event)
-		await process_frame
-		event = InputEventKey.new()
-		event.physical_keycode = KEY_TAB
-		Input.parse_input_event(event)
-		await process_frame
-
 func run() -> void:
 	world = load("res://scenes/main/main.tscn").instantiate()
 	if "--shift-layout" in OS.get_cmdline_user_args():
@@ -49,8 +35,7 @@ func run() -> void:
 	await capture("multi-first-sales")
 	for id in loop.inventory.products:
 		await walk(layout.warehouse.get_node("Supply").global_position+Vector3(0,0,1))
-		await choose(id)
-		await use()
+		await take_supply(id)
 		check(loop.inventory.carried_product() == id,"Selected load picked up: "+String(id))
 		await walk(layout.product_points[id].global_position)
 		await use()

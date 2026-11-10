@@ -3,9 +3,12 @@ extends Node3D
 
 var materials: Dictionary = {}
 var station: Node3D
+var bounds: Rect2
+var coffee: Node3D
 
 func _ready() -> void:
 	station = get_parent()
+	bounds = station.shop_bounds
 	name = "StationDressing"
 	var room := station.get_node("../PrototypeRoom")
 	var floor_material := ShaderMaterial.new()
@@ -95,32 +98,34 @@ func lamp(at: Vector3, warm: bool = true, shadows: bool = false) -> void:
 	add_child(light)
 	# A visible bracket anchors each cutaway ceiling fixture to the nearest wall.
 	if at.z < -3.0:
-		box(Vector3(at.x,at.y,-4.62),Vector3(0.065,0.08,0.45),"8e9b94")
+		box(Vector3(at.x,at.y,bounds.position.y+0.38),Vector3(0.065,0.08,0.45),"8e9b94")
 	else:
-		var edge := 6.80 if at.x > 0 else -6.80
+		var edge := bounds.end.x-0.20 if at.x > 0 else bounds.position.x+0.20
 		box(Vector3((edge+at.x)*0.5,at.y,at.z),Vector3(absf(edge-at.x),0.055,0.07),"8e9b94")
 		box(Vector3(edge,at.y-0.18,at.z),Vector3(0.08,0.4,0.12),"344b4b")
 
 func architecture() -> void:
-	box(Vector3(0,0.12,-4.82),Vector3(13.7,0.24,0.08),"344b4b")
-	box(Vector3(0,1.2,-4.82),Vector3(13.7,0.08,0.08),"317874")
-	for x in [-6.82,6.82]:
-		box(Vector3(x,0.12,0),Vector3(0.08,0.24,9.7),"344b4b")
-		box(Vector3(x,1.2,0),Vector3(0.08,0.08,9.7),"317874")
-	box(Vector3(0,1.61,-4.78),Vector3(3.9,0.61,0.09),"173d40")
-	sign_text("NIGHTSHIFT / 24 H",Vector3(0,1.64,-4.72),3.3,self,"99ddd2")
-	for x in [-4.5,0.0,4.5]:
-		lamp(Vector3(x,2.35,-4.40),x >= 0,x == 0)
-	lamp(Vector3(4.6,2.5,1.35),true,true)
-	lamp(Vector3(-4.8,2.35,1.6))
+	var center := bounds.get_center()
+	var north := bounds.position.y
+	box(Vector3(center.x,0.12,north+0.18),Vector3(bounds.size.x-0.3,0.24,0.08),"344b4b")
+	box(Vector3(center.x,1.2,north+0.18),Vector3(bounds.size.x-0.3,0.08,0.08),"317874")
+	for x in [bounds.position.x+0.18,bounds.end.x-0.18]:
+		box(Vector3(x,0.12,center.y),Vector3(0.08,0.24,bounds.size.y-0.3),"344b4b")
+		box(Vector3(x,1.2,center.y),Vector3(0.08,0.08,bounds.size.y-0.3),"317874")
+	box(Vector3(0,1.61,north+0.22),Vector3(3.9,0.61,0.09),"173d40")
+	sign_text("NIGHTSHIFT / 24 H",Vector3(0,1.64,north+0.28),3.3,self,"99ddd2")
+	for x in [-7.4,-2.0,4.5]:
+		lamp(Vector3(x,2.35,north+0.6),x >= -2.0,x == -2.0)
+	lamp(Vector3(4.6,2.5,1.05),true,true)
+	lamp(Vector3(-7.1,2.35,1.6))
 	# Three aligned gondolas create a real convenience-store aisle plan.
 	# The front half of SnackIsland keeps the exact board dimensions used by the gameplay stock tests.
-	build_gondola("SnackIsland",Vector3(-3.25,0,-1.35),"CHIPS / NÜSSE",0,true)
-	build_gondola("TravelIsland",Vector3(-0.85,0,-1.35),"SÜSS / SNACKS",1,false)
-	build_gondola("DailyIsland",Vector3(1.55,0,-1.35),"TO GO / ALLTAG",2,false)
-	# Low endcaps give the aisles the dense impulse-stock look typical of petrol shops.
-	for aisle_x in [-3.25,-0.85,1.55]:
-		build_endcap(Vector3(aisle_x,0,0.22),int(round((aisle_x+3.25)/2.4)))
+	var names := ["SnackIsland","TravelIsland","DailyIsland"]
+	var signs := ["CHIPS / NÜSSE","SÜSS / SNACKS","TO GO / ALLTAG"]
+	var centers := [-5.90,-2.75,1.15]
+	for i in centers.size():
+		build_gondola(names[i],Vector3(centers[i],0,-1.35),signs[i],i,i == 0)
+		build_endcap(Vector3(centers[i],0,0.22),i)
 
 func build_gondola(node_name: String, at: Vector3, title: String, variant_offset: int, functional_snacks: bool) -> void:
 	var body := StaticBody3D.new()
@@ -128,10 +133,10 @@ func build_gondola(node_name: String, at: Vector3, title: String, variant_offset
 	body.position = at
 	add_child(body)
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(1.28,1.12,2.95)
+	shape.size = Vector3(1.35,1.12,2.95)
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
-	collision.position.y = 0.56
+	collision.position = Vector3(0,0.56,-0.15)
 	body.add_child(collision)
 	# Plinth/backbone.
 	box(Vector3(0,0.11,-0.15),Vector3(1.28,0.22,2.95),"253b3d",body)
@@ -259,8 +264,8 @@ func shop_fittings() -> void:
 	box(Vector3(0,1.67,0.1),Vector3(1.5,0.18,0.78),"1a4b50",cooler)
 	sign_text("ENERGY / 4 °C",Vector3(0,1.67,0.51),1.15,cooler)
 	# A three-door cold wall reads like a real petrol-shop cooler bank. The first bay remains gameplay-controlled.
-	build_cooler_module(Vector3(-3.20,0,-4.15),"SOFTDRINKS",1)
-	build_cooler_module(Vector3(-1.70,0,-4.15),"WASSER / SAFT",3)
+	build_cooler_module(cooler.position+Vector3(1.55,0,0),"SOFTDRINKS",1)
+	build_cooler_module(cooler.position+Vector3(3.10,0,0),"WASSER / SAFT",3)
 	var shelf := station.get_node("Shelf")
 	for x in [-0.86,0.86]:
 		box(Vector3(x,0.79,0),Vector3(0.055,1.58,0.65),"a3aaa0",shelf)
@@ -278,7 +283,7 @@ func shop_fittings() -> void:
 	box(Vector3(0,1.62,0),Vector3(1.8,0.19,0.66),"286663",shelf)
 	sign_text("WATER",Vector3(0,1.62,0.34),1.4,shelf)
 	# Adjacent grocery wall makes the right rear zone a coherent stocked section instead of an isolated rack.
-	build_wall_shelf(Vector3(2.75,0,-4.15),"FRÜHSTÜCK / ALLTAG")
+	build_wall_shelf(Vector3(2.45,0,-6.15),"FRÜHSTÜCK / ALLTAG")
 	var till := station.get_node("Register")
 	till.get_node("Terminal").get_child(0).hide()
 	bevel(Vector3(0,1.02,0),Vector3(1.94,0.09,1.04),"7e8981",till)
@@ -307,16 +312,20 @@ func shop_fittings() -> void:
 	box(Vector3(0,0.89,-0.50),Vector3(0.20,0.025,0.025),"8e9b94",till)
 	sign_text("KASSE",Vector3(0,0.73,0.487),0.65,till)
 	# Coffee unit against the back wall, outside all existing task approaches.
-	solid(Vector3(0,0.46,-4.18), Vector3(2.0,0.92,0.9))
-	box(Vector3(0,0.46,-4.18),Vector3(2.0,0.92,0.9),"52625c")
-	box(Vector3(0,0.94,-4.18),Vector3(2.1,0.08,0.96),"b5b5a4")
-	box(Vector3(-0.36,1.25,-4.15),Vector3(0.65,0.58,0.53),"263739")
-	box(Vector3(-0.36,1.35,-3.87),Vector3(0.30,0.12,0.02),"aed1b3",self,true)
-	box(Vector3(-0.36,1.05,-3.82),Vector3(0.48,0.04,0.25),"8e9b94")
+	coffee = Node3D.new()
+	coffee.name = "CoffeeStation"
+	coffee.position = Vector3(-0.75,0,-6.18)
+	add_child(coffee)
+	solid(Vector3(0,0.46,0),Vector3(2.0,0.92,0.9),coffee)
+	box(Vector3(0,0.46,0),Vector3(2.0,0.92,0.9),"52625c",coffee)
+	box(Vector3(0,0.94,0),Vector3(2.1,0.08,0.96),"b5b5a4",coffee)
+	box(Vector3(-0.36,1.25,0.03),Vector3(0.65,0.58,0.53),"263739",coffee)
+	box(Vector3(-0.36,1.35,0.31),Vector3(0.30,0.12,0.02),"aed1b3",coffee,true)
+	box(Vector3(-0.36,1.05,0.36),Vector3(0.48,0.04,0.25),"8e9b94",coffee)
 	for x in [0.22,0.47,0.72]:
-		cylinder(Vector3(x,1.06,-4.0),0.08,0.2,"ddd3b6")
-	box(Vector3(0,0.75,-3.716),Vector3(1.1,0.20,0.025),"173d40")
-	sign_text("KAFFEE / 24 H",Vector3(0,0.75,-3.696),0.96)
+		cylinder(Vector3(x,1.06,0.18),0.08,0.2,"ddd3b6",coffee)
+	box(Vector3(0,0.75,0.464),Vector3(1.1,0.20,0.025),"173d40",coffee)
+	sign_text("KAFFEE / 24 H",Vector3(0,0.75,0.484),0.96,coffee)
 	var board := station.get_node("ShiftBoard")
 	box(Vector3(0,0.91,0),Vector3(1.28,0.045,0.78),"b5a586",board)
 	box(Vector3(-0.16,0.947,0),Vector3(0.018,0.015,0.29),"304d51",board)
@@ -326,9 +335,9 @@ func shop_fittings() -> void:
 	cylinder(Vector3(-6.05,0.3,3.7),0.25,0.6,"364c4c")
 	cylinder(Vector3(-6.05,0.61,3.7),0.27,0.035,"182b2e")
 	# A framed notice has a physical mount instead of floating UI text.
-	box(Vector3(-2.5,1.3,-4.77),Vector3(0.64,0.9,0.07),"344443")
-	box(Vector3(-2.5,1.3,-4.72),Vector3(0.56,0.82,0.02),"c5b084")
-	sign_text("NACHT\nKAFFEE\n2.50",Vector3(-2.5,1.32,-4.70),1.25,self,"314442")
+	box(Vector3(-3.45,1.3,-6.77),Vector3(0.64,0.9,0.07),"344443")
+	box(Vector3(-3.45,1.3,-6.72),Vector3(0.56,0.82,0.02),"c5b084")
+	sign_text("NACHT\nKAFFEE\n2.50",Vector3(-3.45,1.32,-6.70),1.25,self,"314442")
 
 func entrance() -> void:
 	box(Vector3(0,0.012,3.9),Vector3(2.4,0.025,1.45),"283637")
@@ -349,10 +358,10 @@ func entrance() -> void:
 		box(Vector3(x,0.75,0.105),Vector3(0.055,1.5,0.04),"9bab9f",panel)
 	box(Vector3(0,0.75,0.105),Vector3(2.1,0.07,0.04),"5b9894",panel)
 	sign_text("24 H / EINGANG",Vector3(0,1.05,0.12),1.4,panel)
-	for x in [-4.075,4.075]:
-		box(Vector3(x,0.72,5),Vector3(5.85,0.05,0.38),"80928a")
-		for offset in [-2.4,-0.8,0.8,2.4]:
-			box(Vector3(x+offset,0.37,5.17),Vector3(0.035,0.62,0.025),"587372")
+	for span in [Vector2(bounds.position.x,-1.15),Vector2(1.15,bounds.end.x)]:
+		box(Vector3((span.x+span.y)/2.0,0.72,5),Vector3(span.y-span.x,0.05,0.38),"80928a")
+		for fraction in [0.09,0.36,0.64,0.91]:
+			box(Vector3(lerpf(span.x,span.y,fraction),0.37,5.17),Vector3(0.035,0.62,0.025),"587372")
 
 func forecourt() -> void:
 	# Visual ground beyond the retained collision boundary closes the black void.
@@ -385,7 +394,7 @@ func forecourt() -> void:
 		box(Vector3(x,3.28,8.3),Vector3(0.70,0.10,0.40),"33484d")
 		box(Vector3(x,3.22,8.3),Vector3(0.62,0.035,0.32),"c4efeb",self,true)
 
-func solid(at: Vector3, size: Vector3) -> void:
+func solid(at: Vector3, size: Vector3, parent: Node3D = self) -> void:
 	var body := StaticBody3D.new()
 	body.position = at
 	var collision := CollisionShape3D.new()
@@ -393,7 +402,7 @@ func solid(at: Vector3, size: Vector3) -> void:
 	shape.size = size
 	collision.shape = shape
 	body.add_child(collision)
-	add_child(body)
+	parent.add_child(body)
 
 func bottle(at: Vector3, color: String, parent: Node3D, scale_factor: float = 1.0) -> void:
 	var root := Node3D.new()
@@ -482,15 +491,15 @@ func object_details() -> void:
 	for i in 4:
 		box(Vector3(0,0.941,-0.08+i*0.04),Vector3(0.29-i*0.025,0.003,0.007),"61706a",desk)
 	# Coffee dispenser: beans, spouts and draining grid reveal its function.
-	cylinder(Vector3(-0.36,1.64,-4.18),0.19,0.2,"4c463b")
-	cylinder(Vector3(-0.36,1.75,-4.18),0.21,0.03,"263739")
+	cylinder(Vector3(-0.36,1.64,0),0.19,0.2,"4c463b",coffee)
+	cylinder(Vector3(-0.36,1.75,0),0.21,0.03,"263739",coffee)
 	for x in [-0.47,-0.25]:
-		cylinder(Vector3(x,1.17,-3.84),0.027,0.13,"8e9b94")
+		cylinder(Vector3(x,1.17,0.34),0.027,0.13,"8e9b94",coffee)
 	for i in 7:
-		box(Vector3(-0.56+i*0.065,1.077,-3.82),Vector3(0.015,0.008,0.2),"263739")
+		box(Vector3(-0.56+i*0.065,1.077,0.36),Vector3(0.015,0.008,0.2),"263739",coffee)
 	for x in [-0.53,0.53]:
-		box(Vector3(x,0.44,-3.716),Vector3(0.96,0.48,0.025),"65746a")
-		box(Vector3(x,0.61,-3.69),Vector3(0.26,0.035,0.04),"8e9b94")
+		box(Vector3(x,0.44,0.464),Vector3(0.96,0.48,0.025),"65746a",coffee)
+		box(Vector3(x,0.61,0.49),Vector3(0.26,0.035,0.04),"8e9b94",coffee)
 	# All four dispensers use the same coherent detailed design.
 	var pump_nodes := [
 		["Pump","PumpDisplay",Vector3(-2.9,0,7.25),"01"],
@@ -515,25 +524,29 @@ func window_material() -> StandardMaterial3D:
 
 func finishing_details() -> void:
 	# Glazing sits over the existing low walls, with the doorway and sliding pocket retained.
-	for center in [-4.1,4.1]:
-		var pane := box(Vector3(center,1.11,5),Vector3(5.7,0.72,0.02),"173d40")
+	for span in [Vector2(bounds.position.x+0.075,-1.225),Vector2(1.225,bounds.end.x-0.075)]:
+		var center: float = (span.x+span.y)/2.0
+		var width: float = span.y-span.x
+		var pane := box(Vector3(center,1.11,5),Vector3(width,0.72,0.02),"173d40")
 		pane.material_override = window_material()
 		pane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		box(Vector3(center,1.49,5),Vector3(5.7,0.055,0.09),"8a9d97")
-		for offset in [-2.7,-0.9,0.9,2.7]:
-			box(Vector3(center+offset,1.12,5),Vector3(0.045,0.73,0.09),"8a9d97")
+		box(Vector3(center,1.49,5),Vector3(width,0.055,0.09),"8a9d97")
+		for fraction in [0.025,0.34,0.66,0.975]:
+			box(Vector3(lerpf(span.x,span.y,fraction),1.12,5),Vector3(0.045,0.73,0.09),"8a9d97")
 	# Wall service details remain shallow and outside circulation space.
-	for x in [-3.45,3.45]:
-		box(Vector3(x,0.8,-4.79),Vector3(0.18,0.25,0.035),"bcc7be")
+	var north := bounds.position.y
+	for x in [-3.45,0.85]:
+		box(Vector3(x,0.8,north+0.21),Vector3(0.18,0.25,0.035),"bcc7be")
 		for y in [0.74,0.86]:
-			box(Vector3(x,y,-4.764),Vector3(0.06,0.022,0.008),"263739")
-		box(Vector3(x,0.41,-4.79),Vector3(0.024,0.6,0.024),"8e9b94")
-	box(Vector3(2.25,1.42,-4.76),Vector3(0.85,0.66,0.06),"263739")
-	box(Vector3(2.25,1.42,-4.72),Vector3(0.77,0.58,0.025),"bca477")
-	sign_text("FRISCH\nFÜR DIE NACHT",Vector3(2.25,1.43,-4.697),1.4,self,"263739")
+			box(Vector3(x,y,north+0.236),Vector3(0.06,0.022,0.008),"263739")
+		box(Vector3(x,0.41,north+0.21),Vector3(0.024,0.6,0.024),"8e9b94")
+	box(Vector3(0.85,1.42,north+0.24),Vector3(0.85,0.66,0.06),"263739")
+	box(Vector3(0.85,1.42,north+0.28),Vector3(0.77,0.58,0.025),"bca477")
+	sign_text("FRISCH\nFÜR DIE NACHT",Vector3(0.85,1.43,north+0.303),1.4,self,"263739")
 	# Service cabinet seams distinguish doors from one solid mass.
-	for x in [-6.78,6.78]:
-		for z in [-3.8,-1.8,0.2,2.2,4.2]:
+	for x in [bounds.position.x+0.22,bounds.end.x-0.22]:
+		for z in [-5.8,-3.8,-1.8,0.2,2.2,4.2]:
+			if x > 0 and z > -3.3 and z < -1.1: continue
 			box(Vector3(x,0.64,z),Vector3(0.025,0.91,0.018),"72817b")
 	# The bin gains a metal rim, open mouth and foot pedal.
 	var rim := MeshInstance3D.new()
@@ -581,31 +594,31 @@ func shop_logic() -> void:
 	box(Vector3(-0.69,1.085,-0.28),Vector3(0.28,0.018,0.20),"173d40",till)
 	sign_text("CHF / KARTE",Vector3(0.6,0.8,0.49),0.48,till)
 	# One compact protected bakery display next to the existing coffee machine.
-	solid(Vector3(-1.75,0.5,-4.18),Vector3(1.12,1.0,0.85))
-	bevel(Vector3(-1.75,0.47,-4.18),Vector3(1.12,0.94,0.85),"65746a")
-	box(Vector3(-1.75,1.0,-4.18),Vector3(1.16,0.06,0.89),"8e9b94")
+	solid(Vector3(-2.60,0.5,-6.18),Vector3(1.12,1.0,0.85))
+	bevel(Vector3(-2.60,0.47,-6.18),Vector3(1.12,0.94,0.85),"65746a")
+	box(Vector3(-2.60,1.0,-6.18),Vector3(1.16,0.06,0.89),"8e9b94")
 	for y in [1.05,1.33]:
-		box(Vector3(-1.75,y,-4.18),Vector3(1.0,0.025,0.65),"344b4b")
+		box(Vector3(-2.60,y,-6.18),Vector3(1.0,0.025,0.65),"344b4b")
 		for i in 3:
-			var bread := cylinder(Vector3(-2.05+i*0.29,y+0.055,-4.12),0.085,0.09,"b88c50")
+			var bread := cylinder(Vector3(-2.90+i*0.29,y+0.055,-6.12),0.085,0.09,"b88c50")
 			bread.scale.z = 1.55
-	for x in [-2.29,-1.21]:
-		box(Vector3(x,1.27,-4.18),Vector3(0.035,0.54,0.79),"8e9b94")
-	var glass := box(Vector3(-1.75,1.28,-3.77),Vector3(1.03,0.51,0.01),"173d40")
+	for x in [-3.14,-2.06]:
+		box(Vector3(x,1.27,-6.18),Vector3(0.035,0.54,0.79),"8e9b94")
+	var glass := box(Vector3(-2.60,1.28,-5.77),Vector3(1.03,0.51,0.01),"173d40")
 	glass.material_override = window_material()
 	glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var lid := box(Vector3(-1.75,1.55,-4.18),Vector3(1.10,0.015,0.83),"173d40")
+	var lid := box(Vector3(-2.60,1.55,-6.18),Vector3(1.10,0.015,0.83),"173d40")
 	lid.material_override = window_material()
 	lid.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	for z in [-4.60,-3.76]:
-		box(Vector3(-1.75,1.55,z),Vector3(1.16,0.035,0.035),"8e9b94")
-	sign_text("GEBÄCK",Vector3(-1.75,0.8,-3.74),0.82)
+	for z in [-6.60,-5.76]:
+		box(Vector3(-2.60,1.55,z),Vector3(1.16,0.035,0.035),"8e9b94")
+	sign_text("GEBÄCK",Vector3(-2.60,0.8,-5.74),0.82)
 	# Accessories live on the coffee worktop, rather than unrelated decoration.
 	for i in 4:
-		cylinder(Vector3(0.74,1.15+i*0.025,-4.15),0.08,0.025,"ddd4b3")
-	box(Vector3(0.38,1.03,-4.35),Vector3(0.36,0.12,0.25),"344b4b")
+		cylinder(Vector3(0.74,1.15+i*0.025,0.03),0.08,0.025,"ddd4b3",coffee)
+	box(Vector3(0.38,1.03,-0.17),Vector3(0.36,0.12,0.25),"344b4b",coffee)
 	for i in 4:
-		box(Vector3(0.25+i*0.08,1.11,-4.35),Vector3(0.055,0.05,0.15),"ddd4b3")
+		box(Vector3(0.25+i*0.08,1.11,-0.17),Vector3(0.055,0.05,0.15),"ddd4b3",coffee)
 	# Reuse the vacated entrance-side area for vehicle essentials, a petrol-shop cue.
 	solid(Vector3(-5.1,0.55,2.5),Vector3(1.3,1.1,0.65))
 	bevel(Vector3(-5.1,0.55,2.5),Vector3(1.3,1.1,0.65),"52625c")

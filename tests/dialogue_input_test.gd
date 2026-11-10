@@ -18,15 +18,16 @@ func run() -> void:
 	await create_timer(0.2).timeout
 	check(player.interaction_target == layout.warehouse.get_node("Supply"),"Supply is the real selected interaction")
 	await speak()
-	var selected: int = loop.supply_selection
 	await key(KEY_E)
 	await key(KEY_TAB)
-	check(loop.inventory.carried_product() == &"" and loop.supply_selection == selected,"Hidden supply actions cannot collect or change goods during dialogue")
+	check(loop.inventory.carried_product() == &"" and not world.stock_picker.visible,"Warehouse list cannot open or collect goods during dialogue")
 	await key(KEY_ESCAPE)
 	check(paused,"Pause remains accessible during conversation")
 	await key(KEY_ESCAPE)
 	await key(KEY_SPACE)
 	await key(KEY_E)
+	check(world.stock_picker.visible,"Warehouse list opens after closing dialogue")
+	await key(KEY_ENTER)
 	check(loop.inventory.carried_product() == &"water","Supply input returns immediately after conversation")
 	player.global_position = layout.product_points[&"water"].global_position
 	await create_timer(0.2).timeout

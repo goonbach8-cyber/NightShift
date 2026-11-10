@@ -38,6 +38,18 @@ func key(code: Key) -> void:
 	Input.parse_input_event(event)
 	await create_timer(0.1).timeout
 
+func take_supply(id: StringName) -> void:
+	await use()
+	var picker = world.stock_picker
+	check(picker.visible,"Warehouse opens the stock list")
+	if not picker.visible: return
+	for i in loop.inventory.products.size():
+		if picker.list.get_selected().get_metadata(0) == id:
+			await key(KEY_ENTER)
+			return
+		await key(KEY_DOWN)
+	check(false,"Warehouse list contains "+String(id))
+
 func capture(label: String) -> void:
 	if DisplayServer.get_name() != "headless":
 		var rendered := [false]
@@ -151,6 +163,7 @@ func run() -> void:
 	if not await await_customer():
 		await finish()
 		return
+	await resolve_operator_interruptions()
 	await use()
 	check(loop.served == 2 and loop.stock.shelf_units == 0,"Second customer empties the starting stock")
 	var wait_deadline := Time.get_ticks_msec()+20000
@@ -159,12 +172,12 @@ func run() -> void:
 	check(loop.customers.any(func(customer): return customer.state == &"stock_wait"),"A customer waits for unavailable stock without overselling")
 	await capture("empty-shelf")
 	await walk(layout.warehouse.get_node("Supply").global_position+Vector3(0,0,1))
-	await use()
+	await take_supply(&"water")
 	check(loop.stock.carried_units > 0,"Warehouse supplies the player")
 	await walk(layout.shelf_point.global_position)
 	await use()
 	check(loop.tasks.has(&"restock") and loop.stock.shelf_units > 0,"Restocking unblocks waiting customers")
-	await walk(world.get_node("Station/Cooler").global_position+Vector3(0,0,1.3))
+	await walk(layout.product_points[&"energy"].global_position)
 	await use()
 	check(loop.tasks.has(&"cooler"),"Cooler task is recorded")
 	await walk(layout.delivery.global_position+Vector3(-1,0,0))

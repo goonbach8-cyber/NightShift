@@ -4,28 +4,36 @@ const INTERACTABLE = preload("res://scenes/interactions/interactable.gd")
 const DOOR = preload("res://scenes/interactions/door.tscn")
 
 var restock_items: Array[Node3D] = []
+var shop_bounds: Rect2
 
 
 func _ready() -> void:
 	# Extend the existing room; its floor and three walls stay in use.
+	var floor_shape: CollisionShape3D = get_node("../PrototypeRoom/Floor/CollisionShape3D")
+	var floor_size: Vector3 = floor_shape.shape.size
+	var shop_center := Vector2(floor_shape.position.x,floor_shape.position.z)
+	var footprint := Vector2(floor_size.x,floor_size.z)
+	shop_bounds = Rect2(shop_center-footprint/2.0,footprint)
+	var west := shop_bounds.position.x
+	var left_width := -1.15-west
 	var south := get_node("../PrototypeRoom/SouthWall")
 	south.get_node("MeshInstance3D").visible = false
 	south.get_node("CollisionShape3D").disabled = true
-	_box(self, "FrontLeft", Vector3(-4.075, 0.35, 5), Vector3(5.85, 0.7, 0.3), Color("303b43"))
+	_box(self, "FrontLeft", Vector3(west+left_width/2.0, 0.35, 5), Vector3(left_width, 0.7, 0.3), Color("303b43"))
 	_box(self, "FrontRight", Vector3(4.075, 0.35, 5), Vector3(5.85, 0.7, 0.3), Color("303b43"))
 	var door := DOOR.instantiate()
 	door.name = "Door"
 	door.position = Vector3(0, 0, 5)
 	add_child(door)
 	# Small but believable forecourt: two traffic openings and four dispenser cabinets.
-	_box(self, "Forecourt", Vector3(0, -0.15, 8.1), Vector3(14, 0.3, 6.2), Color("20272d"))
+	_box(self, "Forecourt", Vector3(shop_center.x, -0.15, 8.1), Vector3(footprint.x, 0.3, 6.2), Color("20272d"))
 	# Kerb is split into three pieces so entry and exit read as separate vehicle routes.
-	_box(self, "SouthBoundaryLeft", Vector3(-5.85, 0.3, 11.2), Vector3(2.3, 0.6, 0.3), Color("394148"))
+	_box(self, "SouthBoundaryLeft", Vector3((west-4.7)/2.0, 0.3, 11.2), Vector3(-4.7-west, 0.6, 0.3), Color("394148"))
 	_box(self, "SouthBoundaryMiddle", Vector3(0, 0.3, 11.2), Vector3(2.8, 0.6, 0.3), Color("394148"))
 	_box(self, "SouthBoundaryRight", Vector3(5.85, 0.3, 11.2), Vector3(2.3, 0.6, 0.3), Color("394148"))
 	_box(self, "EntryApron", Vector3(-3.05,-0.10,11.25),Vector3(3.3,0.2,0.5),Color("20272d"))
 	_box(self, "ExitApron",Vector3(3.05,-0.10,11.25),Vector3(3.3,0.2,0.5),Color("20272d"))
-	_box(self, "WestBoundary", Vector3(-7, 0.3, 8.1), Vector3(0.3, 0.6, 6.2), Color("394148"))
+	_box(self, "WestBoundary", Vector3(west, 0.3, 8.1), Vector3(0.3, 0.6, 6.2), Color("394148"))
 	_box(self, "EastBoundary", Vector3(7, 0.3, 8.1), Vector3(0.3, 0.6, 6.2), Color("394148"))
 	_fuel_pump("Pump", "PumpDisplay", Vector3(-2.9,0,7.25), "01")
 	_fuel_pump("Pump02", "PumpDisplay02", Vector3(-2.9,0,9.15), "02")
@@ -41,11 +49,11 @@ func _ready() -> void:
 	_box(board, "Desk", Vector3(0, 0.45, 0), Vector3(1.2, 0.9, 0.7), Color("574e43"))
 	_box(board, "Paper", Vector3(0, 0.92, 0), Vector3(0.5, 0.03, 0.4), Color("ded4ac"), false)
 	_label(board, "SCHICHTZETTEL", Vector3(0, 1.4, 0), 22, Color("e6dab7"))
-	var cooler := _object("Cooler", &"cooler", "Kühltemperatur prüfen", Vector3(-4.8, 0, -3.6))
+	var cooler := _object("Cooler", &"cooler", "Kühltemperatur prüfen", Vector3(-7.55, 0, -6.15))
 	_box(cooler, "Body", Vector3(0, 0.8, 0), Vector3(1.5, 1.6, 0.8), Color("4b666d"))
 	_box(cooler, "Glass", Vector3(0, 0.9, 0.43), Vector3(1.25, 1.1, 0.06), Color("203b40"), false)
 	_label(cooler, "KÜHLUNG  /  4 °C", Vector3(0, 1.9, 0), 22, Color("a6d8d0"))
-	var shelf := _object("Shelf", &"shelf", "Getränke auffüllen", Vector3(4.8, 0, -3.6))
+	var shelf := _object("Shelf", &"shelf", "Getränke auffüllen", Vector3(4.8, 0, -6.15))
 	_box(shelf, "Back", Vector3(0, 0.65, -0.25), Vector3(1.8, 1.3, 0.2), Color("424e50"))
 	for y in [0.15, 0.65, 1.15]:
 		_box(shelf, "Shelf", Vector3(0, y, 0), Vector3(1.8, 0.09, 0.65), Color("69736b"))

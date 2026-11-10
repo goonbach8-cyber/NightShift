@@ -39,7 +39,8 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_echo(): return
 	if (event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE)) and is_instance_valid(world):
-		if page == "": show_page("pause")
+		if page == "" and is_instance_valid(world.stock_picker) and world.stock_picker.active: world.stock_picker.close()
+		elif page == "": show_page("pause")
 		elif page == "pause": close()
 		elif page == "settings": show_page("pause")
 		get_viewport().set_input_as_handled()

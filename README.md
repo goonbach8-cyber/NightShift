@@ -8,7 +8,7 @@ The user-designated business/story baseline is summarized in [PROJECT_DIRECTION.
 
 Run `project.godot` with Godot 4.7.2. Startup opens the main menu. New Game begins Night 1; Continue restores a safe between-night checkpoint. Start the shift at the staff notes behind checkout.
 
-WASD moves, E interacts/scans/accepts payment, F talks, Space advances dialogue, 1/2 select replies, ESC pauses. TAB selects stock only at warehouse supply. T/Y/+/- control the nearby physical radio; M mutes.
+WASD moves, E interacts/scans/accepts payment, F talks, Space advances dialogue, 1/2 select replies, ESC pauses. At warehouse supply, E opens the stock list. Use the mouse or Up/Down and Enter to take a crate. T/Y/+/- control the nearby physical radio; M mutes.
 
 Customers visit Water, Energy and Chips locations, reserve products, queue, pay and leave. Refill matching product displays from warehouse stock, receive deliveries and complete the configured service tasks. Finish at the staff notes to save and advance. These are short functional prototypes, not the six finished story nights.
 

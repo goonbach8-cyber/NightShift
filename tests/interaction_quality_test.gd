@@ -12,9 +12,9 @@ func run() -> void:
 	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player).contains("Refill its display"),"Supply identifies the currently blocked action")
 	check(loop.interaction_prompt(layout.product_nodes[&"chips"],player).contains("Carrying"),"Wrong-product prompt names the carried load")
 	loop.inventory.restock(&"water")
-	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player).contains("Display full"),"Full display does not promise another crate")
+	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player) == "Choose warehouse stock","Supply offers the list even when one display is full")
 	loop.stock.warehouse_units = 0
-	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player).contains("Warehouse empty"),"Empty warehouse is clear before pressing E")
+	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player) == "Choose warehouse stock","An empty product still lets the player browse other stock")
 	check(loop.interaction_prompt(layout.delivery,player).contains("6"),"Delivery prompt exposes manifest")
 	loop.spawn_customer()
 	var customer = loop.customers[0]

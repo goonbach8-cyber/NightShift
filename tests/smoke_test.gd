@@ -29,14 +29,14 @@ func place(at: Vector3) -> void:
 	await frames(4)
 
 
-func use() -> void:
+func use(code: Key = KEY_E) -> void:
 	var event := InputEventKey.new()
-	event.physical_keycode = KEY_E
+	event.physical_keycode = code
 	event.pressed = true
 	Input.parse_input_event(event)
 	await frames(2)
 	event = InputEventKey.new()
-	event.physical_keycode = KEY_E
+	event.physical_keycode = code
 	event.pressed = false
 	Input.parse_input_event(event)
 	await frames(2)
@@ -57,8 +57,7 @@ func _run() -> void:
 	check(texture.atlas.get_size() == Vector2(512, 320), "Original 512x320 artwork retained")
 	var directions := {"move_left": &"left", "move_right": &"right", "move_forward": &"up", "move_backward": &"down"}
 	for action in directions:
-		# The old origin is now inside the narrow gondola aisle. Use the real player spawn,
-		# whose open frontage allows an uncontested movement/animation check in all axes.
+		# The entrance axis stays clear for the directional movement check.
 		await place(Vector3(0, 0.05, 1.5))
 		Input.action_press(action)
 		await frames(25)
@@ -74,7 +73,7 @@ func _run() -> void:
 			Input.action_press(z)
 			await frames(20)
 			check(is_equal_approx(Vector2(player.velocity.x, player.velocity.z).length(), 4.0), "Diagonal speed: " + x + "/" + z)
-	await place(Vector3(0, 0.05, 1.5))
+	await place(Vector3(0, 0.05, 1.08))
 	Input.action_press("move_right")
 	var visited: Dictionary = {}
 	for i in range(70):
@@ -101,10 +100,12 @@ func _run() -> void:
 	await frames(3)
 	check(player.interaction_target != hidden_object, "Interaction cannot reach through a wall")
 	hidden_object.queue_free()
-	await place(Vector3(-4.8, 0.05, -2.3))
+	var cooler: Vector3 = world.layout.product_points[&"energy"].global_position+Vector3.UP*0.05
+	var shelf: Vector3 = world.layout.product_points[&"water"].global_position+Vector3.UP*0.05
+	await place(cooler)
 	await use()
 	check(world.phase == 0 and world.completed.is_empty(), "Tasks cannot complete before shift begins")
-	await place(Vector3(4.8, 0.05, -2.3))
+	await place(shelf)
 	await use()
 	check(world.get_node("Station").restock_items.all(func(item): return not item.visible), "Shelf cannot be filled before shift begins")
 	await place(Vector3(5.9, 0.05, 0.2))
@@ -116,20 +117,21 @@ func _run() -> void:
 	check(world.phase == 1, "E key begins shift")
 	world.gameplay.stock.shelf_units = 0
 	world.gameplay.stock.changed.emit()
-	await place(Vector3(4.3, 0.05, 1.3))
+	await place(world.layout.operator_point.global_position+Vector3.UP*0.05)
 	await use()
 	check(world.phase == 1, "Register rejects incomplete checklist")
-	await place(Vector3(-4.8, 0.05, -2.3))
+	await place(cooler)
 	await use()
 	await use()
 	check(world.completed.size() == 1, "Cooler task is idempotent")
-	await place(Vector3(4.8, 0.05, -2.3))
+	await place(shelf)
 	await use()
 	check(not world.completed.has(&"shelf"), "Shelf needs a warehouse crate")
 	await place(Vector3(8, 0.05, -3.1))
 	await use()
+	await use(KEY_ENTER)
 	check(world.get_node("Station/ServiceAnnex").carried_units == 8, "Supply interaction picks up eight bottles")
-	await place(Vector3(4.8, 0.05, -2.3))
+	await place(shelf)
 	await use()
 	check(world.completed.size() == 2, "Shelf completes second task")
 	check(world.get_node("Station").restock_items.all(func(item): return item.visible), "Restocking fills shelf in the game world")
@@ -139,7 +141,7 @@ func _run() -> void:
 	await place(Vector3(4.6, 0.05, 3.6))
 	await use()
 	check(world.phase == 1, "Customer side cannot finish the shift")
-	await place(Vector3(4.3, 0.05, 1.3))
+	await place(world.layout.operator_point.global_position+Vector3.UP*0.05)
 	await use()
 	check(world.phase == 1, "Shift stays active until delivery task is complete")
 	world.gameplay.elapsed = 18.0

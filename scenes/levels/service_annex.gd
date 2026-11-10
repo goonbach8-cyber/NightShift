@@ -66,7 +66,10 @@ func build_rooms() -> void:
 		if child is MeshInstance3D and is_equal_approx(child.position.x,6.82):
 			if child.mesh is BoxMesh and (child.mesh.size.z > 9 or (child.position.z > -3.3 and child.position.z < -1.1)):
 				child.hide()
-	box(Vector3(7,1,-4.225),Vector3(0.3,2,1.85),"a2a499",true)
+	var bounds: Rect2 = get_parent().shop_bounds
+	var north := bounds.position.y-0.15
+	var opening_edge := -3.3
+	box(Vector3(bounds.end.x,1,(north+opening_edge)/2.0),Vector3(0.3,2,opening_edge-north),"a2a499",true)
 	box(Vector3(7,1,1.95),Vector3(0.3,2,6.1),"a2a499",true)
 	box(Vector3(9.5,-0.1,0),Vector3(5,0.2,10),"727b72",true)
 	box(Vector3(12,1,0),Vector3(0.2,2,10.2),"a2a499",true)
@@ -196,7 +199,7 @@ func setup_sound() -> void:
 	get_node("../../Player").add_child(listener)
 	listener.position.y = 0.8
 	listener.make_current()
-	ambient(Vector3(-4.8,0.9,-3.6),false,-30.0,6.0)
+	ambient(get_parent().get_node("Cooler").position+Vector3.UP*0.9,false,-30.0,6.0)
 	ambient(Vector3(10,1,-3),false,-35.0,5.0)
 	ambient(Vector3(9.5,1,-7),true,-28.0,8.0)
 	for item in doors + [get_parent().get_node("Door")]:

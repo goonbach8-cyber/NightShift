@@ -135,7 +135,7 @@ func _ready() -> void:
 	radio_point.action_id = &"radio"
 	radio_point.prompt = "Radio on/off  |  [Y] Track  [+/-] Volume"
 	shelf.get_parent().add_child(radio_point)
-	radio_point.position = Vector3(6.05,0,-4.6)
+	radio_point.position = Vector3(6.2,0,-6.15)
 	var model = preload("res://scripts/product_display.gd").new()
 	radio_point.add_child(model)
 	model.box(model,Vector3(0,1.05,0),Vector3(0.55,0.32,0.20),Color("283b3c"))

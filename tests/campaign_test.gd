@@ -303,8 +303,7 @@ func run() -> void:
 			await sell()
 		for id in loop.inventory.products:
 			await walk(layout.warehouse.get_node("Supply").global_position+Vector3(0,0,1))
-			await choose(id)
-			await use()
+			await take_supply(id)
 			check(loop.inventory.carried_product() == id,"Night %d warehouse pickup: %s" % [night+1,id])
 			await walk(layout.product_points[id].global_position)
 			await use()

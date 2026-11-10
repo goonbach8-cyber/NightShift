@@ -27,10 +27,13 @@ func purchase() -> bool:
 	changed.emit()
 	return true
 
+func pickup_units() -> int:
+	return maxi(0,mini(8,mini(warehouse_units,capacity-shelf_units)))
+
 func take_crate() -> bool:
 	if carried_units != 0:
 		return false
-	var amount := mini(8,mini(warehouse_units,capacity-shelf_units))
+	var amount := pickup_units()
 	if amount <= 0:
 		return false
 	warehouse_units -= amount

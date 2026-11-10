@@ -40,7 +40,7 @@ func run() -> void:
 	await physics_frame
 	player._update_interaction()
 	check(player.interaction_target == phone,"Ringing phone wins at its authored approach")
-	player.global_position = Vector3(4.04,0.05,1.44)
+	player.global_position = world.layout.checkout.to_global(Vector3(-0.56,0.05,-0.86))
 	player.interaction_target = world.layout.checkout
 	await physics_frame
 	player._update_interaction()
@@ -58,7 +58,7 @@ func run() -> void:
 	await physics_frame
 	player._update_interaction()
 	check(player.interaction_target == pump,"Pending pump request is selectable at its terminal approach")
-	player.global_position = Vector3(4.04,0.05,1.43)
+	player.global_position = world.layout.checkout.to_global(Vector3(-0.56,0.05,-0.87))
 	player.interaction_target = world.layout.checkout
 	await physics_frame
 	player._update_interaction()

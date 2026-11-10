@@ -25,7 +25,6 @@ var spawn_interval: float = 8
 var tasks: Dictionary = {}
 var delivery_ready: bool = false
 var delivery_carried: bool = false
-var supply_selection: int = 0
 var delivery_manifest: Dictionary = {&"water": 6, &"energy": 4, &"chips": 3}
 var carried_delivery_manifest: Dictionary = {}
 # Demo data; the inventory and customer code do not special-case these products.
@@ -337,14 +336,13 @@ func checkout() -> bool:
 	changed.emit()
 	return true
 
-func cycle_supply() -> void:
-	supply_selection = (supply_selection+1) % inventory.products.size()
+func collect_stock(id: StringName) -> bool:
+	if delivery_carried or not inventory.take_crate(id):
+		return false
 	update_supply_prompt()
-	notice.emit("Selected stock: "+inventory.products[selected_product()].display_name)
+	notice.emit("Carrying stock: "+inventory.products[id].display_name)
 	changed.emit()
-
-func selected_product() -> StringName:
-	return inventory.products.keys()[supply_selection]
+	return true
 
 func interaction_prompt(target: Node3D, player: Node3D) -> String:
 	if target == layout.checkout:
@@ -367,18 +365,14 @@ func interaction_prompt(target: Node3D, player: Node3D) -> String:
 	if target == layout.warehouse.get_node("Supply"):
 		if delivery_carried: return "Store delivery · "+inventory.basket_text(delivery_manifest)
 		if carried != &"": return "Carrying %s · Refill its display first" % inventory.products[carried].display_name
-		var selected: Resource = inventory.stocks[selected_product()]
-		var title: String = inventory.products[selected_product()].display_name
-		if selected.warehouse_units == 0: return "Check %s · Warehouse empty · [TAB] Select product" % title
-		if selected.shelf_units == selected.capacity: return "Check %s · Display full · [TAB] Select product" % title
+		return "Choose warehouse stock"
 	if target == layout.delivery:
 		if carried != &"": return "Delivery · Refill %s first" % inventory.products[carried].display_name
 		return "Collect delivery · "+inventory.basket_text(delivery_manifest)
 	return target.prompt
 
 func update_supply_prompt() -> void:
-	var id := selected_product()
-	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else "Collect %s (warehouse %d) — TAB select" % [inventory.products[id].display_name,inventory.stocks[id].warehouse_units]
+	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else "Choose warehouse stock"
 	if layout.has_method("set_carry_state"):
 		layout.set_carry_state(delivery_carried,inventory.carried_product())
 
@@ -399,7 +393,7 @@ func fill_shelf(id: StringName) -> void:
 			else:
 				notice.emit("This display is already full.")
 		else:
-			notice.emit("Collect matching stock in the warehouse. [TAB] selects a product there.")
+			notice.emit("Choose the matching product in the warehouse.")
 
 func interact(action: StringName, player: Node3D) -> void:
 	if String(action).begins_with("stock_"):
@@ -437,13 +431,6 @@ func interact(action: StringName, player: Node3D) -> void:
 						tasks[&"delivery"] = true
 						notice.emit("Stored: "+inventory.basket_text(manifest))
 						carried_delivery_manifest.clear()
-				elif inventory.take_crate(selected_product()):
-					notice.emit("Carrying stock: "+inventory.products[selected_product()].display_name)
-				else:
-					var carried: StringName = inventory.carried_product()
-					if carried != &"": notice.emit("You are carrying %s. Refill its display first." % inventory.products[carried].display_name)
-					elif inventory.stocks[selected_product()].warehouse_units == 0: notice.emit("No %s left in the warehouse." % inventory.products[selected_product()].display_name)
-					else: notice.emit("The %s display is already full." % inventory.products[selected_product()].display_name)
 			&"delivery":
 				if not accept_delivery(delivery_manifest):
 					notice.emit("First put carried stock in its matching display.")

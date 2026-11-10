@@ -81,8 +81,8 @@ func run() -> void:
 	var sprite_position: Vector3 = player.sprite.position
 	var camera_offset: Vector3 = player.get_node("CameraRig/Camera3D").position
 	for direction in ["move_right", "move_left"]:
-		# The origin is now occupied by the gondola aisle. Use the real, open player spawn.
-		player.position = Vector3(0, 0.05, 1.5)
+		# Use the open cross-aisle for an uninterrupted full stride cycle.
+		player.position = Vector3(0, 0.05, 1.08)
 		player.velocity = Vector3.ZERO
 		Input.action_press(direction)
 		var seen := {}

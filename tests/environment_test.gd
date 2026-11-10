@@ -14,7 +14,10 @@ func run() -> void:
 	player = world.get_node("Player")
 	await create_timer(0.5).timeout
 	world.gameplay.navigation.rebuild(world,world.layout.doors)
-	for target in [Vector2(0,0), Vector2(-4.8,0), Vector2(-4.8,-2.3), Vector2(-4.8,0), Vector2(4.8,0), Vector2(4.8,-2.3), Vector2(4.8,0), Vector2(5.9,0.2), Vector2(5.9,1.3), Vector2(4.3,1.3), Vector2(3.0,1.3), Vector2(3.0,0), Vector2(3.0,3.6), Vector2(4.6,3.6), Vector2(0,3.6), Vector2(-4.8,3.6)]:
+	var cooler: Vector3 = world.layout.product_points[&"energy"].global_position
+	var water: Vector3 = world.layout.product_points[&"water"].global_position
+	var till: Vector3 = world.layout.operator_point.global_position
+	for target in [Vector2(0,0), Vector2(-4.8,0), Vector2(cooler.x,cooler.z), Vector2(-4.8,0), Vector2(4.8,0), Vector2(water.x,water.z), Vector2(4.8,0), Vector2(5.9,0.2), Vector2(5.9,1.3), Vector2(till.x,till.z), Vector2(3.0,1.3), Vector2(3.0,0), Vector2(3.0,3.6), Vector2(4.6,3.6), Vector2(0,3.6), Vector2(-4.8,3.6)]:
 		var route: PackedVector3Array = world.gameplay.navigation.path(player.global_position,Vector3(target.x,0,target.y))
 		var reached := not route.is_empty()
 		var deadline := Time.get_ticks_msec()+30000

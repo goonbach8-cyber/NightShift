@@ -31,14 +31,14 @@ func walk(target: Vector2) -> void:
 	await create_timer(0.25).timeout
 	check(reached and player.is_on_floor(),"Walk to "+str(target))
 
-func use() -> void:
+func use(code: Key = KEY_E) -> void:
 	var event := InputEventKey.new()
-	event.physical_keycode = KEY_E
+	event.physical_keycode = code
 	event.pressed = true
 	Input.parse_input_event(event)
 	await process_frame
 	event = InputEventKey.new()
-	event.physical_keycode = KEY_E
+	event.physical_keycode = code
 	Input.parse_input_event(event)
 	await create_timer(0.65).timeout
 
@@ -60,6 +60,7 @@ func run() -> void:
 	await walk(Vector2(8.8,-2.2))
 	await walk(Vector2(8,-3.1))
 	await use()
+	await use(KEY_ENTER)
 	check(annex.carried_units == 8 and annex.reserve_units == 16,"Crate transfers exactly eight reserve units")
 	await use()
 	check(annex.reserve_units == 16,"Cannot pick up a second crate")
@@ -89,11 +90,14 @@ func run() -> void:
 	await walk(Vector2(6,-2.2))
 	await use()
 	check(not annex.get_node("StoreDoor").is_open,"Store door closes after returning to the shop")
-	await walk(Vector2(4.8,-2.3))
+	var water: Vector3 = world.layout.product_points[&"water"].global_position
+	await walk(Vector2(water.x,water.z))
 	await use()
 	check(annex.carried_units == 0 and annex.shop_units == 8,"Warehouse stock reaches the shop shelf")
 	world._on_used(&"supply")
 	check(annex.carried_units == 0 and annex.reserve_units == 16,"Completed shelf does not reserve unnecessary stock")
+	check(world.stock_picker.take.disabled,"Full water display cannot request another crate")
+	world.stock_picker.close()
 	check(annex.PRODUCTS[&"water"].line_total(3) == 660,"Prices use integer rappen")
 	check(annex.PRODUCTS[&"water"].line_total(-1) == 0,"Negative quantities cannot create negative totals")
 	world.muted = true

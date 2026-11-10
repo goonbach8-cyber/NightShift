@@ -44,7 +44,7 @@ func run() -> void:
 	check(absf(prop.rotation.z)>0.9,"Physical change remains visibly tipped")
 	check(not world.objective.text.contains("Check the stockroom before leaving") and not world.objective.text.is_empty() and loop.required_tasks.has(&"wc") and not loop.tasks.has(&"wc"),"Objective removes completed story destination and retains normal task")
 	check(not loop.can_finish(),"Remaining normal tasks still prevent premature completion")
-	await use()
+	await take_supply(&"water")
 	await walk(layout.product_points[&"water"].global_position)
 	await use()
 	await walk(layout.product_points[&"energy"].global_position)

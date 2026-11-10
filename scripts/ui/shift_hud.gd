@@ -131,16 +131,7 @@ func objective_text() -> String:
 
 func update() -> void:
 	var loop: Node = world.gameplay
-	var checkout_focus: bool = is_instance_valid(world.checkout_minigame) and world.checkout_minigame.active
-	var pump_focus: bool = is_instance_valid(world.pump_service) and world.pump_service.active
-	var cctv_focus: bool = is_instance_valid(world.cctv_system) and world.cctv_system.active
-	var power_focus: bool = is_instance_valid(world.power_service) and world.power_service.active
-	var delivery_focus: bool = is_instance_valid(world.delivery_check) and world.delivery_check.active
-	var phone_focus: bool = is_instance_valid(world.phone_system) and world.phone_system.active
-	var spill_focus: bool = is_instance_valid(world.spill_service) and world.spill_service.active
-	var radio_focus: bool = is_instance_valid(world.radio_tuner) and world.radio_tuner.active
-	var device_focus: bool = is_instance_valid(world.device_service) and world.device_service.active
-	var modal: bool = loop.dialogue.active or world.menu.page != "" or checkout_focus or pump_focus or cctv_focus or power_focus or delivery_focus or phone_focus or spill_focus or radio_focus or device_focus
+	var modal: bool = world.menu.page != "" or world.has_interaction_focus()
 	objective_title.text = "NIGHT %d" % (loop.career_shifts+1)
 	objective.text = objective_text()
 	progress.text = "%d served" % loop.served + (" · %d left unserved" % loop.lost_sales if loop.lost_sales > 0 else "")
@@ -173,7 +164,7 @@ func update() -> void:
 				var stock: Resource = loop.inventory.stocks[id]
 				secondary.text = "%d / %d on shelf" % [stock.shelf_units,stock.capacity]
 		if target == world.layout.warehouse.get_node("Supply"):
-			secondary.text = "%d in storage   ·   [TAB] Select stock" % loop.inventory.stocks[loop.selected_product()].warehouse_units if not loop.delivery_carried else "Mixed delivery · Store all items"
+			secondary.text = "Mixed delivery · Store all items" if loop.delivery_carried else ""
 		elif target == world.layout.radio_point:
 			secondary.text = ("Signal drift · %.1f FM" % world.radio.tuned_frequency) if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending else ("%.1f FM · %s" % [world.radio.tuned_frequency,world.radio.station_name()])
 		elif target == world.layout.pump_terminal and is_instance_valid(world.pump_service):
@@ -256,9 +247,7 @@ func compact_prompt(target: Node3D) -> String:
 	if target == world.layout.warehouse.get_node("Supply"):
 		if loop.delivery_carried: return "Store delivery"
 		if carried != &"": return "Restock your display first"
-		if loop.inventory.stocks[loop.selected_product()].warehouse_units == 0: return "Check stock · Warehouse empty"
-		if loop.inventory.stocks[loop.selected_product()].shelf_units == loop.inventory.stocks[loop.selected_product()].capacity: return "Check stock · Display full"
-		return "Collect "+String(loop.inventory.products[loop.selected_product()].display_name)
+		return "Choose warehouse stock"
 	if target == world.layout.delivery: return "Inspect delivery" if carried == &"" else "Restock your display first"
 	if target == world.layout.pump_terminal:
 		if is_instance_valid(world.customer_requests) and world.customer_requests.active and world.customer_requests.request_kind == &"fuel_receipt" and not world.customer_requests.task_complete:

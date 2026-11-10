@@ -20,6 +20,7 @@ var checkout_label: Label
 var checkout_backdrop: PanelContainer
 var story_world: Node3D
 var hud: Control
+var stock_picker: Control
 var checkout_minigame: Node
 var pump_service: Node
 var cctv_system: Node
@@ -69,6 +70,10 @@ func _ready() -> void:
 	hud = preload("res://scripts/ui/shift_hud.gd").new()
 	hud.world = self
 	$HUD.add_child(hud)
+	stock_picker = preload("res://scripts/ui/stock_picker.gd").new()
+	stock_picker.name = "StockPicker"
+	stock_picker.world = self
+	$HUD.add_child(stock_picker)
 	for old_name in ["ObjectiveBackdrop","Objective","Prompt","Message","Controls"]:
 		$HUD.get_node(old_name).hide()
 	objective = hud.objective
@@ -155,16 +160,7 @@ func _process(delta: float) -> void:
 		if in_area and (not candidate.at_checkout or layout.at_operator(player)):
 			ready_event = i
 			break
-	var checkout_busy: bool = is_instance_valid(checkout_minigame) and checkout_minigame.active
-	var pump_busy: bool = is_instance_valid(pump_service) and pump_service.active
-	var cctv_busy: bool = is_instance_valid(cctv_system) and cctv_system.active
-	var power_busy: bool = is_instance_valid(power_service) and power_service.active
-	var delivery_busy: bool = is_instance_valid(delivery_check) and delivery_check.active
-	var phone_busy: bool = is_instance_valid(phone_system) and phone_system.active
-	var spill_busy: bool = is_instance_valid(spill_service) and spill_service.active
-	var radio_busy: bool = is_instance_valid(radio_tuner) and radio_tuner.active
-	var device_busy: bool = is_instance_valid(device_service) and device_service.active
-	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not gameplay.dialogue.active and not checkout_busy and not pump_busy and not cctv_busy and not power_busy and not delivery_busy and not phone_busy and not spill_busy and not radio_busy and not device_busy:
+	if ready_event >= 0 and story_time <= 0 and story_cooldown <= 0 and not has_interaction_focus():
 		var event: Resource = pending_events[ready_event]
 		pending_events.remove_at(ready_event)
 		story_label.text = event.text
@@ -212,7 +208,7 @@ func _exit_tree() -> void:
 	feedback.stream = null
 
 func _dialogue_changed() -> void:
-	player.controls_locked = gameplay.dialogue.active or (is_instance_valid(checkout_minigame) and checkout_minigame.active) or (is_instance_valid(pump_service) and pump_service.active) or (is_instance_valid(cctv_system) and cctv_system.active) or (is_instance_valid(power_service) and power_service.active) or (is_instance_valid(delivery_check) and delivery_check.active) or (is_instance_valid(phone_system) and phone_system.active) or (is_instance_valid(spill_service) and spill_service.active) or (is_instance_valid(radio_tuner) and radio_tuner.active) or (is_instance_valid(device_service) and device_service.active)
+	player.controls_locked = has_interaction_focus()
 	player.velocity.x = 0
 	player.velocity.z = 0
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -224,12 +220,13 @@ func _input(event: InputEvent) -> void:
 	if hud.conversation.handle(event):
 		get_viewport().set_input_as_handled()
 		return
-	var work_shortcut: bool = event is InputEventKey and event.pressed and event.physical_keycode in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_EQUAL,KEY_PLUS,KEY_KP_ADD,KEY_MINUS,KEY_KP_SUBTRACT]
+	var work_shortcut: bool = event is InputEventKey and event.pressed and event.physical_keycode in [KEY_F,KEY_T,KEY_Y,KEY_EQUAL,KEY_PLUS,KEY_KP_ADD,KEY_MINUS,KEY_KP_SUBTRACT]
 	if event.is_action_pressed("interact") or work_shortcut:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if menu.page != "": return
+	if stock_picker.active: return
 	if is_instance_valid(checkout_minigame) and checkout_minigame.active: return
 	if is_instance_valid(pump_service) and pump_service.active: return
 	if is_instance_valid(cctv_system) and cctv_system.active: return
@@ -270,8 +267,6 @@ func _unhandled_input(event: InputEvent) -> void:
 						get_tree().set_meta("nightshift_continue",true)
 						get_tree().reload_current_scene()
 					else: _say("Save failed. The previous checkpoint is retained.")
-	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_TAB and phase == Phase.ACTIVE:
-		if player.interaction_target == layout.warehouse.get_node("Supply"): gameplay.cycle_supply()
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F5:
 		_say("Night saved." if phase == Phase.COMPLETE and checkpoint.write_checkpoint(gameplay) else "Saving is available between completed nights.")
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F9:
@@ -289,6 +284,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _on_used(action: StringName) -> void:
+	if action == &"supply" and phase == Phase.ACTIVE and not gameplay.preparing and not gameplay.delivery_carried:
+		if has_interaction_focus(): return
+		if gameplay.inventory.carried_product() != &"":
+			_say("Refill the matching display before taking another crate.")
+		else:
+			stock_picker.begin()
+		return
 	if action == &"customer_service_key":
 		customer_requests.handle_action(action)
 		return
@@ -368,17 +370,14 @@ func _on_used(action: StringName) -> void:
 func has_interaction_focus(source: Node = null) -> bool:
 	if gameplay.dialogue.active:
 		return true
-	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service,radio_tuner,device_service]:
+	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service,radio_tuner,device_service,stock_picker]:
 		if system != source and is_instance_valid(system) and system.active:
 			return true
 	return false
 
 func can_start_interrupt(source: Node = null) -> bool:
-	if phase != Phase.ACTIVE or not gameplay.active or gameplay.dialogue.active or story_time > 0:
+	if phase != Phase.ACTIVE or not gameplay.active or has_interaction_focus(source) or story_time > 0:
 		return false
-	for system in [checkout_minigame,pump_service,cctv_system,power_service,delivery_check,phone_system,spill_service,radio_tuner,device_service]:
-		if system != source and is_instance_valid(system) and bool(system.get("active")):
-			return false
 	if source != pump_service and is_instance_valid(pump_service) and (pump_service.request_pending or pump_service.fault_pending):
 		return false
 	if source != cctv_system and is_instance_valid(cctv_system) and cctv_system.motion_pending:

@@ -49,12 +49,13 @@ func _ready() -> void:
 
 func _build_channels() -> void:
 	var entrance: Vector3 = layout.entrance.global_position
-	var checkout: Vector3 = layout.checkout.global_position
+	var station := layout.entrance.get_parent() as Node3D
+	var shop_center: Vector2 = station.shop_bounds.get_center()
 	var warehouse: Vector3 = layout.warehouse.global_position
 	channels = [
 		{"name":"CAM 01 · FORECOURT","area":"forecourt","eye":entrance+Vector3(0,5.2,7.6),"target":entrance+Vector3(0,0.7,4.2)},
 		{"name":"CAM 02 · ENTRANCE","area":"entrance","eye":entrance+Vector3(-4.8,3.0,-0.6),"target":entrance+Vector3(0,0.9,-1.2)},
-		{"name":"CAM 03 · SHOP","area":"shop floor","eye":checkout+Vector3(-4.6,4.4,-1.8),"target":checkout+Vector3(-2.6,0.8,-2.2)},
+		{"name":"CAM 03 · SHOP","area":"shop floor","eye":station.to_global(Vector3(5.6,4.6,3.9)),"target":station.to_global(Vector3(shop_center.x,0.8,shop_center.y))},
 		{"name":"CAM 04 · SERVICE YARD","area":"service yard","eye":warehouse+Vector3(3.6,4.2,5.0),"target":warehouse+Vector3(0,0.8,1.0)}
 	]
 
