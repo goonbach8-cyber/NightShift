@@ -37,14 +37,14 @@ var rotate_right := false
 var counter_root: Node3D
 var scanner_plate: MeshInstance3D
 var scanner_material: StandardMaterial3D
-var terminal_label: Label3D
+var terminal_label: MeshInstance3D
 var card_root: Node3D
 var card_material: StandardMaterial3D
 var receipt_root: Node3D
-var receipt_label: Label3D
+var receipt_label: MeshInstance3D
 var cash_root: Node3D
 var cash_note_root: Node3D
-var cash_note_label: Label3D
+var cash_note_label: MeshInstance3D
 var change_visuals: Array[Node3D] = []
 var cash_materials: Array[StandardMaterial3D] = []
 var cash_selection := 0
@@ -89,27 +89,21 @@ func _build_counter() -> void:
 	layout.checkout.add_child(counter_root)
 
 	# A low scanner plate remains in the world even outside the focused interaction.
-	scanner_plate = _box(counter_root,Vector3(SCANNER_X,1.015,0.19),Vector3(0.30,0.025,0.28),Color("1b292b"))
+	scanner_plate = _box(counter_root,Vector3(SCANNER_X,1.078,0.19),Vector3(0.30,0.025,0.28),Color("1b292b"))
 	scanner_material = StandardMaterial3D.new()
 	scanner_material.albedo_color = Color("713d39")
 	scanner_material.roughness = 0.55
 	scanner_plate.material_override = scanner_material
-	_box(counter_root,Vector3(SCANNER_X,1.032,0.19),Vector3(0.24,0.008,0.025),Color("b4554e"))
+	_box(counter_root,Vector3(SCANNER_X,1.095,0.19),Vector3(0.24,0.008,0.025),Color("b4554e"))
 
 	# Subtle staging mats explain left-to-right movement without becoming an arcade UI.
-	_box(counter_root,Vector3(-0.53,1.012,0.19),Vector3(0.34,0.012,0.34),Color("394543"))
-	_box(counter_root,Vector3(0.54,1.012,0.19),Vector3(0.38,0.012,0.34),Color("394543"))
+	_box(counter_root,Vector3(-0.53,1.072,0.19),Vector3(0.34,0.012,0.34),Color("394543"))
+	_box(counter_root,Vector3(0.54,1.072,0.19),Vector3(0.38,0.012,0.34),Color("394543"))
 
-	terminal_label = Label3D.new()
+	# A fixed LCD belongs to the payment pad, readable from the operator side.
+	terminal_label = preload("res://scripts/printed_surface.gd").make(counter_root,"",Vector3(0.56,1.241,0.09),Vector2(0.15,0.095),Color("cbe3a7"),Color("182b27"),true)
 	terminal_label.name = "CardTerminalReadout"
-	terminal_label.position = Vector3(0.0,1.43,-0.12)
-	terminal_label.font_size = 22
-	terminal_label.pixel_size = 0.0033
-	terminal_label.modulate = Color("cbe3a7")
-	terminal_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	terminal_label.visible = false
-	counter_root.add_child(terminal_label)
-
+	terminal_label.hide()
 	card_root = Node3D.new()
 	card_root.name = "CustomerCard"
 	card_root.position = Vector3(-0.18,1.06,-0.13)
@@ -125,21 +119,14 @@ func _build_counter() -> void:
 
 	receipt_root = Node3D.new()
 	receipt_root.name = "Receipt"
-	receipt_root.position = Vector3(0.47,1.035,-0.18)
+	receipt_root.position = Vector3(-0.65,1.19,0.18)
 	receipt_root.visible = false
 	counter_root.add_child(receipt_root)
 	_box(receipt_root,Vector3.ZERO,Vector3(0.28,0.012,0.38),Color("e5dfce"))
-	receipt_label = Label3D.new()
-	receipt_label.position = Vector3(0,0.012,0.02)
-	receipt_label.font_size = 12
-	receipt_label.pixel_size = 0.0022
-	receipt_label.modulate = Color("263235")
-	receipt_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	receipt_root.add_child(receipt_label)
-
+	receipt_label = preload("res://scripts/printed_surface.gd").make(receipt_root,"",Vector3(0,0.008,0.02),Vector2(0.25,0.32),Color("263235"),Color("e5dfce"),true)
 	cash_root = Node3D.new()
 	cash_root.name = "CashTray"
-	cash_root.position = Vector3(0.40,1.04,-0.02)
+	cash_root.position = Vector3(0.40,1.075,-0.02)
 	cash_root.visible = false
 	counter_root.add_child(cash_root)
 	for i in CASH_VALUES.size():
@@ -158,29 +145,16 @@ func _build_counter() -> void:
 		coin.material_override = mat
 		cash_materials.append(mat)
 		cash_root.add_child(coin)
-		var label := Label3D.new()
-		label.text = _money(CASH_VALUES[i])
-		label.position = Vector3(-0.30+i*0.12,0.045,0)
-		label.font_size = 12
-		label.pixel_size = 0.0020
-		label.modulate = Color("e7e2d4")
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		cash_root.add_child(label)
+		preload("res://scripts/printed_surface.gd").make(cash_root,_money(CASH_VALUES[i]),Vector3(-0.30+i*0.12,0.010,0),Vector2(0.082,0.056),Color("37372d"),Color("a99b79"),true)
 	_update_cash_selection()
 
 	cash_note_root = Node3D.new()
 	cash_note_root.name = "CustomerCash"
-	cash_note_root.position = Vector3(-0.43,1.04,-0.16)
+	cash_note_root.position = Vector3(-0.43,1.075,-0.16)
 	cash_note_root.visible = false
 	counter_root.add_child(cash_note_root)
 	_box(cash_note_root,Vector3.ZERO,Vector3(0.34,0.012,0.18),Color("a8b98e"))
-	cash_note_label = Label3D.new()
-	cash_note_label.position = Vector3(0,0.015,0)
-	cash_note_label.font_size = 13
-	cash_note_label.pixel_size = 0.0022
-	cash_note_label.modulate = Color("24302c")
-	cash_note_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	cash_note_root.add_child(cash_note_label)
+	cash_note_label = preload("res://scripts/printed_surface.gd").make(cash_note_root,"",Vector3(0,0.008,0),Vector2(0.29,0.14),Color("24302c"),Color("a8b98e"),true)
 
 func _build_ui() -> void:
 	panel = PanelContainer.new()
@@ -663,7 +637,7 @@ func _print_receipt() -> void:
 	phase = &"receipt"
 	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [pending_receipt_method,float(pending_receipt_total)/100.0]
 	receipt_root.show()
-	var start := Vector3(0.47,1.035,-0.18)
+	var start := Vector3(-0.65,1.19,0.18)
 	receipt_root.position = start+Vector3(0,-0.10,0)
 	var tween := create_tween()
 	tween.tween_property(receipt_root,"position",start,0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

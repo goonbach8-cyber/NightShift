@@ -75,20 +75,10 @@ func cylinder(at: Vector3, radius: float, height: float, color: String, parent: 
 	parent.add_child(item)
 	return item
 
-func sign_text(text: String, at: Vector3, width: float, parent: Node3D = self, color: String = "dce7da") -> Label3D:
-	var label := Label3D.new()
-	label.text = text
-	label.font_size = 48
-	var longest := 1.0
-	for line in text.split("\n"):
-		longest = maxf(longest,ThemeDB.fallback_font.get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,label.font_size).x)
-	label.pixel_size = minf(0.0046,width/longest)
-	label.position = at
-	label.modulate = Color(color)
-	label.outline_size = 0
-	parent.add_child(label)
-	return label
-
+func sign_text(text: String, at: Vector3, width: float, parent: Node3D = self, color: String = "dce7da"):
+	var rows := text.count("\n")+1
+	var height := minf(0.38,0.12*rows)
+	return preload("res://scripts/printed_surface.gd").make(parent,text,at,Vector2(width,height),Color(color),Color("203a3c"))
 func lamp(at: Vector3, warm: bool = true, shadows: bool = false) -> void:
 	box(at, Vector3(1.5,0.10,0.28), "667a78").cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	box(at + Vector3(0,0,0.15), Vector3(1.35,0.05,0.025), "cfdfcf", self, true)
@@ -205,8 +195,9 @@ func build_endcap(at: Vector3, variant_offset: int, title: String) -> void:
 			var x := -0.44+i*0.22
 			bevel(Vector3(x,y+0.14,0.02),Vector3(0.16,0.22,0.18),["a97344","beaa70","557b69","965647","5f7895"][(i+variant_offset)%5],root)
 	box(Vector3(0,1.20,0.12),Vector3(1.18,0.14,0.18),"246463",root)
-	var sign := sign_text(title,Vector3(0,1.20,0.214),0.88,root)
-	sign.pixel_size = minf(sign.pixel_size,0.0031)
+	var sign = sign_text(title,Vector3(0,1.20,0.214),0.88,root)
+	sign.print_size = Vector2(0.88,0.10)
+	sign.mesh.size = sign.print_size
 
 
 func build_cooler_module(at: Vector3, title: String, palette_offset: int) -> void:
@@ -327,7 +318,6 @@ func shop_fittings() -> void:
 	box(Vector3(-0.65,1.18,0.18),Vector3(0.15,0.008,0.14),"ddd4b3",till)
 	box(Vector3(0,0.88,-0.48),Vector3(0.55,0.14,0.025),"263739",till)
 	box(Vector3(0,0.89,-0.50),Vector3(0.20,0.025,0.025),"8e9b94",till)
-	sign_text("CHECKOUT",Vector3(0,0.73,0.487),0.65,till)
 	# Coffee unit against the back wall, outside all existing task approaches.
 	coffee = Node3D.new()
 	coffee.name = "CoffeeStation"
@@ -342,12 +332,10 @@ func shop_fittings() -> void:
 	for x in [0.22,0.47,0.72]:
 		cylinder(Vector3(x,1.06,0.18),0.08,0.2,"ddd3b6",coffee)
 	box(Vector3(0,0.75,0.464),Vector3(1.1,0.20,0.025),"173d40",coffee)
-	sign_text("COFFEE",Vector3(0,0.75,0.484),0.96,coffee)
 	var board := station.get_node("ShiftBoard")
 	box(Vector3(0,0.91,0),Vector3(1.28,0.045,0.78),"b5a586",board)
 	box(Vector3(-0.16,0.947,0),Vector3(0.018,0.015,0.29),"304d51",board)
 	cylinder(Vector3(0.40,1.02,-0.15),0.075,0.18,"c7c2a7",board)
-	sign_text("STAFF NOTES",Vector3(0,0.68,0.365),0.86,board)
 	solid(Vector3(-6.05,0.3,3.7), Vector3(0.5,0.6,0.5))
 	cylinder(Vector3(-6.05,0.3,3.7),0.25,0.6,"364c4c")
 	cylinder(Vector3(-6.05,0.61,3.7),0.27,0.035,"182b2e")
@@ -482,7 +470,7 @@ func pump_detail(at: Vector3, number: String) -> void:
 		var z := at.z+float(side)*0.385
 		bevel(Vector3(at.x,1.12,z),Vector3(0.70,0.46,0.07),"263739")
 		box(Vector3(at.x,1.18,z+float(side)*0.04),Vector3(0.52,0.16,0.012),"173d40",self,true)
-		var display := sign_text(number+" / 1.829",Vector3(at.x,1.18,z+float(side)*0.048),0.46,self,"acdfbc")
+		var display = sign_text(number+" / 1.829",Vector3(at.x,1.18,z+float(side)*0.048),0.46,self,"acdfbc")
 		if side < 0: display.rotation.y = PI
 		for col in range(3):
 			box(Vector3(at.x-0.19+col*0.19,0.98,z+float(side)*0.04),Vector3(0.10,0.05,0.015),"9caaa5")
@@ -610,7 +598,6 @@ func shop_logic() -> void:
 	for i in 4:
 		box(Vector3(-0.015+i*0.085,1.16,0.36),Vector3(0.065,0.07,0.16),["a97344","beaa70","557b69","965647"][i],till)
 	box(Vector3(-0.69,1.085,-0.28),Vector3(0.28,0.018,0.20),"173d40",till)
-	sign_text("CHF / CARD",Vector3(0.6,0.8,0.49),0.48,till)
 	# One compact protected bakery display next to the existing coffee machine.
 	solid(Vector3(-2.60,0.5,-6.18),Vector3(1.12,1.0,0.85))
 	bevel(Vector3(-2.60,0.47,-6.18),Vector3(1.12,0.94,0.85),"65746a")
@@ -630,7 +617,7 @@ func shop_logic() -> void:
 	lid.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for z in [-6.60,-5.76]:
 		box(Vector3(-2.60,1.55,z),Vector3(1.16,0.035,0.035),"8e9b94")
-	sign_text("BAKERY",Vector3(-2.60,0.8,-5.74),0.82)
+	sign_text("BAKERY",Vector3(-2.60,0.80,-5.748),0.82)
 	# Accessories live on the coffee worktop, rather than unrelated decoration.
 	for i in 4:
 		cylinder(Vector3(0.74,1.15+i*0.025,0.03),0.08,0.025,"ddd4b3",coffee)

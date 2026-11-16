@@ -57,15 +57,8 @@ func _ready() -> void:
 func _build_forecourt_feedback() -> void:
 	var station: Node3D = world.get_node("Station")
 	for pump in range(1,5):
-		var label := Label3D.new()
+		var label = preload("res://scripts/printed_surface.gd").make(station,"READY",PUMP_POSITIONS[pump]+Vector3(0,1.18,0.436),Vector2(0.50,0.15),Color("a6d1bd"),Color("172d2d"))
 		label.name = "PumpStatus%02d" % pump
-		label.position = PUMP_POSITIONS[pump]+Vector3(0,1.30,0.43)
-		label.font_size = 15
-		label.pixel_size = 0.003
-		label.modulate = Color("8fa9a2")
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		label.text = "READY"
-		station.add_child(label)
 		pump_labels[pump] = label
 
 func _build_ui() -> void:

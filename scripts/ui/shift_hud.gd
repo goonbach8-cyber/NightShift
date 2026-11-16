@@ -56,10 +56,10 @@ func _ready() -> void:
 	checkout_next = STYLE.text(column,16,STYLE.MUTED)
 	prompt_panel = card(0.5,1,0.5,1)
 	prompt_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	prompt_panel.offset_top = -113
+	prompt_panel.offset_top = -99
 	prompt_panel.offset_bottom = -28
 	column = STYLE.column(prompt_panel,5)
-	prompt = STYLE.text(column,20)
+	prompt = STYLE.text(column,18)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	secondary = STYLE.text(column,14,STYLE.MUTED)
 	secondary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -273,4 +273,6 @@ func compact_prompt(target: Node3D) -> String:
 			return "Reset pump %02d" % int(id)
 	if target == world.layout.radio_point:
 		return "Retune radio" if is_instance_valid(world.radio_tuner) and world.radio_tuner.drift_pending else "Open radio tuner"
+	if target.action_id in [&"accident",&"map",&"missing",&"redwater",&"depot_ledger",&"construction"]:
+		return "Read document"
 	return target.prompt

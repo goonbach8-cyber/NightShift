@@ -129,16 +129,9 @@ func _spawn_price_check() -> void:
 	price_tag_visual = Node3D.new()
 	price_tag_visual.name = "CustomerPriceTagVisual"
 	product_node.add_child(price_tag_visual)
-	price_tag_visual.position = Vector3(0,1.18,0.46)
-	var panel := _box(price_tag_visual,Vector3.ZERO,Vector3(0.34,0.18,0.035),Color("d5c68b"))
-	var label := Label3D.new()
-	label.text = _price_text(target_product)
-	label.position = Vector3(0,0,0.025)
-	label.font_size = 12
-	label.pixel_size = 0.0022
-	label.modulate = Color("2b3330")
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	price_tag_visual.add_child(label)
+	price_tag_visual.transform = product_node.get_node("PriceSurface").transform
+	_box(price_tag_visual,Vector3.ZERO,Vector3(0.34,0.18,0.035),Color("d5c68b"))
+	preload("res://scripts/printed_surface.gd").make(price_tag_visual,_price_text(target_product),Vector3(0,0,0.020),Vector2(0.31,0.15),Color("2b3330"),Color("d5c68b"))
 
 func _on_price_check_used(_action: StringName) -> void:
 	if not active or request_kind != &"price_check" or task_complete:
@@ -222,14 +215,7 @@ func _show_carried_prop(kind: StringName) -> void:
 			_box(carried_prop,Vector3(0.10,0,0),Vector3(0.16,0.025,0.04),Color("b9a36d"))
 		&"receipt":
 			_box(carried_prop,Vector3.ZERO,Vector3(0.22,0.018,0.34),Color("e3dcc8"))
-			var label := Label3D.new()
-			label.text = "PUMP %02d\nFUEL RECEIPT" % target_pump
-			label.position = Vector3(0,0.012,0)
-			label.font_size = 10
-			label.pixel_size = 0.0019
-			label.modulate = Color("2a3232")
-			label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			carried_prop.add_child(label)
+			preload("res://scripts/printed_surface.gd").make(carried_prop,"PUMP %02d\nFUEL RECEIPT" % target_pump,Vector3(0,0.011,0),Vector2(0.19,0.30),Color("2a3232"),Color("e3dcc8"),true)
 		_:
 			_box(carried_prop,Vector3.ZERO,Vector3(0.22,0.018,0.16),Color("d5c68b"))
 

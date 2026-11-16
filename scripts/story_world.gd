@@ -7,7 +7,7 @@ var model = preload("res://scripts/product_display.gd").new()
 var road: Node3D
 var crack: Node3D
 var construction: Node3D
-var branding: Label3D
+var branding: MeshInstance3D
 var alternate: Node3D
 var intrusions: Node3D
 var overlap_echo: Node3D
@@ -127,7 +127,8 @@ func setup(owner_world: Node3D) -> void:
 		model.box(alternate,shelter_at+Vector3(x,1.0,0.35),Vector3(0.08,2.0,0.08),Color("82908a"))
 	model.box(alternate,shelter_at+Vector3(0,2.0,0.35),Vector3(2.2,0.12,1.0),Color("536461"))
 	model.box(alternate,shelter_at+Vector3(0,0.55,0.30),Vector3(1.45,0.12,0.42),Color("82755e"))
-	label(alternate,"REDWATER BUS",shelter_at+Vector3(0,1.55,0.39),22)
+	model.box(alternate,shelter_at+Vector3(0,1.55,0.37),Vector3(1.25,0.21,0.04),Color("334d4d"))
+	label(alternate,"REDWATER BUS",shelter_at+Vector3(0,1.55,0.395),22)
 	# Different roadside utility cabinet and municipal sign are visible from the forecourt.
 	model.box(alternate,forecourt+Vector3(-5.6,0.65,4.2),Vector3(0.9,1.3,0.65),Color("52635f"))
 	label(alternate,"R-14",forecourt+Vector3(-5.6,1.15,3.873),20).rotation.y = PI
@@ -167,7 +168,8 @@ func setup(owner_world: Node3D) -> void:
 	for x in [-2.9,2.9]: floor_box(depot,Vector3(x,0.5,0),Vector3(0.2,1,6))
 	floor_box(depot,Vector3(0,0.5,2.9),Vector3(6,1,0.2))
 	floor_box(depot,Vector3(1,0.5,-1.8),Vector3(2,1,0.7))
-	label(depot,"DEPOT / COLLECTIONS",Vector3(0,1.8,-2.6),32)
+	model.box(depot,Vector3(0,1.67,-2.78),Vector3(1.9,0.26,0.07),Color("334d4d"))
+	label(depot,"DEPOT / COLLECTIONS",Vector3(0,1.67,-2.738),32)
 	person(depot,Vector3(1,0,-2.3))
 	point(depot,"depot_clerk",Vector3(1,0,-1),"Talk to depot clerk")
 	point(depot,"depot_ledger",Vector3(-1,0,-1.8),"Read depot ledger")
@@ -183,15 +185,10 @@ func setup(owner_world: Node3D) -> void:
 	loop.dialogue.changed.connect(dialogue_changed)
 	apply_night()
 
-func label(parent: Node3D, text: String, at: Vector3, size: int) -> Label3D:
-	var sign := Label3D.new()
-	sign.text = text
-	sign.position = at
-	sign.font_size = size
-	sign.pixel_size = 0.004
-	parent.add_child(sign)
-	return sign
-
+func label(parent: Node3D, text: String, at: Vector3, size: int):
+	var width := clampf(size*0.051,0.6,1.65)
+	var height := 0.14 if not text.contains("\n") else 0.29
+	return preload("res://scripts/printed_surface.gd").make(parent,text,at,Vector2(width,height))
 func floor_box(parent: Node3D, at: Vector3, size: Vector3) -> void:
 	model.box(parent,at,size,Color("66716b"))
 	var body := StaticBody3D.new()

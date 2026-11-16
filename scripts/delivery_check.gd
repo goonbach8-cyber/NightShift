@@ -22,7 +22,7 @@ var carton_label: Label
 var status: Label
 var help: Label
 var clipboard_root: Node3D
-var clipboard_label: Label3D
+var clipboard_label: MeshInstance3D
 var paper_sound: AudioStreamPlayer
 
 func _ready() -> void:
@@ -43,19 +43,14 @@ func _ready() -> void:
 func _build_clipboard() -> void:
 	clipboard_root = Node3D.new()
 	clipboard_root.name = "DeliveryClipboard"
-	clipboard_root.position = Vector3(-0.30,1.10,-0.18)
+	clipboard_root.position = layout.delivery_visual.position+Vector3(-0.05,0.27,0)
 	layout.delivery.add_child(clipboard_root)
 	var model := preload("res://scripts/product_display.gd").new()
 	clipboard_root.add_child(model)
 	model.box(model,Vector3.ZERO,Vector3(0.34,0.035,0.46),Color("715e47"))
 	model.box(model,Vector3(0,0.025,0),Vector3(0.29,0.012,0.38),Color("ded7c4"))
-	clipboard_label = Label3D.new()
-	clipboard_label.position = Vector3(0,0.045,0)
-	clipboard_label.font_size = 12
-	clipboard_label.pixel_size = 0.0020
-	clipboard_label.modulate = Color("283234")
-	clipboard_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	clipboard_root.add_child(clipboard_label)
+	clipboard_label = preload("res://scripts/printed_surface.gd").make(clipboard_root,"DELIVERY",Vector3(0,0.032,0),Vector2(0.27,0.35),Color("283234"),Color("ded7c4"),true)
+	model.box(clipboard_root,Vector3(0,0.039,-0.20),Vector3(0.10,0.015,0.035),Color("a7aea4"))
 	clipboard_root.hide()
 
 func _build_ui() -> void:

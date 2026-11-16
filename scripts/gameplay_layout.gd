@@ -45,7 +45,7 @@ var pump_reset_points: Dictionary = {}
 var cctv_terminal: Node3D
 var breaker_panel: Node3D
 var phone_point: Node3D
-var phone_display: Label3D
+var phone_display: MeshInstance3D
 var phone_handset: Node3D
 var cleaning_station: Node3D
 var service_tool_station: Node3D
@@ -114,12 +114,12 @@ func _ready() -> void:
 	product_points[&"water"] = shelf_point
 	product_labels[&"water"] = stock_label
 	var cooler := shelf.get_parent().get_node("Cooler")
-	bind_product(&"energy",cooler,Vector3(0,0,1.3))
+	bind_product(&"energy",cooler,Vector3(0,0,1.3),Vector3(0,0.19,0.505))
 	var snacks := shelf.get_parent().get_node("StationDressing/SnackIsland")
 	snacks.set_script(preload("res://scenes/interactions/interactable.gd"))
 	snacks.add_to_group("interactable")
 	snacks.action_id = &"stock_chips"
-	bind_product(&"chips",snacks,Vector3(0,0,2.25))
+	bind_product(&"chips",snacks,Vector3(0,0,2.25),Vector3(0,1.20,1.80))
 	# Interaction belongs to the accessible front face, not the deep gondola pivot.
 	marker(snacks,"PlayerInteraction",Vector3(0,0,1.85))
 	# Dynamic inventory geometry is created after static map batching.
@@ -347,17 +347,19 @@ func setup_customer_service_key() -> void:
 	marker(customer_service_key,"PlayerInteraction",Vector3(-0.12,0,0))
 	var model := preload("res://scripts/product_display.gd").new()
 	customer_service_key.add_child(model)
+	# Face the stockroom aisle while keeping the existing interaction markers fixed.
+	model.rotation.y = -PI/2.0
 	model.box(model,Vector3(0,1.22,0),Vector3(0.30,0.44,0.06),Color("4c5957"))
-	model.box(model,Vector3(0,1.22,0.04),Vector3(0.06,0.06,0.04),Color("c3ab6e"))
-	var tag := Label3D.new()
-	tag.text = "WC KEY"
-	tag.position = Vector3(0,1.42,0.04)
-	tag.font_size = 12
-	tag.pixel_size = 0.0021
-	tag.modulate = Color("ded8bd")
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	customer_service_key.add_child(tag)
-
+	model.box(model,Vector3(-0.035,1.32,0.045),Vector3(0.035,0.035,0.06),Color("a8b2a4"))
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.033
+	ring.outer_radius = 0.053
+	ring.rings = 12
+	ring.ring_segments = 8
+	var key_ring := model.part(model,ring,Vector3(-0.035,1.285,0.077),Color("c3ab6e"))
+	key_ring.rotation.x = PI/2.0
+	model.box(model,Vector3(-0.035,1.177,0.077),Vector3(0.025,0.14,0.026),Color("c3ab6e"))
+	model.box(model,Vector3(-0.005,1.12,0.077),Vector3(0.065,0.025,0.026),Color("c3ab6e"))
 func setup_phone() -> void:
 	phone_point = Node3D.new()
 	phone_point.name = "CounterPhone"
@@ -378,15 +380,9 @@ func setup_phone() -> void:
 	model.box(phone_handset,Vector3(0,1.13,-0.01),Vector3(0.28,0.07,0.10),Color("53615d"))
 	model.box(phone_handset,Vector3(-0.13,1.13,-0.01),Vector3(0.06,0.10,0.12),Color("53615d"))
 	model.box(phone_handset,Vector3(0.13,1.13,-0.01),Vector3(0.06,0.10,0.12),Color("53615d"))
-	phone_display = Label3D.new()
+	model.box(model,Vector3(0,1.098,0.047),Vector3(0.22,0.018,0.085),Color("15282c"))
+	phone_display = preload("res://scripts/printed_surface.gd").make(phone_point,"READY",Vector3(0,1.108,0.047),Vector2(0.205,0.073),Color("cbe3a7"),Color("182b27"),true)
 	phone_display.name = "PhoneDisplay"
-	phone_display.position = Vector3(0,1.04,0.12)
-	phone_display.font_size = 14
-	phone_display.pixel_size = 0.0025
-	phone_display.modulate = Color("cbe3a7")
-	phone_display.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	phone_display.text = "READY"
-	phone_point.add_child(phone_display)
 
 func setup_breaker_panel() -> void:
 	breaker_panel = Node3D.new()
@@ -473,8 +469,9 @@ func register_event_lights(node: Node) -> void:
 		node.add_to_group("night_event_light")
 	for child in node.get_children(): register_event_lights(child)
 
-func bind_product(id: StringName, object: Node3D, approach: Vector3) -> void:
+func bind_product(id: StringName, object: Node3D, approach: Vector3, price_face := Vector3(0,0.70,0.345)) -> void:
 	product_nodes[id] = object
+	marker(object,"PriceSurface",price_face)
 	product_points[id] = marker(object,"CustomerApproach",approach)
 	var label := Label3D.new()
 	label.position.y = 1.6

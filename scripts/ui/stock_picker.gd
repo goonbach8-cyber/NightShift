@@ -17,7 +17,7 @@ func _ready() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size.x = 586
+	panel.custom_minimum_size.x = 680
 	center.add_child(panel)
 	var column := STYLE.column(panel,12)
 	STYLE.text(column,14,STYLE.ACCENT).text = "STATION 14 / STAFF"
@@ -27,7 +27,7 @@ func _ready() -> void:
 	list.column_titles_visible = true
 	list.hide_root = true
 	list.select_mode = Tree.SELECT_ROW
-	list.custom_minimum_size.y = 164
+	list.custom_minimum_size.y = 216
 	list.add_theme_font_size_override("font_size",18)
 	list.add_theme_constant_override("v_separation",7)
 	list.add_theme_color_override("title_button_color",STYLE.ACCENT)
@@ -36,6 +36,7 @@ func _ready() -> void:
 	for i in list.columns:
 		list.set_column_title(i,["Product","In storage","On shelf","Free slots"][i])
 		list.set_column_expand_ratio(i,2 if i == 0 else 1)
+		list.set_column_custom_minimum_width(i,230 if i == 0 else 106)
 	list.item_selected.connect(_refresh_action)
 	list.item_activated.connect(_take_selected)
 	STYLE.text(column,14,STYLE.MUTED).text = "↑ ↓  Select    ·    Enter  Take    ·    Esc  Close"

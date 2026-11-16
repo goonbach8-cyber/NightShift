@@ -3,6 +3,6 @@
 [resource]
 script = ExtResource("1")
 product_id = &"water"
-display_name = "Mineralwasser 50 cl"
+display_name = "Mineral water 50 cl"
 category = &"drinks"
 price_rappen = 220
