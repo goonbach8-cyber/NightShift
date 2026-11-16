@@ -8,7 +8,7 @@ The user-designated business/story baseline is summarized in [PROJECT_DIRECTION.
 
 Run `project.godot` with Godot 4.7.2. Startup opens the main menu. New Game begins Night 1; Continue restores a safe between-night checkpoint. Start the shift at the staff notes behind checkout.
 
-WASD moves, E interacts/scans/accepts payment, F talks, Space advances dialogue, 1/2 select replies. ESC closes an open service, delivery, maintenance or checkout panel; otherwise it pauses. At warehouse supply, E opens the stock list. Use the mouse or Up/Down and Enter to take a crate. T/Y/+/- control the nearby physical radio; M mutes.
+WASD moves; E interacts. Checkout: drag the visible product across the scanner (A/D alternative), click the card or press E to pay. Cash: click coins or use 1–6; right-click/Backspace undoes; click the handover tray or press Enter to finish. F talks, Space advances dialogue, 1/2 select replies. ESC closes an open panel before Pause. At warehouse Supply, E opens the stock list or returns a carried crate. Mouse or Up/Down + Enter takes a crate; E at the matching shelf places it. T/Y/+/- control the nearby radio; M mutes.
 
 Customers visit Water, Energy and Chips locations, reserve products, queue, pay and leave. Refill matching product displays from warehouse stock, receive deliveries and complete the configured service tasks. Finish at the staff notes to save and advance. These are short functional prototypes, not the six finished story nights.
 
@@ -19,6 +19,8 @@ Run headlessly without desktop input:
 ```text
 godot --headless --path . --script res://tests/smoke_test.gd
 godot --headless --path . --script res://tests/menu_test.gd
+godot --headless --path . --script res://tests/checkout_pointer_test.gd
+godot --headless --path . --script res://tests/stock_handling_test.gd
 godot --headless --path . --script res://tests/story_continuity_test.gd
 godot --headless --path . --script res://tests/campaign_test.gd -- --six-nights --shift-layout
 godot --headless --path . --script res://tests/story_campaign_test.gd

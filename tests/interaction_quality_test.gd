@@ -9,7 +9,7 @@ func run() -> void:
 	check(loop.interaction_prompt(layout.delivery,player).contains("Refill") and not loop.interaction_prompt(layout.delivery,player).contains("Collect"),"Full hands do not advertise delivery pickup")
 	check(loop.interaction_prompt(layout.product_nodes[&"water"],player).begins_with("Restock"),"Matching load offers restocking")
 	check(loop.interaction_prompt(layout.product_nodes[&"chips"],player).begins_with("Check"),"Wrong load does not promise restocking")
-	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player).contains("Refill its display"),"Supply identifies the currently blocked action")
+	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player).begins_with("Return "+loop.inventory.products[&"water"].display_name+" crate"),"Supply offers returning unused stock instead of trapping the carried load")
 	check(loop.interaction_prompt(layout.product_nodes[&"chips"],player).contains("Carrying"),"Wrong-product prompt names the carried load")
 	loop.inventory.restock(&"water")
 	check(loop.interaction_prompt(layout.warehouse.get_node("Supply"),player) == "Choose warehouse stock","Supply offers the list even when one display is full")

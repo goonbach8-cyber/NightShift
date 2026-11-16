@@ -364,7 +364,7 @@ func interaction_prompt(target: Node3D, player: Node3D) -> String:
 		return "Check "+stock_text+" · Stock from warehouse"
 	if target == layout.warehouse.get_node("Supply"):
 		if delivery_carried: return "Store delivery · "+inventory.basket_text(delivery_manifest)
-		if carried != &"": return "Carrying %s · Refill its display first" % inventory.products[carried].display_name
+		if carried != &"": return "Return %s crate · %d units" % [inventory.products[carried].display_name,inventory.stocks[carried].carried_units]
 		return "Choose warehouse stock"
 	if target == layout.delivery:
 		if carried != &"": return "Delivery · Refill %s first" % inventory.products[carried].display_name
@@ -372,7 +372,7 @@ func interaction_prompt(target: Node3D, player: Node3D) -> String:
 	return target.prompt
 
 func update_supply_prompt() -> void:
-	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else "Choose warehouse stock"
+	layout.warehouse.get_node("Supply").prompt = "Store delivery" if delivery_carried else ("Return stock crate" if inventory.carried_product() != &"" else "Choose warehouse stock")
 	if layout.has_method("set_carry_state"):
 		layout.set_carry_state(delivery_carried,inventory.carried_product())
 
@@ -381,6 +381,7 @@ func fill_shelf(id: StringName) -> void:
 	if inventory.restock(id):
 		tasks[&"restock"] = true
 		var item: Resource = inventory.stocks[id]
+		layout.present_restock(id,before,item.shelf_units)
 		notice.emit("Restocked %d × %s · %d/%d on display." % [item.shelf_units-before,inventory.products[id].display_name,item.shelf_units,item.capacity])
 	else:
 		var carried: StringName = inventory.carried_product()
@@ -394,6 +395,16 @@ func fill_shelf(id: StringName) -> void:
 				notice.emit("This display is already full.")
 		else:
 			notice.emit("Choose the matching product in the warehouse.")
+
+func return_stock() -> bool:
+	var id: StringName = inventory.carried_product()
+	if id == &"" or delivery_carried: return false
+	var amount: int = inventory.return_crate()
+	if amount <= 0: return false
+	notice.emit("Returned %d × %s to storage." % [amount,inventory.products[id].display_name])
+	update_supply_prompt()
+	changed.emit()
+	return true
 
 func interact(action: StringName, player: Node3D) -> void:
 	if String(action).begins_with("stock_"):

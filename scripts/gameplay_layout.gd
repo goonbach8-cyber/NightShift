@@ -36,6 +36,9 @@ var wc_mark: MeshInstance3D
 var carried_visual: Node3D
 var carried_crate: MeshInstance3D
 var carried_material: StandardMaterial3D
+var carried_lid: MeshInstance3D
+var carry_contents: Dictionary = {}
+var placement_tweens: Dictionary = {}
 var service_waste: MeshInstance3D
 var service_point: Node3D
 var checkout_item: MeshInstance3D
@@ -219,34 +222,64 @@ func setup_carried_visual() -> void:
 	carried_visual.rotation = Vector3(0.08,-0.28,0.06)
 	carried_crate = MeshInstance3D.new()
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.44,0.34,0.32)
+	mesh.size = Vector3(0.44,0.035,0.32)
 	carried_crate.mesh = mesh
+	carried_crate.position.y = -0.15
 	carried_material = StandardMaterial3D.new()
 	carried_material.albedo_color = Color("b18c5c")
 	carried_material.roughness = 0.9
 	carried_crate.material_override = carried_material
 	carried_visual.add_child(carried_crate)
-	var band := MeshInstance3D.new()
-	var band_mesh := BoxMesh.new()
-	band_mesh.size = Vector3(0.07,0.345,0.325)
-	band.mesh = band_mesh
-	var band_material := StandardMaterial3D.new()
-	band_material.albedo_color = Color("d0bc91")
-	band.material_override = band_material
-	carried_visual.add_child(band)
 	var details = preload("res://scripts/product_display.gd").new()
 	carried_visual.add_child(details)
+	carried_lid = details.box(carried_visual,Vector3(0,0.16,0),Vector3(0.44,0.025,0.32),Color("b18c5c"))
+	carried_lid.hide()
+	for config in [
+		[Vector3(-0.21,0,0),Vector3(0.025,0.29,0.32)],
+		[Vector3(0.21,0,0),Vector3(0.025,0.29,0.32)],
+		[Vector3(0,0,-0.15),Vector3(0.42,0.29,0.025)],
+		[Vector3(0,0,0.15),Vector3(0.42,0.29,0.025)]
+	]:
+		var wall: MeshInstance3D = details.box(carried_visual,config[0],config[1],Color("b18c5c"))
+		wall.material_override = carried_material
 	for x in [-0.16,0.16]:
 		details.box(carried_visual,Vector3(x,0.158,0),Vector3(0.096,0.027,0.318),Color("b8a682"))
 	details.box(carried_visual,Vector3(0,-0.008,0.162),Vector3(0.185,0.104,0.008),Color("ded3b8"))
 	for y in [-0.036,0,0.029]:
 		details.box(carried_visual,Vector3(0,y,0.168),Vector3(0.115,0.009,0.004),Color("706b55"))
+	for id in inventory.products:
+		var goods: Array[Node3D] = []
+		for i in 8:
+			var slot := Node3D.new()
+			slot.position = Vector3(-0.15+(i%4)*0.10,0.04,-0.07+int(i/4)*0.14)
+			slot.scale = Vector3.ONE*0.45
+			carried_visual.add_child(slot)
+			if id == &"energy":
+				details.energy_can(slot,Vector3.ZERO)
+			elif id == &"chips":
+				details.chip_packet(slot,Vector3.ZERO)
+			else:
+				var bottle := CylinderMesh.new()
+				bottle.top_radius = 0.055
+				bottle.bottom_radius = 0.075
+				bottle.height = 0.25
+				bottle.radial_segments = 8
+				details.part(slot,bottle,Vector3.ZERO,Color("7d9670"))
+				details.box(slot,Vector3(0,0.15,0),Vector3(0.07,0.05,0.07),Color("d7ddbe"))
+			slot.hide()
+			goods.append(slot)
+		carry_contents[id] = goods
 	carried_visual.hide()
 
 func set_carry_state(delivery: bool, product: StringName) -> void:
 	if not is_instance_valid(carried_visual):
 		return
 	carried_visual.visible = delivery or product != &""
+	carried_lid.visible = delivery
+	for id in carry_contents:
+		var amount: int = inventory.stocks[id].carried_units if not delivery and id == product else 0
+		for i in carry_contents[id].size():
+			carry_contents[id][i].visible = i < amount
 	if not carried_visual.visible:
 		return
 	if delivery:
@@ -257,6 +290,23 @@ func set_carry_state(delivery: bool, product: StringName) -> void:
 			&"energy": carried_material.albedo_color = Color("3f8f80")
 			&"chips": carried_material.albedo_color = Color("b96e36")
 			_: carried_material.albedo_color = Color("8b8878")
+
+func present_restock(id: StringName, before: int, after: int) -> void:
+	# Inventory commits immediately; a short placement settles the actual slots,
+	# not duplicate decorative products or a separate timer-owned inventory.
+	var slots: Array = shelf.get_parent().restock_items if id == &"water" else displays[id].slots
+	for i in range(before,mini(after,slots.size())):
+		var slot: Node3D = slots[i]
+		if placement_tweens.has(slot):
+			var previous: Dictionary = placement_tweens[slot]
+			previous.tween.kill()
+			slot.position = previous.rest
+		var rest := slot.position
+		slot.position += Vector3(0,0.12,0.18)
+		var tween := create_tween()
+		placement_tweens[slot] = {"tween":tween,"rest":rest}
+		tween.tween_property(slot,"position",rest,0.18+float(i-before)*0.035).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.finished.connect(func(): placement_tweens.erase(slot),CONNECT_ONE_SHOT)
 
 func set_service_done(done: bool) -> void:
 	if is_instance_valid(service_waste):

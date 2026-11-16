@@ -36,7 +36,7 @@ func run() -> void:
 	check(game.begin(),"Physical checkout starts for a ready staffed basket")
 	check(game.active and game.phase == &"scan" and player.controls_locked,"Checkout focus locks movement without pausing the world")
 	check(game.current_id == &"water","First staged item matches basket order")
-	check(not game._barcode_aligned(),"Water starts with its barcode turned away from the scanner")
+	check(game._barcode_aligned(),"Routine products start ready to scan without a repeated barcode search")
 	game.item_rotation = -PI
 	game.slide = -0.02
 	game._apply_item_transform()

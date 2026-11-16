@@ -81,6 +81,16 @@ func take_crate(id: StringName) -> bool:
 func restock(id: StringName) -> bool:
 	return stocks.has(id) and carried_product() == id and stocks[id].restock()
 
+func return_crate() -> int:
+	var id := carried_product()
+	if id == &"": return 0
+	var item: Resource = stocks[id]
+	var amount: int = item.carried_units
+	item.warehouse_units += amount
+	item.carried_units = 0
+	item.changed.emit()
+	return amount
+
 func receive_delivery(delivery_id: StringName, manifest: Dictionary) -> bool:
 	if delivery_id == &"" or delivery_ids.has(delivery_id) or manifest.is_empty():
 		return false

@@ -287,7 +287,7 @@ func _on_used(action: StringName) -> void:
 	if action == &"supply" and phase == Phase.ACTIVE and not gameplay.preparing and not gameplay.delivery_carried:
 		if has_interaction_focus(): return
 		if gameplay.inventory.carried_product() != &"":
-			_say("Refill the matching display before taking another crate.")
+			gameplay.return_stock()
 		else:
 			stock_picker.begin()
 		return

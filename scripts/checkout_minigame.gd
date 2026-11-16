@@ -28,6 +28,13 @@ var placed_count := 0
 var placed_items: Array[Node3D] = []
 var customer: CharacterBody3D
 var previous_camera_size := 8.5
+var previous_camera_position := Vector3.ZERO
+var camera_tween: Tween
+var dragging := false
+var drag_offset := 0.0
+var session := 0
+var feedback_text := ""
+var feedback_remaining := 0.0
 
 var move_left := false
 var move_right := false
@@ -45,6 +52,7 @@ var receipt_label: MeshInstance3D
 var cash_root: Node3D
 var cash_note_root: Node3D
 var cash_note_label: MeshInstance3D
+var change_tray: Node3D
 var change_visuals: Array[Node3D] = []
 var cash_materials: Array[StandardMaterial3D] = []
 var cash_selection := 0
@@ -147,6 +155,13 @@ func _build_counter() -> void:
 		cash_root.add_child(coin)
 		preload("res://scripts/printed_surface.gd").make(cash_root,_money(CASH_VALUES[i]),Vector3(-0.30+i*0.12,0.010,0),Vector2(0.082,0.056),Color("37372d"),Color("a99b79"),true)
 	_update_cash_selection()
+	change_tray = Node3D.new()
+	change_tray.name = "ChangeHandoverTray"
+	change_tray.position = Vector3(0.43,1.055,0.33)
+	counter_root.add_child(change_tray)
+	_box(change_tray,Vector3.ZERO,Vector3(0.40,0.018,0.28),Color("394543"))
+	preload("res://scripts/printed_surface.gd").make(change_tray,"HAND OVER",Vector3(0,0.012,0.105),Vector2(0.32,0.055),Color("d0d7b5"),Color("394543"),true)
+	change_tray.hide()
 
 	cash_note_root = Node3D.new()
 	cash_note_root.name = "CustomerCash"
@@ -197,9 +212,18 @@ func begin() -> bool:
 		customer.set_checkout_basket_hidden(true)
 	if layout.has_method("set_checkout_product"):
 		layout.set_checkout_product(&"",false)
-	previous_camera_size = camera.size
-	var zoom := create_tween()
-	zoom.tween_property(camera,"size",minf(previous_camera_size,6.8),0.22)
+	if not camera_tween or not camera_tween.is_running():
+		previous_camera_size = camera.size
+		previous_camera_position = camera.position
+	session += 1
+	dragging = false
+	feedback_remaining = 0.0
+	if camera_tween: camera_tween.kill()
+	var focus := counter_root.to_global(Vector3(0,1.15,0.12))
+	var eye := focus+camera.global_basis.z*8.0
+	camera_tween = create_tween().set_parallel(true)
+	camera_tween.tween_property(camera,"size",2.4,0.22)
+	camera_tween.tween_property(camera,"position",camera.get_parent().to_local(eye),0.22)
 	player.controls_locked = true
 	player.velocity.x = 0
 	player.velocity.z = 0
@@ -258,27 +282,17 @@ func _process(delta: float) -> void:
 		if ready:
 			_scan_current()
 	_refresh_ui()
+	feedback_remaining = maxf(0,feedback_remaining-delta)
+	if feedback_remaining > 0:
+		status.text = feedback_text
 
 func _input(event: InputEvent) -> void:
-	if not active:
+	if not active or world.has_interaction_focus(self):
 		return
-	if event is InputEventMouseMotion and phase == &"scan" and not busy and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
-		slide = clampf(slide+event.relative.x*0.0035,SLIDE_MIN,SLIDE_MAX)
-		item_rotation = wrapf(item_rotation+event.relative.y*0.012,-PI,PI)
-		_apply_item_transform()
+	if event is InputEventMouse:
+		_pointer_input(event)
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseButton and event.pressed and phase == &"scan":
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			item_rotation = wrapf(item_rotation-0.24,-PI,PI)
-			_apply_item_transform()
-			get_viewport().set_input_as_handled()
-			return
-		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			item_rotation = wrapf(item_rotation+0.24,-PI,PI)
-			_apply_item_transform()
-			get_viewport().set_input_as_handled()
-			return
 	if not event is InputEventKey:
 		return
 	var key: Key = event.physical_keycode
@@ -301,7 +315,11 @@ func _input(event: InputEvent) -> void:
 	elif phase == &"cash":
 		if not pressed:
 			return
-		if key in [KEY_LEFT,KEY_A]:
+		if key >= KEY_1 and key <= KEY_6:
+			cash_selection = key-KEY_1
+			_update_cash_selection()
+			_add_cash(CASH_VALUES[cash_selection])
+		elif key in [KEY_LEFT,KEY_A]:
 			cash_selection = wrapi(cash_selection-1,0,CASH_VALUES.size())
 			_update_cash_selection()
 		elif key in [KEY_RIGHT,KEY_D]:
@@ -326,19 +344,87 @@ func _input(event: InputEvent) -> void:
 	elif phase == &"card_retry" and pressed:
 		if key in [KEY_E,KEY_ENTER,KEY_KP_ENTER]:
 			phase = &"card"
-			_confirm_payment()
+			_tap_card()
 		elif key == KEY_C:
 			_enter_cash(int(gameplay.checkout_details().get("total",0)))
 		else:
 			return
 	elif pressed and key in [KEY_E,KEY_ENTER,KEY_KP_ENTER] and phase == &"card":
-		_confirm_payment()
+		_tap_card()
 	elif key in [KEY_F,KEY_TAB,KEY_T,KEY_Y,KEY_SPACE,KEY_1,KEY_2,KEY_E,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE,KEY_C]:
 		# Work/dialogue shortcuts must not leak into the world during checkout focus.
 		pass
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+func _counter_point(screen: Vector2) -> Variant:
+	# Ray/plane mapping keeps the held item under the pointer at any viewport size.
+	var plane := Plane(counter_root.global_basis.y.normalized(),counter_root.to_global(Vector3(0,1.11,0)))
+	var hit: Variant = plane.intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+	return counter_root.to_local(hit) if hit != null else null
+
+func _near(screen: Vector2, node: Node3D, offset: Vector3, radius: float) -> bool:
+	if not is_instance_valid(node) or not node.is_visible_in_tree(): return false
+	var center := node.to_global(offset)
+	var edge := center+camera.global_basis.x*radius
+	return screen.distance_to(camera.unproject_position(center)) <= maxf(12.0,camera.unproject_position(edge).distance_to(camera.unproject_position(center)))
+
+func _pointer_input(event: InputEventMouse) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if not event.pressed:
+				dragging = false
+				_apply_item_transform()
+				return
+			if phase == &"scan" and not busy and _near(event.position,current_visual,Vector3(0,0.15,0),0.23):
+				var point: Variant = _counter_point(event.position)
+				if point != null:
+					dragging = true
+					drag_offset = slide-point.x
+					_apply_item_transform()
+			elif phase in [&"card",&"card_retry"] and _near(event.position,card_root,Vector3.ZERO,0.22):
+				phase = &"card"
+				_tap_card()
+			elif phase == &"cash" and not busy:
+				for i in CASH_VALUES.size():
+					if _near(event.position,cash_root,Vector3(-0.30+i*0.12,0,0),0.055):
+						cash_selection = i
+						_update_cash_selection()
+						_add_cash(CASH_VALUES[i])
+						return
+				if _near(event.position,counter_root,Vector3(0.43,1.055,0.28),0.18):
+					_confirm_cash()
+			return
+		if event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+			if phase == &"cash": _remove_cash()
+			elif phase == &"scan":
+				dragging = false
+				slide = START_X
+				_apply_item_transform()
+			return
+		if event.pressed and phase == &"scan" and not busy:
+			if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+				item_rotation = wrapf(item_rotation+(-0.24 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.24),-PI,PI)
+				_apply_item_transform()
+	elif event is InputEventMouseMotion and dragging and phase == &"scan" and not busy:
+		if (event.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
+			dragging = false
+			return
+		var point: Variant = _counter_point(event.position)
+		if point == null: return
+		var before := slide
+		slide = clampf(point.x+drag_offset,SLIDE_MIN,SLIDE_MAX)
+		_apply_item_transform()
+		# A quick sweep must not jump over the narrow scanner between frames.
+		if _barcode_aligned() and minf(before,slide) <= SCANNER_X+SCAN_HALF_WIDTH and maxf(before,slide) >= SCANNER_X-SCAN_HALF_WIDTH:
+			_scan_current()
+	elif event is InputEventMouseMotion and phase == &"cash":
+		for i in CASH_VALUES.size():
+			if _near(event.position,cash_root,Vector3(-0.30+i*0.12,0,0),0.055):
+				cash_selection = i
+				_update_cash_selection()
+				break
 
 func _spawn_next_item() -> void:
 	var detail: Dictionary = gameplay.checkout_details()
@@ -350,7 +436,11 @@ func _spawn_next_item() -> void:
 	slide = START_X
 	item_rotation = 0.0
 	current_visual = _product_visual(current_id)
+	# Routine products arrive ready to scan; rotation is a correction, not a
+	# mandatory repeated search for a barcode on every identical bottle.
+	item_rotation = wrapf(-current_barcode_angle,-PI,PI)
 	current_visual.position = Vector3(slide,1.11,0.19)
+	current_visual.rotation.y = item_rotation
 	current_visual.rotation.y = item_rotation
 	counter_root.add_child(current_visual)
 
@@ -435,12 +525,15 @@ func _apply_item_transform() -> void:
 	if not is_instance_valid(current_visual):
 		return
 	current_visual.position.x = slide
+	current_visual.position.y = 1.145 if dragging else 1.11
 	current_visual.rotation.y = item_rotation
 
 func _scan_current() -> void:
 	if busy or not is_instance_valid(current_visual):
 		return
 	busy = true
+	dragging = false
+	var scan_session := session
 	var scanned_id := current_id
 	var item := current_visual
 	current_visual = null
@@ -457,6 +550,9 @@ func _scan_current() -> void:
 	tween.tween_property(item,"position",target,0.20).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(item,"rotation:y",0.0,0.20)
 	await tween.finished
+	if not active or session != scan_session or phase != &"scan" or not is_instance_valid(item):
+		if is_instance_valid(item): item.queue_free()
+		return
 	placed_items.append(item)
 	placed_count += 1
 	status.text = String(gameplay.inventory.products[scanned_id].display_name)+" scanned"
@@ -473,6 +569,7 @@ func _placed_position(index: int) -> Vector3:
 
 func _enter_payment() -> void:
 	busy = false
+	feedback_remaining = 0.0
 	if is_instance_valid(current_visual):
 		current_visual.queue_free()
 		current_visual = null
@@ -489,11 +586,25 @@ func _enter_payment() -> void:
 		terminal_label.modulate = Color("cbe3a7")
 		terminal_label.show()
 		card_material.albedo_color = Color("405b66")
+		card_root.position = Vector3(-0.18,1.06,-0.13)
 		card_root.show()
 		cash_root.hide()
 		cash_note_root.hide()
 	scanner_material.albedo_color = Color("394543")
 	_refresh_ui()
+
+func _tap_card() -> void:
+	if busy or phase != &"card": return
+	busy = true
+	var tap_session := session
+	var tap := create_tween()
+	tap.tween_property(card_root,"position",Vector3(0.56,1.27,0.09),0.18)
+	await tap.finished
+	if not active or session != tap_session: return
+	busy = false
+	_confirm_payment()
+	if phase == &"card_retry":
+		card_root.position = Vector3(-0.18,1.06,-0.13)
 
 func _enter_cash(total: int) -> void:
 	phase = &"cash"
@@ -508,6 +619,7 @@ func _enter_cash(total: int) -> void:
 	cash_note_label.text = _money(cash_given)
 	cash_note_root.show()
 	cash_root.show()
+	change_tray.show()
 	_update_cash_selection()
 
 func _cash_tender(total: int) -> int:
@@ -521,6 +633,7 @@ func _add_cash(value: int) -> void:
 	if phase != &"cash" or busy:
 		return
 	cash_added += value
+	feedback_remaining = 0.0
 	cash_history.append(value)
 	_spawn_change_coin(value)
 	_refresh_ui()
@@ -529,6 +642,7 @@ func _remove_cash() -> void:
 	if phase != &"cash" or cash_history.is_empty():
 		return
 	cash_added -= cash_history.pop_back()
+	feedback_remaining = 0.0
 	if not change_visuals.is_empty():
 		var visual: Node3D = change_visuals.pop_back()
 		if is_instance_valid(visual):
@@ -540,7 +654,7 @@ func _confirm_cash() -> void:
 		return
 	var change := cash_given-cash_due
 	if cash_added != change:
-		status.text = "Change is "+("short" if cash_added < change else "too high")+" · need "+_money(change)
+		_feedback("Change is "+("short" if cash_added < change else "too high")+" · need "+_money(change))
 		return
 	_confirm_payment()
 
@@ -565,7 +679,7 @@ func _spawn_change_coin(value: int) -> void:
 	coin.material_override = material
 	var column := change_visuals.size()%4
 	var row := int(change_visuals.size()/4)
-	coin.position = Vector3(0.30+column*0.085,1.055,0.28-row*0.08)
+	coin.position = Vector3(0.30+column*0.085,1.078,0.28-row*0.08)
 	counter_root.add_child(coin)
 	change_visuals.append(coin)
 
@@ -578,6 +692,7 @@ func _clear_change_visuals() -> void:
 func _confirm_payment() -> void:
 	if phase not in [&"card",&"cash"] or busy:
 		return
+	feedback_remaining = 0.0
 	busy = true
 	var detail: Dictionary = gameplay.checkout_details()
 	if phase == &"card" and card_decline_pending and card_attempts == 0:
@@ -601,6 +716,7 @@ func _confirm_payment() -> void:
 	terminal_label.modulate = Color("cbe3a7")
 	card_root.hide()
 	cash_root.hide()
+	change_tray.hide()
 	cash_note_root.hide()
 	pending_receipt_total = total
 	pending_receipt_method = method
@@ -627,13 +743,19 @@ func _feed_printer() -> void:
 	if phase != &"printer_jam":
 		return
 	if absf(printer_alignment) > 0.11:
-		status.text = "Paper is still crooked in the feed slot."
+		_feedback("Paper is still crooked in the feed slot.")
 		return
 	printer_jam_pending = false
 	receipt_root.rotation.y = 0.0
 	_print_receipt()
 
+func _feedback(text: String) -> void:
+	feedback_text = text
+	feedback_remaining = 1.4
+	status.text = text
+
 func _print_receipt() -> void:
+	feedback_remaining = 0.0
 	phase = &"receipt"
 	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [pending_receipt_method,float(pending_receipt_total)/100.0]
 	receipt_root.show()
@@ -655,23 +777,23 @@ func _refresh_ui() -> void:
 		if is_instance_valid(current_visual) and absf(slide-SCANNER_X) <= 0.24 and not _barcode_aligned():
 			status.text = "Rotate "+name+" — barcode is not facing the scanner"
 		progress.text = "%d / %d scanned" % [detail.get("scanned",0),detail.get("count",0)]
-		help.text = "A / D move   ·   W / S rotate   ·   drag mouse   ·   wheel rotates   ·   ESC leave"
+		help.text = "Drag product across scanner / A D   ·   wheel / W S rotate   ·   ESC leave"
 	elif phase == &"card":
 		title.text = "CARD TERMINAL"
 		status.text = "Present card · CHF %.2f" % (float(detail.get("total",0))/100.0)
 		progress.text = "%d items scanned" % detail.get("count",0)
-		help.text = "[E / ENTER]  Confirm card payment   ·   ESC leave"
+		help.text = "Click card / E confirm   ·   ESC leave"
 	elif phase == &"cash":
 		var change := cash_given-cash_due
 		title.text = "CASH · CHANGE"
 		status.text = "Customer gives %s · Return %s" % [_money(cash_given),_money(change)]
 		progress.text = "Tray: %s / %s" % [_money(cash_added),_money(change)]
-		help.text = "← / → choose coin   ·   E add   ·   Backspace undo   ·   Enter confirm   ·   ESC leave"
+		help.text = "Click coins / 1–6   ·   right-click undo   ·   Enter hand over   ·   ESC leave"
 	elif phase == &"card_retry":
 		title.text = "CARD DECLINED"
 		status.text = "Customer has another card."
 		progress.text = "No sale has been charged."
-		help.text = "[E / ENTER] Try another card   ·   [C] Pay cash   ·   ESC leave"
+		help.text = "Click card / E retry   ·   C pay cash   ·   ESC leave"
 	elif phase == &"printer_jam":
 		title.text = "RECEIPT PRINTER · PAPER JAM"
 		status.text = "Straighten the receipt paper in the feed slot."
@@ -693,6 +815,8 @@ func _clear_item_visuals() -> void:
 	placed_items.clear()
 
 func _end_mode() -> void:
+	session += 1
+	dragging = false
 	_clear_item_visuals()
 	active = false
 	phase = &"idle"
@@ -702,6 +826,7 @@ func _end_mode() -> void:
 	card_root.hide()
 	receipt_root.hide()
 	cash_root.hide()
+	change_tray.hide()
 	cash_note_root.hide()
 	_clear_change_visuals()
 	cash_added = 0
@@ -719,8 +844,10 @@ func _end_mode() -> void:
 	move_right = false
 	rotate_left = false
 	rotate_right = false
-	var restore := create_tween()
-	restore.tween_property(camera,"size",previous_camera_size,0.22)
+	if camera_tween: camera_tween.kill()
+	camera_tween = create_tween().set_parallel(true)
+	camera_tween.tween_property(camera,"size",previous_camera_size,0.22)
+	camera_tween.tween_property(camera,"position",previous_camera_position,0.22)
 	player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
