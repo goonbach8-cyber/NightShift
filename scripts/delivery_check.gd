@@ -207,7 +207,7 @@ func _refresh_ui() -> void:
 		status.text = "Discrepancy logged." if discrepancies.has(id) else "This carton has been checked."
 	elif status.text.is_empty() or status.text.begins_with("This carton"):
 		status.text = "Compare the carton label with the manifest."
-	help.text = "← / → carton   ·   [E] quantities match   ·   [R] mismatch   ·   [ENTER] accept after all checked"
+	help.text = "← / → carton   ·   [E] quantities match   ·   [R] mismatch   ·   [ENTER] accept after all checked   ·   ESC close"
 
 func _manifest_text(mark_checked: bool) -> String:
 	var lines := PackedStringArray()

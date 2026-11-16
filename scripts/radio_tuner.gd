@@ -159,6 +159,8 @@ func _confirm() -> void:
 		_update_prompt()
 		world._say("Radio signal restored.",4.0)
 		gameplay.changed.emit()
+	elif drift_pending:
+		world._say("Static remains. Match the drifting signal.",4.0)
 	close()
 
 func _refresh_ui() -> void:
@@ -168,7 +170,7 @@ func _refresh_ui() -> void:
 	frequency_label.text = "%.1f FM" % selected_frequency
 	station_label.text = "UNLISTED / REDWATER TRAFFIC" if radio.hidden_station_enabled and absf(selected_frequency-101.7) <= 0.12 else radio.station_name()
 	strength_label.text = "Signal %d%% · %s" % [roundi(radio.signal_strength*100.0),"ON" if radio.enabled else "OFF"]
-	help.text = "← / → fine tune   ·   ↑ / ↓ coarse tune   ·   [T] power   ·   [E] confirm"
+	help.text = "← / → fine tune   ·   ↑ / ↓ coarse tune   ·   [T] power   ·   [E] confirm   ·   ESC close"
 
 func _update_prompt() -> void:
 	if not is_instance_valid(layout.radio_point):

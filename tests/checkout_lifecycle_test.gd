@@ -5,6 +5,7 @@ func run() -> void:
 	world.player.global_position = world.layout.operator_point.global_position
 	var game = world.checkout_minigame
 	check(game.begin(),"Checkout starts staged basket")
+	check(game.help.text.contains("ESC"),"Checkout scan labels ESC as leave")
 	game.item_rotation = -PI
 	game.slide = game.SCANNER_X
 	game._apply_item_transform()

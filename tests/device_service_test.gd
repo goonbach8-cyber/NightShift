@@ -1,4 +1,16 @@
 extends "res://tests/service_runtime_base.gd"
+
+func press(code: Key) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	event.pressed = true
+	Input.parse_input_event(event)
+	await process_frame
+	event = InputEventKey.new()
+	event.physical_keycode = code
+	Input.parse_input_event(event)
+	await process_frame
+
 func run() -> void:
 	await setup()
 	var service = world.device_service
@@ -17,6 +29,11 @@ func run() -> void:
 	check(cooler.action_id == &"cooler","Actual cooler action reaches maintenance routing")
 	world._on_used(cooler.action_id)
 	check(service.active and world.player.controls_locked,"Cooler interaction locks focus")
+	check(service.help.text.contains("ESC"),"Cooler service labels ESC as close")
+	await press(KEY_ESCAPE)
+	check(not service.active and not world.player.controls_locked and world.menu.page == "","ESC closes cooler service without pausing")
+	world._on_used(cooler.action_id)
+	check(service.active and world.player.controls_locked,"Cooler service reopens after ESC")
 	key(service,KEY_R)
 	check(service.fault_pending,"Reset rejected while fasteners closed")
 	for i in 3:

@@ -31,6 +31,7 @@ func run() -> void:
 	tuner.begin()
 	key(tuner,KEY_E)
 	check(tuner.drift_pending,"Wrong frequency does not complete drift")
+	check(world.hud.message.text.contains("Static remains"),"Wrong frequency reports that the signal was not restored")
 	tuner.begin()
 	radio.set_frequency(96.3)
 	key(tuner,KEY_E)

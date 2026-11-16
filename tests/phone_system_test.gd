@@ -32,6 +32,7 @@ func run() -> void:
 	key(phone,KEY_ENTER)
 	check(loop.story_flags.get(&"dialed_0317",false) and phone.mode == &"call","Player can dial 0317")
 	key(phone,KEY_ESCAPE)
+	check(not phone.active and not world.player.controls_locked and not phone.ringing,"Cancelled call releases phone focus")
 	phone.begin()
 	phone.dial_buffer = "9999"
 	key(phone,KEY_ENTER)

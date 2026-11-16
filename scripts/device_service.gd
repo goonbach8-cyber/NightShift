@@ -265,7 +265,7 @@ func _refresh_ui() -> void:
 	for i in screw_turns.size():
 		states.append("%d:%s" % [i+1,"OPEN" if screw_turns[i] >= 2 else ("%d/2" % screw_turns[i])])
 	progress.text = "   ".join(states)+"   ·   selected %d" % (selected_screw+1)
-	help.text = "← / → select fastener   ·   [E] turn screwdriver   ·   [R] reset controller"
+	help.text = "← / → select fastener   ·   [E] turn screwdriver   ·   [R] reset controller   ·   ESC close"
 
 func _all_screws_open() -> bool:
 	for turns in screw_turns:

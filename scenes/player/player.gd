@@ -9,7 +9,14 @@ extends CharacterBody3D
 
 @onready var sprite: AnimatedSprite3D = $AnimatedSprite3D
 
-var controls_locked := false
+var controls_locked := false:
+	set(value):
+		controls_locked = value
+		if not value:
+			# Panels reuse movement keys for navigation. A key still held when
+			# the panel closes must not become an accidental movement step.
+			for action in ["move_left","move_right","move_forward","move_backward"]:
+				Input.action_release(action)
 var facing: StringName = &"down"
 var interaction_target: Node3D
 

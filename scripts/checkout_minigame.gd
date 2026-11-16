@@ -655,23 +655,23 @@ func _refresh_ui() -> void:
 		if is_instance_valid(current_visual) and absf(slide-SCANNER_X) <= 0.24 and not _barcode_aligned():
 			status.text = "Rotate "+name+" — barcode is not facing the scanner"
 		progress.text = "%d / %d scanned" % [detail.get("scanned",0),detail.get("count",0)]
-		help.text = "A / D move   ·   W / S rotate   ·   drag mouse   ·   wheel rotates"
+		help.text = "A / D move   ·   W / S rotate   ·   drag mouse   ·   wheel rotates   ·   ESC leave"
 	elif phase == &"card":
 		title.text = "CARD TERMINAL"
 		status.text = "Present card · CHF %.2f" % (float(detail.get("total",0))/100.0)
 		progress.text = "%d items scanned" % detail.get("count",0)
-		help.text = "[E / ENTER]  Confirm card payment"
+		help.text = "[E / ENTER]  Confirm card payment   ·   ESC leave"
 	elif phase == &"cash":
 		var change := cash_given-cash_due
 		title.text = "CASH · CHANGE"
 		status.text = "Customer gives %s · Return %s" % [_money(cash_given),_money(change)]
 		progress.text = "Tray: %s / %s" % [_money(cash_added),_money(change)]
-		help.text = "← / → choose coin   ·   E add   ·   Backspace undo   ·   Enter confirm"
+		help.text = "← / → choose coin   ·   E add   ·   Backspace undo   ·   Enter confirm   ·   ESC leave"
 	elif phase == &"card_retry":
 		title.text = "CARD DECLINED"
 		status.text = "Customer has another card."
 		progress.text = "No sale has been charged."
-		help.text = "[E / ENTER] Try another card   ·   [C] Pay cash"
+		help.text = "[E / ENTER] Try another card   ·   [C] Pay cash   ·   ESC leave"
 	elif phase == &"printer_jam":
 		title.text = "RECEIPT PRINTER · PAPER JAM"
 		status.text = "Straighten the receipt paper in the feed slot."

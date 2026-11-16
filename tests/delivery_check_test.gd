@@ -9,6 +9,17 @@ func check(value: bool, label: String) -> void:
 	if not value:
 		failures += 1
 
+func press(code: Key) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	event.pressed = true
+	Input.parse_input_event(event)
+	await process_frame
+	event = InputEventKey.new()
+	event.physical_keycode = code
+	Input.parse_input_event(event)
+	await process_frame
+
 func run() -> void:
 	var world = load("res://scenes/main/main.tscn").instantiate()
 	root.add_child(world)
@@ -27,6 +38,10 @@ func run() -> void:
 	check(delivery.begin(),"Waiting yard delivery opens receiving inspection")
 	check(delivery.active and player.controls_locked,"Delivery inspection locks movement without pausing the shift")
 	check(delivery.order.size() == loop.delivery_manifest.size(),"Inspection exposes every manifest line")
+	check(delivery.help.text.contains("ESC"),"Receiving inspection labels ESC as close")
+	await press(KEY_ESCAPE)
+	check(not delivery.active and not player.controls_locked and world.menu.page == "","ESC closes receiving inspection without pausing")
+	check(delivery.begin(),"Receiving inspection reopens after ESC")
 
 	delivery._accept()
 	check(loop.delivery_ready and not loop.delivery_carried,"Unchecked delivery cannot be accepted")

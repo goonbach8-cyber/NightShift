@@ -1,6 +1,6 @@
 # NightShift / 03:17 — playable prototype
 
-Updated 10 November 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. The six playable chapters now incorporate the Mike, Josh and Lea story foundation. The shifts are still short.
+Updated 16 November 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md), derived from the user-designated September business plan. The six playable chapters now incorporate the Mike, Josh and Lea story foundation. The shifts are still short.
 
 ## Playing
 
@@ -15,8 +15,8 @@ Updated 10 November 2026. Product/story baseline: [PROJECT_DIRECTION.md](PROJECT
 - At the warehouse supply point, **E** opens the product list. It shows warehouse units, the current shelf count and free shelf slots. Select a row with the mouse or **↑/↓**, then click **Take** or press **Enter**. **Esc** closes it. Carry one product type and refill its matching display. With a delivery in hand, **E** stores it directly instead.
 - The sales floor extends west and north (16.4 × 12 m gross floor). Three gondolas are spaced with about 1.8 m of clearance between them, with a rear cross-aisle in front of the cooler and coffee wall. The original entry and service doorway keep their positions. The established checkout and queue positions remain in place, with a clear approach from the front cross-aisle.
 - At the cooler, **E** with empty hands checks refrigeration. Restocking Energy and temperature inspection are separate actions; carrying the wrong goods cannot complete the inspection. Night 2 adds waste-bin service. Night 3 instead adds a WC check/cleaning point with a visible floor mark. Task text names the actual action.
-- Radio controls work only at the physical radio: **E/T** power, **Y** next track, **+/-** local volume. **M** mutes audio globally.
-- **ESC** pauses; Resume, Settings and Main Menu are available. Pause freezes gameplay, customer patience and dialogue input. Resume clears held movement actions.
+- Radio controls work only at the physical radio: **E/T** power, **Y** next track, **+/-** local volume. **M** mutes audio globally. A failed retune closes the tuner but reports that the signal was not restored.
+- **ESC** pauses; Resume, Settings and Main Menu are available. Pause freezes gameplay, customer patience and dialogue input. An open service, delivery, maintenance or checkout panel consumes ESC to close itself first, and closing any panel releases held movement keys. Resume also clears held movement actions.
 - At completion, the transition shows customers, items, revenue, lost customers and tasks. Continue writes the safe boundary checkpoint and loads the next night. Returning mid-shift does not save active customers.
 
 ## Campaign chapters
@@ -68,6 +68,7 @@ Run with Godot 4.7.2 CLI, e.g. `godot --headless --path . --script res://tests/c
 - `dialogue_readability_test.gd`: authored handovers and customer branches across six nights fit the dialogue area and expose the correct answer controls.
 - `dialogue_input_test.gd`: no hidden pickup/restock/door/radio actions during dialogue; normal controls return after closing it.
 - `menu_test.gd`, `pause_gameplay_test.gd`: new/continue/backup/settings and frozen gameplay/input while paused.
+- `modal_input_test.gd`: real ESC events across phone, pump, CCTV, breaker, radio and checkout panels; visible ESC hints, repeated open/close, Pause arbitration and held-movement release.
 - `world_binding_test.gd`, `product_route_test.gd`: independent physical product displays, correct routes and wrong-product rejection.
 - `event_spacing_test.gd`, `presentation_test.gd`, `narrative_test.gd`: trigger prerequisites, cooldowns, reading time, dialogue and radio restoration.
 - `audio_routing_test.gd`, plus existing smoke, inventory, stock, save, service, environment, sidewalk, customer lifecycle/door and queue tests.
