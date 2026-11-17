@@ -39,6 +39,7 @@ var carried_material: StandardMaterial3D
 var carried_lid: MeshInstance3D
 var carry_contents: Dictionary = {}
 var placement_tweens: Dictionary = {}
+var breaker_switches: Array[MeshInstance3D] = []
 var service_waste: MeshInstance3D
 var service_point: Node3D
 var checkout_item: MeshInstance3D
@@ -215,11 +216,16 @@ func _ready() -> void:
 	wc_mark.hide()
 
 func setup_carried_visual() -> void:
+	var anchor := Node3D.new()
+	anchor.name = "CarryAnchor"
+	get_node("../Player").add_child(anchor)
+	# Camera-facing chest attachment for the billboard worker. Keep the whole
+	# load inside the existing movement capsule instead of offset beside Mike.
+	anchor.position = Vector3(0,0.66,0.10)
+	anchor.scale = Vector3.ONE*0.85
 	carried_visual = Node3D.new()
 	carried_visual.name = "CarriedWorkItem"
-	get_node("../Player").add_child(carried_visual)
-	carried_visual.position = Vector3(0.34,0.72,0.10)
-	carried_visual.rotation = Vector3(0.08,-0.28,0.06)
+	anchor.add_child(carried_visual)
 	carried_crate = MeshInstance3D.new()
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.44,0.035,0.32)
@@ -251,8 +257,9 @@ func setup_carried_visual() -> void:
 		var goods: Array[Node3D] = []
 		for i in 8:
 			var slot := Node3D.new()
-			slot.position = Vector3(-0.15+(i%4)*0.10,0.04,-0.07+int(i/4)*0.14)
-			slot.scale = Vector3.ONE*0.45
+			var bottom: float = -0.125 if id == &"water" else (-0.131 if id == &"energy" else -0.164)
+			slot.position = Vector3(-0.15+(i%4)*0.10,-0.1325-bottom*0.34,-0.07+int(i/4)*0.14)
+			slot.scale = Vector3.ONE*0.34
 			carried_visual.add_child(slot)
 			if id == &"energy":
 				details.energy_can(slot,Vector3.ZERO)
@@ -447,9 +454,10 @@ func setup_breaker_panel() -> void:
 	breaker_panel.add_child(model)
 	model.box(model,Vector3(0,1.05,0),Vector3(0.12,1.20,0.76),Color("5e6662"))
 	model.box(model,Vector3(-0.07,1.05,0),Vector3(0.03,1.05,0.64),Color("273234"))
-	for i in 4:
+	for i in 3:
 		var y := 1.38-i*0.22
-		model.box(model,Vector3(0.08,y,0),Vector3(0.06,0.11,0.12),Color("c7b782" if i == 0 else "7f8a84"))
+		var lever: MeshInstance3D = model.box(model,Vector3(0.08,y,0),Vector3(0.06,0.11,0.12),Color("7f8a84"))
+		breaker_switches.append(lever)
 
 func setup_pump_reset_points() -> void:
 	var names := ["Pump","Pump02","Pump03","Pump04"]

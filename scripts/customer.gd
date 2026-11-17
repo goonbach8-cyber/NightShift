@@ -38,6 +38,13 @@ var walk_phase := 0.0
 var basket_visual: Node3D
 var basket_items := 0
 var station_staff := false
+var attention_target: Node3D
+var reaction: StringName = &""
+var reaction_time := 0.0
+
+func react(kind: StringName) -> void:
+	reaction = kind
+	reaction_time = 0.65
 
 func _ready() -> void:
 	if not station_staff:
@@ -247,10 +254,21 @@ func _physics_process(delta: float) -> void:
 		left_arm.rotation.x = -swing*0.65
 		right_arm.rotation.x = swing*0.65
 	else:
+		if is_instance_valid(attention_target) and not station_staff:
+			var attention := attention_target.global_position-global_position
+			if Vector2(attention.x,attention.z).length() > 0.1:
+				visual_root.rotation.y = lerp_angle(visual_root.rotation.y,atan2(attention.x,attention.z),clampf(delta*7.0,0,1))
 		left_leg.rotation.x = lerpf(left_leg.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
 		right_leg.rotation.x = lerpf(right_leg.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
-		left_arm.rotation.x = lerpf(left_arm.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
-		right_arm.rotation.x = lerpf(right_arm.rotation.x,0.0,clampf(delta*9.0,0.0,1.0))
+		var offering := state in [&"checkout",&"assistance",&"customer_request"]
+		left_arm.rotation.x = lerpf(left_arm.rotation.x,-0.45 if offering else 0.0,clampf(delta*9.0,0.0,1.0))
+		right_arm.rotation.x = lerpf(right_arm.rotation.x,-0.65 if state in [&"browsing",&"stock_wait"] else (-0.45 if offering else 0.0),clampf(delta*9.0,0.0,1.0))
+		if is_instance_valid(basket_visual):
+			basket_visual.position = basket_visual.position.lerp(Vector3(0,0.72,0.25) if offering else Vector3(0.34,0.50,0.05),clampf(delta*8,0,1))
+	reaction_time = maxf(0,reaction_time-delta)
+	var pulse := sin((1.0-reaction_time/0.65)*PI) if reaction_time > 0 else 0.0
+	visual_root.rotation.z = pulse*(0.08 if reaction == &"payment_failed" else 0.0)
+	visual_root.rotation.x = pulse*(-0.08 if reaction in [&"thanks",&"greet"] else 0.0)
 	var before := global_position
 	move_and_slide()
 	if walking and Vector2(global_position.x-before.x,global_position.z-before.z).length() < 0.002:

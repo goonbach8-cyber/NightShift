@@ -176,6 +176,12 @@ func _input(event: InputEvent) -> void:
 		return
 	if not event.pressed or event.echo:
 		return
+	if event.physical_keycode >= KEY_1 and event.physical_keycode < KEY_1+channels.size():
+		selected_channel = event.physical_keycode-KEY_1
+		view_time = 0.0
+		_apply_channel()
+		get_viewport().set_input_as_handled()
+		return
 	match event.physical_keycode:
 		KEY_ESCAPE:
 			close()
@@ -237,10 +243,10 @@ func _refresh_ui() -> void:
 			status.text = "Motion alert source · review this feed."
 		else:
 			status.text = "Motion alert active · locate the reported area."
-		help.text = "← / → camera   ·   ↑ / ↓ zoom   ·   [E / ENTER] clear reviewed alert   ·   ESC close"
+		help.text = "1–4 / ← → camera   ·   ↑ ↓ zoom   ·   E clear reviewed alert   ·   ESC close"
 	else:
 		status.text = "Live security feed · no active alert."
-		help.text = "← / → camera   ·   ↑ / ↓ zoom   ·   ESC close"
+		help.text = "1–4 / ← → camera   ·   ↑ ↓ zoom   ·   ESC close"
 
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.cctv_terminal):

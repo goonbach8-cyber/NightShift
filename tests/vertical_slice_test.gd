@@ -90,6 +90,11 @@ func walk(to: Vector3) -> bool:
 	await create_timer(0.3).timeout
 	var reached := Vector2(player.global_position.x-to.x,player.global_position.z-to.z).length() < 0.55
 	check(reached,"Player walked to "+str(to))
+	if not reached:
+		print("WALK_DIAG pos=",player.global_position," goal=",to," locked=",player.controls_locked," dialogue=",loop.dialogue.active," checkout=",world.checkout_minigame.active," checkout_phase=",world.checkout_minigame.phase," phone=",world.phone_system.active," pump=",world.pump_service.active," cctv=",world.cctv_system.active," power=",world.power_service.active," radio=",world.radio_tuner.active," spill=",world.spill_service.active," device=",world.device_service.active," waypoint=",route[0] if not route.is_empty() else Vector3.INF)
+		for i in player.get_slide_collision_count():
+			var contact := player.get_slide_collision(i)
+			print("WALK_CONTACT ",contact.get_collider().get_path()," at ",contact.get_position())
 	return reached
 
 func await_customer() -> bool:
@@ -104,12 +109,18 @@ func await_customer() -> bool:
 	return false
 
 func resolve_operator_interruptions() -> void:
-	if world.pump_service.request_pending:
+	if world.pump_service.request_pending and not world.pump_service.dispensing:
 		await walk(layout.pump_terminal.get_node("Approach").global_position)
 		check(player.interaction_target == layout.pump_terminal,"Fuel request is reachable from its pump terminal")
 		await use()
 		check(world.pump_service.active and player.controls_locked,"Fuel authorization opens the focused control panel")
-		await use() # The request opens with the requested pump and prepay amount selected.
+		if not world.pump_service.active:
+			return
+		await key([KEY_1,KEY_2,KEY_3,KEY_4][world.pump_service.request_pump-1])
+		for attempt in world.pump_service.PRESETS.size():
+			if world.pump_service.PRESETS[world.pump_service.selected_limit_index] == world.pump_service.request_limit: break
+			await key(KEY_UP)
+		await use()
 		var deadline := Time.get_ticks_msec()+3000
 		while world.pump_service.active and Time.get_ticks_msec()<deadline:
 			await process_frame

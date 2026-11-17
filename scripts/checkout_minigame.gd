@@ -4,12 +4,6 @@ extends Node
 const STYLE = preload("res://scripts/ui/station_theme.gd")
 const START_X := -0.56
 const SCANNER_X := -0.02
-const SCAN_HALF_WIDTH := 0.13
-const SLIDE_MIN := -0.62
-const SLIDE_MAX := 0.14
-const SLIDE_SPEED := 0.78
-const ROTATE_SPEED := 2.45
-const ALIGN_TOLERANCE := deg_to_rad(48.0)
 
 var world: Node
 var gameplay: Node
@@ -30,16 +24,10 @@ var customer: CharacterBody3D
 var previous_camera_size := 8.5
 var previous_camera_position := Vector3.ZERO
 var camera_tween: Tween
-var dragging := false
-var drag_offset := 0.0
 var session := 0
 var feedback_text := ""
 var feedback_remaining := 0.0
 
-var move_left := false
-var move_right := false
-var rotate_left := false
-var rotate_right := false
 
 var counter_root: Node3D
 var scanner_plate: MeshInstance3D
@@ -118,7 +106,7 @@ func _build_counter() -> void:
 	card_root.rotation.z = -0.10
 	card_root.visible = false
 	counter_root.add_child(card_root)
-	var card := _box(card_root,Vector3.ZERO,Vector3(0.28,0.018,0.18),Color("405b66"))
+	var card := _box(card_root,Vector3.ZERO,Vector3(0.20,0.012,0.12),Color("405b66"))
 	card_material = StandardMaterial3D.new()
 	card_material.albedo_color = Color("405b66")
 	card_material.roughness = 0.46
@@ -127,11 +115,11 @@ func _build_counter() -> void:
 
 	receipt_root = Node3D.new()
 	receipt_root.name = "Receipt"
-	receipt_root.position = Vector3(-0.65,1.19,0.18)
+	receipt_root.position = Vector3(-0.55,1.10,-0.27)
 	receipt_root.visible = false
 	counter_root.add_child(receipt_root)
-	_box(receipt_root,Vector3.ZERO,Vector3(0.28,0.012,0.38),Color("e5dfce"))
-	receipt_label = preload("res://scripts/printed_surface.gd").make(receipt_root,"",Vector3(0,0.008,0.02),Vector2(0.25,0.32),Color("263235"),Color("e5dfce"),true)
+	_box(receipt_root,Vector3.ZERO,Vector3(0.16,0.008,0.22),Color("e5dfce"))
+	receipt_label = preload("res://scripts/printed_surface.gd").make(receipt_root,"",Vector3(0,0.006,0),Vector2(0.145,0.20),Color("263235"),Color("e5dfce"),true)
 	cash_root = Node3D.new()
 	cash_root.name = "CashTray"
 	cash_root.position = Vector3(0.40,1.075,-0.02)
@@ -182,6 +170,8 @@ func _build_ui() -> void:
 	panel.anchor_bottom = 1.0
 	panel.offset_top = -176
 	panel.offset_bottom = -28
+	panel.offset_left = -70
+	panel.offset_right = 70
 	var column := STYLE.column(panel,5)
 	title = STYLE.text(column,18,STYLE.ACCENT)
 	status = STYLE.text(column,16)
@@ -198,31 +188,24 @@ func begin() -> bool:
 		return true
 	if world.has_interaction_focus(self):
 		return false
-	if not gameplay.checkout_ready() or gameplay.dialogue.active or not layout.at_operator(player):
+	if world.phase != world.Phase.ACTIVE or gameplay.dialogue.active or not layout.at_operator(player):
 		return false
 	active = true
-	phase = &"scan"
+	phase = &"waiting"
 	busy = false
-	customer = gameplay.queue[0]
-	customer.state = &"checkout"
-	customer.status_text = "Being served"
-	placed_count = int(gameplay.checkout_details().get("scanned",0))
 	_clear_item_visuals()
-	if customer.has_method("set_checkout_basket_hidden"):
-		customer.set_checkout_basket_hidden(true)
 	if layout.has_method("set_checkout_product"):
 		layout.set_checkout_product(&"",false)
 	if not camera_tween or not camera_tween.is_running():
 		previous_camera_size = camera.size
 		previous_camera_position = camera.position
 	session += 1
-	dragging = false
 	feedback_remaining = 0.0
 	if camera_tween: camera_tween.kill()
 	var focus := counter_root.to_global(Vector3(0,1.15,0.12))
 	var eye := focus+camera.global_basis.z*8.0
 	camera_tween = create_tween().set_parallel(true)
-	camera_tween.tween_property(camera,"size",2.4,0.22)
+	camera_tween.tween_property(camera,"size",2.9,0.22)
 	camera_tween.tween_property(camera,"position",camera.get_parent().to_local(eye),0.22)
 	player.controls_locked = true
 	player.velocity.x = 0
@@ -238,13 +221,44 @@ func begin() -> bool:
 	_clear_change_visuals()
 	cash_added = 0
 	cash_history.clear()
-	if int(gameplay.checkout_details().get("remaining",0)) <= 0:
-		_enter_payment()
-	else:
-		_spawn_next_item()
+	_try_next_customer()
 	_refresh_ui()
 	world._update_objective()
 	return true
+
+func _try_next_customer() -> void:
+	if phase != &"waiting" or not gameplay.checkout_ready(): return
+	# Let existing assistance systems present their real request before a basket.
+	active = false
+	var needs_help: bool = world.customer_requests.handle_checkout_use() or world.customer_assistance.handle_checkout_use()
+	active = true
+	if needs_help:
+		_end_mode()
+		return
+	session += 1
+	customer = gameplay.queue[0]
+	customer.state = &"checkout"
+	customer.status_text = "Being served"
+	customer.attention_target = layout.checkout
+	customer.react(&"greet")
+	phase = &"scan"
+	busy = false
+	placed_count = int(gameplay.checkout_details().get("scanned",0))
+	customer.set_checkout_basket_hidden(true)
+	if int(gameplay.checkout_details().get("remaining",0)) <= 0: _enter_payment()
+	else: _spawn_next_item()
+
+func _finish_transaction() -> void:
+	session += 1
+	_clear_item_visuals()
+	for prop in [terminal_label,card_root,receipt_root,cash_root,change_tray,cash_note_root]: prop.hide()
+	_clear_change_visuals()
+	current_id = &""
+	customer = null
+	phase = &"waiting"
+	busy = false
+	feedback_remaining = 0.0
+	_refresh_ui()
 
 func cancel() -> void:
 	if not active or phase in [&"receipt",&"printer_jam"]:
@@ -268,19 +282,14 @@ func cancel() -> void:
 func _process(delta: float) -> void:
 	if not active:
 		return
-	if phase != &"receipt" and (gameplay.queue.is_empty() or not is_instance_valid(customer) or gameplay.queue[0] != customer):
+	if phase == &"waiting":
+		if world.cashier_should_yield():
+			cancel()
+			return
+		_try_next_customer()
+	elif phase not in [&"receipt",&"printer_jam"] and (gameplay.queue.is_empty() or not is_instance_valid(customer) or gameplay.queue[0] != customer):
 		cancel()
 		return
-	if phase == &"scan" and not busy and is_instance_valid(current_visual):
-		var horizontal := (1.0 if move_right else 0.0) - (1.0 if move_left else 0.0)
-		var turning := (1.0 if rotate_right else 0.0) - (1.0 if rotate_left else 0.0)
-		slide = clampf(slide+horizontal*SLIDE_SPEED*delta,SLIDE_MIN,SLIDE_MAX)
-		item_rotation = wrapf(item_rotation+turning*ROTATE_SPEED*delta,-PI,PI)
-		_apply_item_transform()
-		var ready := _barcode_aligned() and absf(slide-SCANNER_X) <= SCAN_HALF_WIDTH
-		scanner_material.albedo_color = Color("4f8a67") if ready else Color("713d39")
-		if ready:
-			_scan_current()
 	_refresh_ui()
 	feedback_remaining = maxf(0,feedback_remaining-delta)
 	if feedback_remaining > 0:
@@ -299,6 +308,11 @@ func _input(event: InputEvent) -> void:
 	var pressed: bool = event.pressed and not event.echo
 	if pressed and key == KEY_ESCAPE:
 		cancel()
+	elif pressed and key == KEY_F and phase in [&"scan",&"waiting"] and not busy:
+		cancel()
+		gameplay.talk()
+	elif phase == &"scan" and pressed and key in [KEY_E,KEY_ENTER,KEY_KP_ENTER,KEY_SPACE]:
+		_scan_current()
 	elif phase == &"printer_jam":
 		if not pressed:
 			return
@@ -333,14 +347,6 @@ func _input(event: InputEvent) -> void:
 			_confirm_cash()
 		else:
 			return
-	elif key in [KEY_A,KEY_LEFT]:
-		move_left = event.pressed
-	elif key in [KEY_D,KEY_RIGHT]:
-		move_right = event.pressed
-	elif key in [KEY_W,KEY_UP]:
-		rotate_left = event.pressed
-	elif key in [KEY_S,KEY_DOWN]:
-		rotate_right = event.pressed
 	elif phase == &"card_retry" and pressed:
 		if key in [KEY_E,KEY_ENTER,KEY_KP_ENTER]:
 			phase = &"card"
@@ -358,12 +364,6 @@ func _input(event: InputEvent) -> void:
 		return
 	get_viewport().set_input_as_handled()
 
-func _counter_point(screen: Vector2) -> Variant:
-	# Ray/plane mapping keeps the held item under the pointer at any viewport size.
-	var plane := Plane(counter_root.global_basis.y.normalized(),counter_root.to_global(Vector3(0,1.11,0)))
-	var hit: Variant = plane.intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
-	return counter_root.to_local(hit) if hit != null else null
-
 func _near(screen: Vector2, node: Node3D, offset: Vector3, radius: float) -> bool:
 	if not is_instance_valid(node) or not node.is_visible_in_tree(): return false
 	var center := node.to_global(offset)
@@ -374,15 +374,9 @@ func _pointer_input(event: InputEventMouse) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if not event.pressed:
-				dragging = false
-				_apply_item_transform()
 				return
 			if phase == &"scan" and not busy and _near(event.position,current_visual,Vector3(0,0.15,0),0.23):
-				var point: Variant = _counter_point(event.position)
-				if point != null:
-					dragging = true
-					drag_offset = slide-point.x
-					_apply_item_transform()
+				_scan_current()
 			elif phase in [&"card",&"card_retry"] and _near(event.position,card_root,Vector3.ZERO,0.22):
 				phase = &"card"
 				_tap_card()
@@ -398,27 +392,7 @@ func _pointer_input(event: InputEventMouse) -> void:
 			return
 		if event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 			if phase == &"cash": _remove_cash()
-			elif phase == &"scan":
-				dragging = false
-				slide = START_X
-				_apply_item_transform()
 			return
-		if event.pressed and phase == &"scan" and not busy:
-			if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
-				item_rotation = wrapf(item_rotation+(-0.24 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.24),-PI,PI)
-				_apply_item_transform()
-	elif event is InputEventMouseMotion and dragging and phase == &"scan" and not busy:
-		if (event.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
-			dragging = false
-			return
-		var point: Variant = _counter_point(event.position)
-		if point == null: return
-		var before := slide
-		slide = clampf(point.x+drag_offset,SLIDE_MIN,SLIDE_MAX)
-		_apply_item_transform()
-		# A quick sweep must not jump over the narrow scanner between frames.
-		if _barcode_aligned() and minf(before,slide) <= SCANNER_X+SCAN_HALF_WIDTH and maxf(before,slide) >= SCANNER_X-SCAN_HALF_WIDTH:
-			_scan_current()
 	elif event is InputEventMouseMotion and phase == &"cash":
 		for i in CASH_VALUES.size():
 			if _near(event.position,cash_root,Vector3(-0.30+i*0.12,0,0),0.055):
@@ -440,7 +414,6 @@ func _spawn_next_item() -> void:
 	# mandatory repeated search for a barcode on every identical bottle.
 	item_rotation = wrapf(-current_barcode_angle,-PI,PI)
 	current_visual.position = Vector3(slide,1.11,0.19)
-	current_visual.rotation.y = item_rotation
 	current_visual.rotation.y = item_rotation
 	counter_root.add_child(current_visual)
 
@@ -478,7 +451,6 @@ func _product_visual(id: StringName) -> Node3D:
 			cap.height = 0.033
 			cap.radial_segments = 12
 			model.part(root,cap,Vector3(0,0.335,0),Color("d7ddbe"))
-			model.box(root,Vector3(0,0.15,0.066),Vector3(0.099,0.08,0.014),Color("d0d7b5"))
 			current_barcode_angle = PI
 			barcode_radius = 0.082
 			barcode_y = 0.18
@@ -512,27 +484,21 @@ func _add_barcode(parent: Node3D, angle: float, radius: float, y: float) -> void
 	barcode.position = Vector3(sin(angle)*radius,y,cos(angle)*radius)
 	barcode.rotation.y = angle
 	parent.add_child(barcode)
-	_box(barcode,Vector3.ZERO,Vector3(0.13,0.085,0.008),Color("e7e2d4"))
 	for i in range(5):
-		var width := 0.010 if i%2 == 0 else 0.006
-		_box(barcode,Vector3(-0.045+i*0.022,0,0.006),Vector3(width,0.070,0.006),Color("172124"))
-
-func _barcode_aligned() -> bool:
-	var facing := wrapf(item_rotation+current_barcode_angle,-PI,PI)
-	return absf(facing) <= ALIGN_TOLERANCE
+		var width := 0.004 if i%2 == 0 else 0.002
+		_box(barcode,Vector3(-0.022+i*0.011,0,0.001),Vector3(width,0.035,0.001),Color("172124"))
 
 func _apply_item_transform() -> void:
 	if not is_instance_valid(current_visual):
 		return
 	current_visual.position.x = slide
-	current_visual.position.y = 1.145 if dragging else 1.11
+	current_visual.position.y = 1.11
 	current_visual.rotation.y = item_rotation
 
 func _scan_current() -> void:
-	if busy or not is_instance_valid(current_visual):
+	if not active or phase != &"scan" or busy or not is_instance_valid(current_visual):
 		return
 	busy = true
-	dragging = false
 	var scan_session := session
 	var scanned_id := current_id
 	var item := current_visual
@@ -546,17 +512,20 @@ func _scan_current() -> void:
 	beep.play()
 	var target := _placed_position(placed_count)
 	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(item,"position",target,0.20).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(item,"rotation:y",0.0,0.20)
+	scanner_material.albedo_color = Color("79b797")
+	tween.tween_property(item,"position",Vector3(SCANNER_X,1.14,0.19),0.09)
+	tween.tween_property(item,"position",target,0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(item,"scale",Vector3.ONE*0.55,0.11)
 	await tween.finished
 	if not active or session != scan_session or phase != &"scan" or not is_instance_valid(item):
 		if is_instance_valid(item): item.queue_free()
 		return
 	placed_items.append(item)
+	if placed_items.size() > 4: placed_items[-5].hide()
 	placed_count += 1
 	status.text = String(gameplay.inventory.products[scanned_id].display_name)+" scanned"
 	busy = false
+	scanner_material.albedo_color = Color("394543")
 	if int(gameplay.checkout_details().get("remaining",0)) <= 0:
 		_enter_payment()
 	else:
@@ -564,8 +533,8 @@ func _scan_current() -> void:
 
 func _placed_position(index: int) -> Vector3:
 	var column := index%2
-	var row := int(index/2)
-	return Vector3(0.45+column*0.16,1.10,0.26-row*0.14)
+	var row := int((index%4)/2)
+	return Vector3(0.40+column*0.19,1.10,0.55+row*0.20)
 
 func _enter_payment() -> void:
 	busy = false
@@ -697,6 +666,7 @@ func _confirm_payment() -> void:
 	var detail: Dictionary = gameplay.checkout_details()
 	if phase == &"card" and card_decline_pending and card_attempts == 0:
 		card_attempts += 1
+		if is_instance_valid(customer): customer.react(&"payment_failed")
 		terminal_label.text = "DECLINED"
 		terminal_label.modulate = Color("e38b78")
 		card_material.albedo_color = Color("6b4248")
@@ -730,7 +700,7 @@ func _enter_printer_jam() -> void:
 	printer_alignment = -0.5 if (gameplay.served+gameplay.lost_sales)%2 == 0 else 0.5
 	receipt_root.show()
 	receipt_label.text = "PAPER"
-	receipt_root.position = Vector3(0.47,0.98,-0.18)
+	receipt_root.position = Vector3(0.47,1.10,-0.18)
 	_apply_printer_alignment()
 	_refresh_ui()
 
@@ -755,16 +725,18 @@ func _feedback(text: String) -> void:
 	status.text = text
 
 func _print_receipt() -> void:
+	var receipt_session := session
 	feedback_remaining = 0.0
 	phase = &"receipt"
 	receipt_label.text = "NIGHTSHIFT\n%s\nCHF %.2f\nTHANK YOU" % [pending_receipt_method,float(pending_receipt_total)/100.0]
 	receipt_root.show()
-	var start := Vector3(-0.65,1.19,0.18)
+	var start := Vector3(-0.55,1.10,-0.27)
 	receipt_root.position = start+Vector3(0,-0.10,0)
 	var tween := create_tween()
 	tween.tween_property(receipt_root,"position",start,0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	await get_tree().create_timer(0.85).timeout
-	_end_mode()
+	await get_tree().create_timer(0.35).timeout
+	if active and session == receipt_session and phase == &"receipt":
+		_finish_transaction()
 
 func _refresh_ui() -> void:
 	if not active or not is_instance_valid(panel):
@@ -773,11 +745,9 @@ func _refresh_ui() -> void:
 	if phase == &"scan":
 		title.text = "CHECKOUT · SCAN"
 		var name := String(gameplay.inventory.products[current_id].display_name) if current_id != &"" else "Item"
-		status.text = "Move "+name+" across the scanner"
-		if is_instance_valid(current_visual) and absf(slide-SCANNER_X) <= 0.24 and not _barcode_aligned():
-			status.text = "Rotate "+name+" — barcode is not facing the scanner"
-		progress.text = "%d / %d scanned" % [detail.get("scanned",0),detail.get("count",0)]
-		help.text = "Drag product across scanner / A D   ·   wheel / W S rotate   ·   ESC leave"
+		status.text = "Scan "+name
+		progress.text = "%d / %d scanned · CHF %.2f" % [detail.get("scanned",0),detail.get("count",0),float(detail.get("subtotal",0))/100.0]
+		help.text = "Click product / E scan   ·   ESC leave workstation"
 	elif phase == &"card":
 		title.text = "CARD TERMINAL"
 		status.text = "Present card · CHF %.2f" % (float(detail.get("total",0))/100.0)
@@ -799,6 +769,11 @@ func _refresh_ui() -> void:
 		status.text = "Straighten the receipt paper in the feed slot."
 		progress.text = "Alignment: %d%%" % roundi((1.0-clampf(absf(printer_alignment)/0.6,0.0,1.0))*100.0)
 		help.text = "← / → align paper   ·   [E / ENTER] feed paper"
+	elif phase == &"waiting":
+		title.text = "CASHIER · READY"
+		status.text = "Waiting for the next basket."
+		progress.text = ""
+		help.text = "Remain here to serve arriving customers   ·   ESC leave"
 	else:
 		title.text = "PAYMENT APPROVED"
 		status.text = "Receipt printing…"
@@ -816,7 +791,6 @@ func _clear_item_visuals() -> void:
 
 func _end_mode() -> void:
 	session += 1
-	dragging = false
 	_clear_item_visuals()
 	active = false
 	phase = &"idle"
@@ -840,10 +814,6 @@ func _end_mode() -> void:
 	receipt_root.rotation = Vector3.ZERO
 	panel.hide()
 	scanner_material.albedo_color = Color("713d39")
-	move_left = false
-	move_right = false
-	rotate_left = false
-	rotate_right = false
 	if camera_tween: camera_tween.kill()
 	camera_tween = create_tween().set_parallel(true)
 	camera_tween.tween_property(camera,"size",previous_camera_size,0.22)

@@ -24,6 +24,13 @@ var help: Label
 var clipboard_root: Node3D
 var clipboard_label: MeshInstance3D
 var paper_sound: AudioStreamPlayer
+var cartons: Dictionary = {}
+var carton_materials: Dictionary = {}
+var carton_labels: Dictionary = {}
+var camera: Camera3D
+var camera_tween: Tween
+var camera_position := Vector3.ZERO
+var camera_size := 8.5
 
 func _ready() -> void:
 	if world == null:
@@ -31,6 +38,7 @@ func _ready() -> void:
 	gameplay = world.gameplay
 	layout = world.layout
 	player = world.player
+	camera = player.get_node("CameraRig/Camera3D")
 	_build_clipboard()
 	_build_ui()
 	paper_sound = AudioStreamPlayer.new()
@@ -58,10 +66,10 @@ func _build_ui() -> void:
 	panel.name = "DeliveryCheckPanel"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.hud.add_child(panel)
-	panel.anchor_left = 0.27
-	panel.anchor_right = 0.73
-	panel.anchor_top = 0.18
-	panel.anchor_bottom = 0.82
+	panel.anchor_left = 0.035
+	panel.anchor_right = 0.34
+	panel.anchor_top = 0.10
+	panel.anchor_bottom = 0.87
 	var column := STYLE.column(panel,8)
 	title = STYLE.text(column,18,STYLE.ACCENT)
 	manifest_label = STYLE.text(column,16)
@@ -73,7 +81,42 @@ func _build_ui() -> void:
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help = STYLE.text(column,13,STYLE.MUTED)
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var actions := HBoxContainer.new()
+	column.add_child(actions)
+	for action in ["Match","Mismatch","Accept"]:
+		var button := Button.new()
+		button.text = action
+		actions.add_child(button)
+		if action == "Accept": button.pressed.connect(_accept)
+		else: button.pressed.connect(func(): _verify_selected(action == "Match"))
 	panel.hide()
+
+func _actual_delivery() -> Dictionary:
+	var result: Dictionary = gameplay.delivery_manifest.duplicate()
+	var night: int = gameplay.career_shifts+1
+	if night == 3 and result.has(&"chips"): result[&"chips"] = maxi(0,int(result[&"chips"])-1)
+	elif night == 5 and result.has(&"energy"): result[&"energy"] = int(result[&"energy"])+1
+	return result
+
+func _present_cartons() -> void:
+	var manifest := _actual_delivery()
+	var model := preload("res://scripts/product_display.gd").new()
+	for id in manifest:
+		if not cartons.has(id):
+			var parcel := Node3D.new()
+			parcel.name = "Carton_"+String(id)
+			layout.delivery.add_child(parcel)
+			var index := cartons.size()
+			parcel.position = Vector3(-0.20+(index%3)*0.34,0.86,-0.35+int(index/3)*0.36)
+			var box: MeshInstance3D = model.box(parcel,Vector3.ZERO,Vector3(0.30,0.26,0.30),Color("b18c5c"))
+			carton_materials[id] = box.material_override
+			carton_labels[id] = preload("res://scripts/printed_surface.gd").make(parcel,"",Vector3(0,0.133,0),Vector2(0.26,0.22),Color("263235"),Color("d5c6a3"),true)
+			cartons[id] = parcel
+		cartons[id].visible = gameplay.delivery_ready and not gameplay.delivery_carried
+		carton_labels[id].text = "%s\nx%d%s" % [String(id).to_upper(),manifest[id]," !" if discrepancies.has(id) else (" OK" if verified.has(id) else "")]
+		carton_materials[id].albedo_color = Color("b68e52") if discrepancies.has(id) else (Color("71947b") if verified.has(id) else (Color("c8b78a") if active and not order.is_empty() and order[selected] == id else Color("9b8059")))
+	model.free()
+	layout.delivery_visual.hide()
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(gameplay):
@@ -81,6 +124,7 @@ func _process(_delta: float) -> void:
 	clipboard_root.visible = gameplay.delivery_ready and not gameplay.delivery_carried
 	if clipboard_root.visible:
 		clipboard_label.text = "DELIVERY\n"+_manifest_text(false)
+	_present_cartons()
 
 func begin() -> bool:
 	if active:
@@ -102,14 +146,7 @@ func begin() -> bool:
 	selected = 0
 	verified.clear()
 	discrepancies.clear()
-	actual_manifest = gameplay.delivery_manifest.duplicate()
-	# Some later shifts contain an ordinary receiving discrepancy. The player must
-	# actually compare the carton label instead of confirming every line by habit.
-	var night: int = gameplay.career_shifts+1
-	if night == 3 and actual_manifest.has(&"chips"):
-		actual_manifest[&"chips"] = maxi(0,int(actual_manifest[&"chips"])-1)
-	elif night == 5 and actual_manifest.has(&"energy"):
-		actual_manifest[&"energy"] = int(actual_manifest[&"energy"])+1
+	actual_manifest = _actual_delivery()
 	order.clear()
 	for id in actual_manifest.keys():
 		order.append(id)
@@ -124,6 +161,15 @@ func begin() -> bool:
 	for action in ["move_left","move_right","move_forward","move_backward"]:
 		Input.action_release(action)
 	panel.show()
+	_present_cartons()
+	if not camera_tween or not camera_tween.is_running():
+		camera_position = camera.position
+		camera_size = camera.size
+	if camera_tween: camera_tween.kill()
+	var focus: Vector3 = layout.delivery.to_global(Vector3(0.08,0.95,-0.35))
+	camera_tween = create_tween().set_parallel(true)
+	camera_tween.tween_property(camera,"position",camera.get_parent().to_local(focus+camera.global_basis.z*8),0.20)
+	camera_tween.tween_property(camera,"size",3.2,0.20)
 	_refresh_ui()
 	world._update_objective()
 	return true
@@ -133,11 +179,26 @@ func close() -> void:
 		return
 	active = false
 	panel.hide()
+	if camera_tween: camera_tween.kill()
+	camera_tween = create_tween().set_parallel(true)
+	camera_tween.tween_property(camera,"position",camera_position,0.20)
+	camera_tween.tween_property(camera,"size",camera_size,0.20)
 	player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
 func _input(event: InputEvent) -> void:
-	if not active or not event is InputEventKey:
+	if not active or world.has_interaction_focus(self):
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not panel.get_global_rect().has_point(event.position):
+		for id in cartons:
+			var center: Vector2 = camera.unproject_position(cartons[id].to_global(Vector3(0,0.13,0)))
+			if center.distance_to(event.position) < 36:
+				selected = order.find(id)
+				_refresh_ui()
+				get_viewport().set_input_as_handled()
+				break
+		return
+	if not event is InputEventKey:
 		return
 	if not event.pressed or event.echo:
 		return
@@ -179,6 +240,8 @@ func _verify_selected(mark_as_match: bool) -> void:
 		discrepancies[id] = {"expected":expected,"actual":actual}
 		status.text = "%s discrepancy logged · manifest %d / carton %d" % [gameplay.inventory.products[id].display_name,expected,actual]
 	_refresh_ui()
+	_present_cartons()
+	status.text = "%s: %d received / %d ordered%s" % [gameplay.inventory.products[id].display_name,actual,expected," · discrepancy recorded" if not really_matches else " · checked"]
 
 func _accept() -> void:
 	if verified.size() < order.size():
@@ -207,7 +270,7 @@ func _refresh_ui() -> void:
 		status.text = "Discrepancy logged." if discrepancies.has(id) else "This carton has been checked."
 	elif status.text.is_empty() or status.text.begins_with("This carton"):
 		status.text = "Compare the carton label with the manifest."
-	help.text = "← / → carton   ·   [E] quantities match   ·   [R] mismatch   ·   [ENTER] accept after all checked   ·   ESC close"
+	help.text = "Click carton / ← → select\nE match · R mismatch · Enter accept · ESC close"
 
 func _manifest_text(mark_checked: bool) -> String:
 	var lines := PackedStringArray()

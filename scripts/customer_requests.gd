@@ -159,6 +159,7 @@ func _finish_request() -> void:
 		return
 	request_customer.state = &"queued"
 	request_customer.status_text = "Waiting at checkout"
+	request_customer.react(&"thanks")
 	gameplay.story_flags[StringName("customer_request_night_%d" % (gameplay.career_shifts+1))] = true
 	match request_kind:
 		&"wc_key":

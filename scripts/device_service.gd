@@ -16,7 +16,6 @@ var return_required := false
 var completed := false
 var next_fault_at := 104.0
 
-var selected_screw := 0
 var screw_turns: Array[int] = [0,0,0]
 var panel_open := false
 var cooler_panel: Node3D
@@ -30,6 +29,7 @@ var status: Label
 var progress: Label
 var help: Label
 var tool_sound: AudioStreamPlayer
+var cover: MeshInstance3D
 
 func _ready() -> void:
 	if world == null:
@@ -53,8 +53,8 @@ func _build_cooler_panel() -> void:
 	cooler_panel.name = "CoolerServicePanel"
 	cooler.add_child(cooler_panel)
 	cooler_panel.position = Vector3(-0.58,0.82,0.32)
-	var body := _box(cooler_panel,Vector3.ZERO,Vector3(0.34,0.46,0.06),Color("394846"))
-	body.rotation.y = 0.0
+	_box(cooler_panel,Vector3.ZERO,Vector3(0.34,0.46,0.06),Color("283936"))
+	cover = _box(cooler_panel,Vector3(0,0,0.075),Vector3(0.34,0.46,0.025),Color("56625a"))
 	for i in 3:
 		var screw := MeshInstance3D.new()
 		var mesh := CylinderMesh.new()
@@ -111,8 +111,8 @@ func _process(_delta: float) -> void:
 func _begin_fault() -> void:
 	fault_pending = true
 	panel_open = false
-	selected_screw = 0
 	screw_turns = [0,0,0]
+	cover.position.x = 0.0
 	cooler_panel.show()
 	controller_material.albedo_color = Color("a34f45")
 	_update_screw_visuals()
@@ -160,8 +160,7 @@ func begin_service() -> bool:
 	if not fault_pending or not toolkit_carried or _other_focus_active():
 		return false
 	active = true
-	panel_open = true
-	selected_screw = 0
+	panel_open = _all_screws_open()
 	player.controls_locked = true
 	player.velocity = Vector3.ZERO
 	for action in ["move_left","move_right","move_forward","move_backward"]:
@@ -181,19 +180,20 @@ func close() -> void:
 	world._update_objective()
 
 func _input(event: InputEvent) -> void:
-	if not active or not event is InputEventKey or not event.pressed or event.echo:
+	if not active or world.has_interaction_focus(self):
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var camera: Camera3D = player.get_node("CameraRig/Camera3D")
+		if event.position.distance_to(camera.unproject_position(cooler_panel.global_position)) < 42:
+			if panel_open: _reset_controller()
+			else: _turn_selected_screw()
+			get_viewport().set_input_as_handled()
+		return
+	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	match event.physical_keycode:
 		KEY_ESCAPE:
 			close()
-		KEY_LEFT, KEY_A:
-			selected_screw = wrapi(selected_screw-1,0,screw_turns.size())
-			_update_screw_visuals()
-			_refresh_ui()
-		KEY_RIGHT, KEY_D:
-			selected_screw = wrapi(selected_screw+1,0,screw_turns.size())
-			_update_screw_visuals()
-			_refresh_ui()
 		KEY_E, KEY_ENTER, KEY_KP_ENTER:
 			_turn_selected_screw()
 		KEY_R:
@@ -203,24 +203,25 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func _turn_selected_screw() -> void:
-	if screw_turns[selected_screw] >= 2:
-		status.text = "That fastener is already loose."
+	if panel_open:
+		status.text = "Cover open. Reset the red airflow controller."
 		return
-	screw_turns[selected_screw] += 1
+	screw_turns = [2,2,2]
+	panel_open = true
+	cover.position.x = -0.34
 	tool_sound.play()
 	_update_screw_visuals()
 	_refresh_ui()
 
 func _reset_controller() -> void:
 	if not _all_screws_open():
-		status.text = "Open all three service-panel fasteners first."
+		status.text = "Open the service cover first."
 		return
 	tool_sound.play()
 	controller_material.albedo_color = Color("78a77d")
 	status.text = "Controller reset · airflow restored."
 	progress.text = "Close up and return the maintenance toolkit."
 	help.text = ""
-	await get_tree().create_timer(0.55).timeout
 	_finish_repair()
 
 func _finish_repair() -> void:
@@ -260,12 +261,9 @@ func _refresh_ui() -> void:
 	if not active:
 		return
 	title.text = "COOLER · SERVICE PANEL"
-	status.text = "Airflow controller fault · loosen each fastener twice."
-	var states := PackedStringArray()
-	for i in screw_turns.size():
-		states.append("%d:%s" % [i+1,"OPEN" if screw_turns[i] >= 2 else ("%d/2" % screw_turns[i])])
-	progress.text = "   ".join(states)+"   ·   selected %d" % (selected_screw+1)
-	help.text = "← / → select fastener   ·   [E] turn screwdriver   ·   [R] reset controller   ·   ESC close"
+	status.text = "Airflow controller fault"
+	progress.text = "Cover open · reset the red controller" if panel_open else "Release and slide the service cover"
+	help.text = "Click panel / E open cover   ·   R reset controller   ·   ESC close"
 
 func _all_screws_open() -> bool:
 	for turns in screw_turns:
@@ -277,8 +275,6 @@ func _update_screw_visuals() -> void:
 	for i in screw_materials.size():
 		if screw_turns[i] >= 2:
 			screw_materials[i].albedo_color = Color("61706a")
-		elif i == selected_screw and active:
-			screw_materials[i].albedo_color = Color("d5b76f")
 		else:
 			screw_materials[i].albedo_color = Color("8a918d")
 

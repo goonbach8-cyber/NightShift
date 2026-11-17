@@ -39,7 +39,7 @@ func _ready() -> void:
 		list.set_column_custom_minimum_width(i,230 if i == 0 else 106)
 	list.item_selected.connect(_refresh_action)
 	list.item_activated.connect(_take_selected)
-	STYLE.text(column,14,STYLE.MUTED).text = "↑ ↓  Select    ·    Enter  Take    ·    Esc  Close"
+	STYLE.text(column,14,STYLE.MUTED).text = "↑ ↓  Select    ·    E / Enter  Take    ·    1–9 Quick take    ·    Esc  Close"
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_END
 	column.add_child(buttons)
@@ -82,6 +82,14 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or not list.has_focus() or not event is InputEventKey or not event.pressed:
 		return
+	if not event.echo and event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_9:
+		var index: int = event.physical_keycode-KEY_1
+		if index < rows.size():
+			rows[rows.keys()[index]].select(0)
+			_refresh_action()
+			_take_selected()
+		get_viewport().set_input_as_handled()
+		return
 	match event.physical_keycode:
 		KEY_UP, KEY_DOWN:
 			var row := list.get_selected()
@@ -91,7 +99,7 @@ func _input(event: InputEvent) -> void:
 					next.select(0)
 					list.scroll_to_item(next)
 					_refresh_action()
-		KEY_ENTER, KEY_KP_ENTER:
+		KEY_E, KEY_ENTER, KEY_KP_ENTER:
 			if not event.echo:
 				_take_selected()
 		_:

@@ -36,11 +36,11 @@ func run() -> void:
 	check(game.begin(),"Physical checkout starts for a ready staffed basket")
 	check(game.active and game.phase == &"scan" and player.controls_locked,"Checkout focus locks movement without pausing the world")
 	check(game.current_id == &"water","First staged item matches basket order")
-	check(game._barcode_aligned(),"Routine products start ready to scan without a repeated barcode search")
+	check(is_instance_valid(game.current_visual),"Routine products are available for direct scanning")
 	game.item_rotation = -PI
 	game.slide = -0.02
 	game._apply_item_transform()
-	check(game._barcode_aligned(),"Rotating the bottle exposes its barcode")
+	check(game.current_visual.get_node("Barcode").get_child_count() == 5,"Barcode contains only small ink stripes, not a white block")
 	game._scan_current()
 	await create_timer(0.28).timeout
 	check(loop.scanned_units == 1 and game.current_id == &"energy","Successful physical scan advances exactly one basket item")
@@ -48,7 +48,7 @@ func run() -> void:
 	game.item_rotation = -PI/2.0
 	game.slide = -0.02
 	game._apply_item_transform()
-	check(game._barcode_aligned(),"Energy can uses a different barcode side")
+	check(game.current_id == &"energy","Energy can is available without precision alignment")
 	game._scan_current()
 	await create_timer(0.28).timeout
 	check(loop.scanned_units == 2 and game.current_id == &"chips","Second scan advances without charging the customer")
@@ -56,7 +56,7 @@ func run() -> void:
 	game.item_rotation = 0.0
 	game.slide = -0.02
 	game._apply_item_transform()
-	check(game._barcode_aligned(),"Chip bag barcode is readable in its natural starting orientation")
+	check(game.current_id == &"chips","Chip bag is available without precision alignment")
 	game._scan_current()
 	await create_timer(0.28).timeout
 	check(game.phase == &"card" and loop.scanned_units == 3 and loop.revenue_rappen == 0,"All scans lead to card payment without selling early")
@@ -65,7 +65,8 @@ func run() -> void:
 	game._confirm_payment()
 	await create_timer(1.15).timeout
 	check(loop.revenue_rappen == 860 and loop.served == 1,"Card confirmation commits the existing atomic sale once")
-	check(not game.active and not player.controls_locked,"Receipt completes and returns control to normal play")
+	check(game.active and game.phase == &"waiting" and player.controls_locked,"Receipt completes without leaving the cashier workstation")
+	game.cancel()
 	check(loop.checkout_details().is_empty(),"Completed physical checkout leaves no stale basket state")
 
 	# Every third completed transaction uses cash so the grounded change interaction
@@ -96,7 +97,8 @@ func run() -> void:
 	game._confirm_cash()
 	await create_timer(1.15).timeout
 	check(loop.revenue_rappen == 1080 and loop.served == 3,"Exact cash change commits the same atomic sale path")
-	check(not game.active and not player.controls_locked,"Cash receipt returns to normal play")
+	check(game.active and game.phase == &"waiting","Cash receipt returns to the ready workstation")
+	game.cancel()
 
 	# From Night 2 onward, a rare deterministic card decline adds a believable interruption.
 	loop.career_shifts = 1
@@ -127,7 +129,8 @@ func run() -> void:
 	game._input(retry)
 	await create_timer(1.15).timeout
 	check(loop.revenue_rappen == 1300 and loop.served == 5,"Second card succeeds through the normal atomic sale path")
-	check(not game.active,"Declined-card recovery still ends with a normal receipt")
+	check(game.active and game.phase == &"waiting","Declined-card recovery returns to the ready workstation")
+	game.cancel()
 
 	world.queue_free()
 	await create_timer(0.3).timeout

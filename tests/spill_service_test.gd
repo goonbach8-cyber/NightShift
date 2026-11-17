@@ -11,7 +11,7 @@ func run() -> void:
 	world._on_used(&"spill_cleanup")
 	check(spill.active and world.player.controls_locked,"Cleanup begins with movement locked")
 	var first = spill.stain_visuals[0]
-	for i in spill.REQUIRED_PASSES:
+	for i in 1:
 		var event := InputEventKey.new()
 		event.physical_keycode = KEY_D if i%2 == 0 else KEY_A
 		event.pressed = true
@@ -21,7 +21,7 @@ func run() -> void:
 		spill._input(event)
 		if i == 0: check(first.scale.x < 1,"First sweep visibly shrinks puddle")
 	await create_timer(0.55).timeout
-	check(not spill.spill_pending and spill.return_required and not spill.active,"Required sweeps finish cleanup")
+	check(not spill.spill_pending and spill.return_required and not spill.active,"Covering the actual spill completes cleanup without repeated edge quotas")
 	check(not world.player.controls_locked,"Cleanup releases controls")
 	world._on_used(&"cleaning_kit")
 	check(spill.completed and not spill.return_required and not spill.kit_carried,"Returning mop resets service")

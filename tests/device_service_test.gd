@@ -36,11 +36,8 @@ func run() -> void:
 	check(service.active and world.player.controls_locked,"Cooler service reopens after ESC")
 	key(service,KEY_R)
 	check(service.fault_pending,"Reset rejected while fasteners closed")
-	for i in 3:
-		key(service,KEY_E)
-		key(service,KEY_E)
-		key(service,KEY_RIGHT)
-	check(service._all_screws_open(),"Three screws each require two turns")
+	key(service,KEY_E)
+	check(service._all_screws_open() and service.cover.position.x < -0.3,"One deliberate action releases the cover and exposes the controller")
 	key(service,KEY_R)
 	await create_timer(0.65).timeout
 	check(not service.fault_pending and service.return_required and not world.player.controls_locked,"Repair releases focus and requires toolkit return")

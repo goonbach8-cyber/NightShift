@@ -8,7 +8,7 @@ The user-designated business/story baseline is summarized in [PROJECT_DIRECTION.
 
 Run `project.godot` with Godot 4.7.2. Startup opens the main menu. New Game begins Night 1; Continue restores a safe between-night checkpoint. Start the shift at the staff notes behind checkout.
 
-WASD moves; E interacts. Checkout: drag the visible product across the scanner (A/D alternative), click the card or press E to pay. Cash: click coins or use 1–6; right-click/Backspace undoes; click the handover tray or press Enter to finish. F talks, Space advances dialogue, 1/2 select replies. ESC closes an open panel before Pause. At warehouse Supply, E opens the stock list or returns a carried crate. Mouse or Up/Down + Enter takes a crate; E at the matching shelf places it. T/Y/+/- control the nearby radio; M mutes.
+WASD moves; E interacts. Checkout stays in cashier mode between customers: click a product or press E to scan, then click the card/E or hand over exact change. Cash: click coins or use 1–6; right-click/Backspace undoes; click the tray/Enter hands over. ESC leaves cashier mode; F leaves it to talk. At warehouse Supply, E opens stock selection or returns a crate; Up/Down + E/Enter or 1–9 takes stock. E at the matching shelf restocks. Click delivery cartons to compare with the manifest, E marks a match, R records a mismatch, Enter accepts. Pump keys 1–4 select a dispenser, Up/Down sets prepay, E authorizes. M mutes.
 
 Customers visit Water, Energy and Chips locations, reserve products, queue, pay and leave. Refill matching product displays from warehouse stock, receive deliveries and complete the configured service tasks. Finish at the staff notes to save and advance. These are short functional prototypes, not the six finished story nights.
 
@@ -20,7 +20,11 @@ Run headlessly without desktop input:
 godot --headless --path . --script res://tests/smoke_test.gd
 godot --headless --path . --script res://tests/menu_test.gd
 godot --headless --path . --script res://tests/checkout_pointer_test.gd
+godot --headless --path . --script res://tests/cashier_queue_test.gd
+godot --headless --path . --script res://tests/cashier_request_handoff_test.gd
 godot --headless --path . --script res://tests/stock_handling_test.gd
+godot --headless --path . --script res://tests/delivery_physical_test.gd
+godot --headless --path . --script res://tests/service_interaction_v2_test.gd
 godot --headless --path . --script res://tests/story_continuity_test.gd
 godot --headless --path . --script res://tests/campaign_test.gd -- --six-nights --shift-layout
 godot --headless --path . --script res://tests/story_campaign_test.gd
@@ -28,7 +32,7 @@ godot --headless --path . --script res://tests/ending_save_test.gd
 godot --headless --path . --script res://tests/depot_movement_test.gd
 ```
 
-Require zero failures and inspect logs for script errors/warnings. `-- --dev-debug` enables optional customer and inventory diagnostics. Controls have been manually verified by the user. The new story geometry, reading comfort and audio impact still require human evaluation; no desktop automation is needed or authorized.
+Require zero failures and inspect logs for script errors/warnings. `-- --dev-debug` enables optional customer and inventory diagnostics. The V2 interactions need a fresh rendered manual playtest; the prior user playtest identified visual and repetition problems. Headless tests do not establish visual polish or enjoyment. No desktop automation is needed or authorized.
 
 ## Player-Animation
 

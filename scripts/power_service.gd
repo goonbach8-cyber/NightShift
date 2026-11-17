@@ -85,6 +85,7 @@ func _begin_fault() -> void:
 	selected_circuit = 0
 	fault_pending = true
 	_dim_circuit(fault_circuit)
+	_sync_switches()
 	_update_prompt()
 	world._say("Power fault · "+String(circuits[fault_circuit].symptom),7.0)
 	gameplay.changed.emit()
@@ -129,7 +130,24 @@ func close() -> void:
 	world._update_objective()
 
 func _input(event: InputEvent) -> void:
-	if not active or not event is InputEventKey:
+	if not active or world.has_interaction_focus(self):
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var camera: Camera3D = player.get_node("CameraRig/Camera3D")
+		var closest := 20.0
+		var picked := -1
+		for i in layout.breaker_switches.size():
+			var lever: Node3D = layout.breaker_switches[i]
+			var distance: float = event.position.distance_to(camera.unproject_position(lever.global_position))
+			if distance < closest:
+				closest = distance
+				picked = i
+		if picked >= 0:
+			selected_circuit = picked
+			_reset_selected()
+			get_viewport().set_input_as_handled()
+		return
+	if not event is InputEventKey:
 		return
 	if not event.pressed or event.echo:
 		return
@@ -161,14 +179,20 @@ func _reset_selected() -> void:
 	completed = true
 	var restored := String(circuits[fault_circuit].name)
 	fault_circuit = -1
+	_sync_switches()
 	_update_prompt()
 	status.text = restored+" circuit restored."
 	details.text = "Power is stable again."
 	help.text = ""
 	gameplay.changed.emit()
-	await get_tree().create_timer(0.55).timeout
 	close()
 	world._say(restored+" circuit restored.",4.0)
+
+func _sync_switches() -> void:
+	for i in layout.breaker_switches.size():
+		var lever: MeshInstance3D = layout.breaker_switches[i]
+		lever.rotation.z = 0.65 if fault_pending and i == fault_circuit else 0.0
+		lever.material_override.albedo_color = Color("b76b50") if fault_pending and i == fault_circuit else Color("7f9b87")
 
 func _dim_circuit(index: int) -> void:
 	_restore_lights()

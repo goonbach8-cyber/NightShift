@@ -57,27 +57,25 @@ func sell() -> void:
 	# render-only item-scanning interaction is disabled in DisplayServer.headless.
 	# The player must still physically reach and focus the register first.
 	var opened: bool = game.active if game.active else game.begin()
+	if opened and not game.active and (world.customer_requests.active or world.customer_assistance.request_active):
+		# A request can become eligible while walking here. The workstation
+		# deliberately yields before scanning; resolve that request, not a
+		# nonexistent transaction, then retry this same sale.
+		await sell()
+		return
 	if not opened:
 		print("CHECKOUT_DIAG queue=",loop.queue.size()," ready=",loop.checkout_ready()," partner=",loop.dialogue.active," player=",player.global_position," operator=",layout.operator_point.global_position," phone=",world.phone_system.active," ring=",world.phone_system.ringing," focus=",world.has_interaction_focus(game))
 	check(opened,"Campaign opens physical checkout")
 	if not opened:
 		return
 	var deadline := Time.get_ticks_msec()+25000
-	while game.active and Time.get_ticks_msec() < deadline:
+	while game.active and (loop.served == previous or game.phase in [&"receipt",&"printer_jam"]) and Time.get_ticks_msec() < deadline:
 		if game.busy and game.phase not in [&"printer_jam",&"receipt"]:
 			await process_frame
 			continue
 		match game.phase:
 			&"scan":
-				# Drive the same held-key movement used by the player.
-				game.rotate_left = true
-				while not game._barcode_aligned() and game.phase == &"scan" and Time.get_ticks_msec() < deadline:
-					game._process(0.04)
-				game.rotate_left = false
-				game.move_right = true
-				while not game.busy and game.phase == &"scan" and Time.get_ticks_msec() < deadline:
-					game._process(0.04)
-				game.move_right = false
+				await key(KEY_E)
 			&"card", &"card_retry":
 				await key(KEY_E)
 			&"cash":
@@ -93,7 +91,12 @@ func sell() -> void:
 					await key(KEY_LEFT if game.printer_alignment > 0 else KEY_RIGHT)
 				await key(KEY_E)
 		await process_frame
-	check(not game.active and loop.served == previous+1,"Physical checkout completes exactly one basket and releases focus")
+	check(loop.served == previous+1,"Physical checkout completes exactly one basket")
+	if loop.served != previous+1:
+		print("CASHIER_SALE_DIAG previous=",previous," served=",loop.served," active=",game.active," phase=",game.phase," request=",world.customer_requests.active," assistance=",world.customer_assistance.request_active," queue=",loop.queue.size())
+	# This campaign fixture deliberately leaves the workstation between sales
+	# to exercise all world routes. Continuous service has its own real-input test.
+	game.cancel()
 
 func prepare_shift_end() -> void:
 	for attempt in 3:
@@ -135,7 +138,7 @@ func service_pending() -> void:
 			print("PHONE_DIAG after active=",world.phone_system.active," mode=",world.phone_system.mode," ring=",world.phone_system.ringing," locked=",player.controls_locked)
 		check(not world.phone_system.active,"Campaign phone conversation releases control")
 		await create_timer(0.8).timeout
-	if world.pump_service.request_pending:
+	if world.pump_service.request_pending and not world.pump_service.dispensing:
 		var pump = world.pump_service
 		await walk(layout.pump_terminal.get_node("Approach").global_position)
 		check(player.interaction_target == layout.pump_terminal,"Pending pump request owns its physical terminal")
@@ -192,7 +195,7 @@ func service_pending() -> void:
 			check(spill.active,"Spill cleanup opens only with the carried kit")
 			if not spill.active:
 				return
-			for i in spill.REQUIRED_PASSES:
+			for i in 1:
 				var event := InputEventKey.new()
 				event.physical_keycode = KEY_D if i%2 == 0 else KEY_A
 				event.pressed = true
@@ -212,10 +215,7 @@ func service_pending() -> void:
 			await use()
 			await walk(layout.product_points[&"energy"].global_position)
 			await use()
-			for i in 3:
-				await key(KEY_E)
-				await key(KEY_E)
-				await key(KEY_RIGHT)
+			await key(KEY_E)
 			await key(KEY_R)
 			await create_timer(0.65).timeout
 		await walk(layout.service_tool_station.get_node("Approach").global_position)

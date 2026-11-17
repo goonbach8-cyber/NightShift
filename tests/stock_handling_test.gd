@@ -6,6 +6,16 @@ func visible_goods(id: StringName) -> int:
 		if item.visible: amount += 1
 	return amount
 
+func mesh_bounds(node: Node3D, relative: Node3D) -> AABB:
+	var box := AABB()
+	var first := true
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			var bound: AABB = (relative.global_transform.affine_inverse()*child.global_transform)*child.get_aabb()
+			box = bound if first else box.merge(bound)
+			first = false
+	return box
+
 func run() -> void:
 	await setup()
 	var layout = world.layout
@@ -17,6 +27,16 @@ func run() -> void:
 		check(loop.collect_stock(id),"Collect a physical crate: "+String(id))
 		var carried: int = stock.carried_units
 		check(visible_goods(id) == carried and layout.carried_visual.visible,"Open crate shows its actual carried quantity: "+String(id))
+		for slot in layout.carry_contents[id]:
+			var bounds := mesh_bounds(slot,layout.carried_visual)
+			check(bounds.position.x >= -0.198 and bounds.end.x <= 0.198 and bounds.position.z >= -0.138 and bounds.end.z <= 0.138,"Merchandise lies inside the physical crate walls")
+			check(bounds.position.y >= -0.135 and bounds.position.y <= -0.12,"Merchandise rests on the crate floor, not in midair")
+		var attachment: Transform3D = layout.carried_visual.transform
+		var anchor: Node3D = layout.carried_visual.get_parent()
+		check(anchor.name == "CarryAnchor" and absf(anchor.position.x) < 0.01,"Crate attaches centrally to Mike instead of floating beside him")
+		for direction in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
+			world.player._update_facing(direction)
+			check(layout.carried_visual.transform.is_equal_approx(attachment),"Turning cannot detach the container or its contents")
 		for other in loop.inventory.products:
 			if other != id: check(visible_goods(other) == 0,"Crate does not show the wrong merchandise")
 		# Receiving or reserving goods while a crate is carried must not invent

@@ -24,9 +24,9 @@ var stain_visuals: Array[MeshInstance3D] = []
 var sweep_position := -0.34
 var sweep_left := false
 var sweep_right := false
-var sweep_passes := 0
-var last_edge := -1
-const REQUIRED_PASSES := 4
+var coverage: Dictionary = {}
+const CLEANING_BINS := 16
+var cleanup_session := 0
 
 var panel: PanelContainer
 var title: Label
@@ -75,22 +75,19 @@ func _process(delta: float) -> void:
 		return
 	if gameplay.active and not completed and not spill_pending and not return_required and gameplay.career_shifts >= 1 and gameplay.career_shifts < 5 and gameplay.elapsed >= next_spill_at and gameplay.served+gameplay.lost_sales >= 1 and world.can_start_interrupt(self):
 		_spawn_spill()
-	if not active:
+	if not active or not spill_pending:
 		return
 	var direction := (1.0 if sweep_right else 0.0)-(1.0 if sweep_left else 0.0)
 	if direction == 0:
 		return
+	var before := sweep_position
 	sweep_position = clampf(sweep_position+direction*0.72*delta,-0.36,0.36)
 	if is_instance_valid(work_mop):
 		work_mop.position.x = sweep_position
-	if sweep_position >= 0.34 and last_edge != 1:
-		last_edge = 1
-		_register_pass()
-	elif sweep_position <= -0.34 and last_edge != -1:
-		last_edge = -1
-		_register_pass()
+	_clean_path(before,sweep_position)
 
 func _spawn_spill() -> void:
+	coverage.clear()
 	spill_pending = true
 	var night: int = gameplay.career_shifts+1
 	var target: StringName = &"chips"
@@ -182,9 +179,8 @@ func begin_cleanup() -> bool:
 	if _other_focus_active():
 		return false
 	active = true
+	cleanup_session += 1
 	sweep_position = -0.34
-	sweep_passes = 0
-	last_edge = -1
 	sweep_left = false
 	sweep_right = false
 	_clear_carried_mop()
@@ -194,28 +190,39 @@ func begin_cleanup() -> bool:
 	for action in ["move_left","move_right","move_forward","move_backward"]:
 		Input.action_release(action)
 	panel.show()
+	_clean_path(sweep_position,sweep_position)
 	_refresh_ui()
 	world._update_objective()
 	return true
 
-func _register_pass() -> void:
-	if sweep_passes >= REQUIRED_PASSES:
-		return
-	sweep_passes += 1
+func _clean_path(before: float, after: float) -> void:
+	if not active or not spill_pending: return
+	for i in CLEANING_BINS:
+		var x := -0.36+(float(i)+0.5)*0.72/CLEANING_BINS
+		if x >= minf(before,after)-0.16 and x <= maxf(before,after)+0.16:
+			coverage[i] = true
 	if not scrub_sound.playing:
 		scrub_sound.play()
-	var remaining := 1.0-float(sweep_passes)/float(REQUIRED_PASSES)
 	for visual in stain_visuals:
 		if is_instance_valid(visual):
+			var near_bins := 0
+			var cleaned := 0
+			for i in CLEANING_BINS:
+				var x := -0.36+(float(i)+0.5)*0.72/CLEANING_BINS
+				if absf(x-visual.position.x) < 0.24:
+					near_bins += 1
+					if coverage.has(i): cleaned += 1
+			var remaining := 1.0-float(cleaned)/maxi(1,near_bins)
 			visual.scale = Vector3(0.55+remaining*0.45,1.0,0.55+remaining*0.45)
 			var mat := visual.material_override as StandardMaterial3D
 			if mat:
 				mat.albedo_color.a = 0.18+remaining*0.54
 	_refresh_ui()
-	if sweep_passes >= REQUIRED_PASSES:
+	if coverage.size() == CLEANING_BINS:
 		_finish_cleanup()
 
 func _finish_cleanup() -> void:
+	var cleaning_session := cleanup_session
 	spill_pending = false
 	return_required = true
 	if is_instance_valid(spill_point):
@@ -223,7 +230,8 @@ func _finish_cleanup() -> void:
 	status.text = "Floor clean."
 	progress.text = "Return the mop to the service room."
 	help.text = ""
-	await get_tree().create_timer(0.45).timeout
+	await get_tree().create_timer(0.12).timeout
+	if cleanup_session != cleaning_session: return
 	if is_instance_valid(spill_root):
 		spill_root.queue_free()
 	spill_root = null
@@ -296,14 +304,38 @@ func _refresh_ui() -> void:
 		return
 	title.text = "CLEANING · SHOP FLOOR"
 	status.text = "Sweep the mop across the whole spill."
-	progress.text = "%d / %d passes" % [sweep_passes,REQUIRED_PASSES]
-	help.text = "A / D or ← / → sweep   ·   alternate sides until the floor is clean"
+	progress.text = "%d%% of spill covered" % roundi(float(coverage.size())*100/CLEANING_BINS)
+	help.text = "Drag mop over the spill / A D sweep   ·   ESC put mop down"
 
 func _input(event: InputEvent) -> void:
-	if not active or not event is InputEventKey:
+	if not active or world.has_interaction_focus(self):
+		return
+	if event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0 and spill_pending:
+		var camera: Camera3D = player.get_node("CameraRig/Camera3D")
+		var plane := Plane(spill_root.global_basis.y.normalized(),spill_root.global_position)
+		var hit: Variant = plane.intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
+		if hit != null:
+			var point: Vector3 = spill_root.to_local(hit)
+			if absf(point.z) <= 0.32:
+				var before := sweep_position
+				sweep_position = clampf(point.x,-0.36,0.36)
+				work_mop.position.x = sweep_position
+				_clean_path(before,sweep_position)
+				get_viewport().set_input_as_handled()
+		return
+	if not event is InputEventKey:
 		return
 	var key: Key = event.physical_keycode
-	if key in [KEY_A,KEY_LEFT]:
+	if key == KEY_ESCAPE and event.pressed and spill_pending:
+		cleanup_session += 1
+		active = false
+		sweep_left = false
+		sweep_right = false
+		panel.hide()
+		_clear_work_mop()
+		_show_carried_mop()
+		player.controls_locked = world.has_interaction_focus(self)
+	elif key in [KEY_A,KEY_LEFT]:
 		sweep_left = event.pressed
 	elif key in [KEY_D,KEY_RIGHT]:
 		sweep_right = event.pressed

@@ -171,6 +171,7 @@ func visit_next_product(customer: CharacterBody3D) -> void:
 	if customer.remaining_products.is_empty():
 		customer.has_product = true
 		customer.state = &"queued"
+		customer.attention_target = layout.checkout
 		customer.wait_seconds = 0
 		var quantity := 0
 		for amount in customer.order.values(): quantity += int(amount)
@@ -180,6 +181,7 @@ func visit_next_product(customer: CharacterBody3D) -> void:
 		update_queue()
 		return
 	customer.current_product = customer.remaining_products[0]
+	customer.attention_target = layout.product_nodes[customer.current_product]
 	customer.state = &"shopping"
 	customer.status_text = "Sucht "+inventory.products[customer.current_product].display_name
 	customer.go_to(layout.product_points[customer.current_product])
@@ -320,6 +322,7 @@ func checkout() -> bool:
 		return false
 	queue.pop_front()
 	customer.paid = true
+	customer.react(&"thanks")
 	customer.state = &"leaving"
 	customer.status_text = "Thank you!"
 	revenue_rappen += int(receipt.total)

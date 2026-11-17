@@ -28,6 +28,8 @@ var request_serial := 0
 var busy := false
 var fault_pending := false
 var fault_pump := 0
+var dispensing := false
+var fuel_tween: Tween
 
 var vehicle_root: Node3D
 var pump_labels: Dictionary = {}
@@ -70,7 +72,7 @@ func _build_ui() -> void:
 	panel.anchor_right = 0.69
 	panel.anchor_top = 1.0
 	panel.anchor_bottom = 1.0
-	panel.offset_top = -170
+	panel.offset_top = -260
 	panel.offset_bottom = -28
 	var column := STYLE.column(panel,5)
 	title = STYLE.text(column,18,STYLE.ACCENT)
@@ -79,6 +81,13 @@ func _build_ui() -> void:
 	help = STYLE.text(column,13,STYLE.MUTED)
 	for label in [title,status,details,help]:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var pump_keys := HBoxContainer.new()
+	column.add_child(pump_keys)
+	for number in range(1,5):
+		var key := Button.new()
+		key.text = "Pump %02d" % number
+		key.pressed.connect(func(): selected_pump = number; _refresh_ui())
+		pump_keys.add_child(key)
 	panel.hide()
 
 func _process(_delta: float) -> void:
@@ -89,6 +98,8 @@ func _process(_delta: float) -> void:
 		_create_request()
 
 func _create_request() -> void:
+	if request_pending:
+		return
 	request_serial += 1
 	request_pump = ((gameplay.career_shifts*2 + request_serial*3) % 4)+1
 	request_limit = PRESETS[(gameplay.career_shifts+request_serial) % PRESETS.size()]
@@ -115,14 +126,15 @@ func begin() -> bool:
 	if not request_pending:
 		world._say("No fuel requests are waiting.")
 		return false
+	if dispensing or fault_pending:
+		world._say("Fuel is dispensing." if dispensing else "Reset the faulted dispenser outside.")
+		return false
 	if world.gameplay.dialogue.active:
 		return false
 	active = true
 	busy = false
-	selected_pump = request_pump
-	selected_limit_index = PRESETS.find(request_limit)
-	if selected_limit_index < 0:
-		selected_limit_index = 0
+	selected_pump = 1
+	selected_limit_index = 0
 	player.controls_locked = true
 	player.velocity.x = 0
 	player.velocity.z = 0
@@ -143,6 +155,11 @@ func _input(event: InputEvent) -> void:
 		return
 	var pressed: bool = event.pressed and not event.echo
 	if not pressed:
+		return
+	if event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_4:
+		selected_pump = event.physical_keycode-KEY_1+1
+		_refresh_ui()
+		get_viewport().set_input_as_handled()
 		return
 	match event.physical_keycode:
 		KEY_ESCAPE:
@@ -166,7 +183,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func _authorize() -> void:
-	if busy or not request_pending:
+	if busy or dispensing or not request_pending or fault_pending:
 		return
 	if selected_pump != request_pump:
 		status.text = "Pump %02d has no waiting vehicle." % selected_pump
@@ -174,13 +191,17 @@ func _authorize() -> void:
 	if PRESETS[selected_limit_index] != request_limit:
 		status.text = "Wrong prepay limit · customer requested %s." % _money(request_limit)
 		return
-	busy = true
+	dispensing = true
 	confirm_sound.play()
-	status.text = "AUTHORIZED · Pump %02d" % request_pump
-	details.text = "%s limit sent to dispenser" % _money(request_limit)
-	help.text = ""
-	_set_pump_status(request_pump,"AUTH",Color("8fc59d"))
-	await get_tree().create_timer(0.75).timeout
+	var serial := request_serial
+	var pump := request_pump
+	_end_mode()
+	_update_terminal_prompt()
+	fuel_tween = create_tween()
+	fuel_tween.tween_method(func(amount: float): _set_pump_status(pump,"FUEL %d%%" % (roundi(amount*10)*10),Color("8fc59d")),0.0,1.0,0.75)
+	await fuel_tween.finished
+	if serial != request_serial or not dispensing: return
+	dispensing = false
 	var should_fault: bool = gameplay.career_shifts >= 1 and request_serial % 2 == 0
 	if should_fault:
 		_begin_fault(request_pump)
@@ -216,6 +237,8 @@ func _set_reset_availability(pump: int) -> void:
 		layout.pump_reset_points[id].available = int(id) == pump
 
 func _complete_request() -> void:
+	if not request_pending:
+		return
 	var completed_pump := request_pump
 	request_pending = false
 	fault_pending = false
@@ -226,10 +249,10 @@ func _complete_request() -> void:
 	request_limit = 0
 	next_request_at = gameplay.elapsed + 38.0 + float((requests_completed+gameplay.career_shifts)%3)*9.0
 	_set_pump_status(completed_pump,"READY",Color("8fa9a2"))
-	_remove_vehicle()
+	_depart_vehicle()
 	_update_terminal_prompt()
 	_end_mode()
-	world._say("Pump %02d authorized." % completed_pump,3.0)
+	world._say("Pump %02d fueling complete." % completed_pump,3.0)
 	gameplay.changed.emit()
 
 func _refresh_ui() -> void:
@@ -238,7 +261,7 @@ func _refresh_ui() -> void:
 	title.text = "FORECOURT · PUMP CONTROL"
 	status.text = "Request: Pump %02d · %s" % [request_pump,_money(request_limit)]
 	details.text = "Selected: Pump %02d · %s" % [selected_pump,_money(PRESETS[selected_limit_index])]
-	help.text = "← / → pump   ·   ↑ / ↓ prepay limit   ·   [E / ENTER] authorize   ·   ESC close"
+	help.text = "1–4 / click pump   ·   ↑ ↓ limit   ·   E authorize   ·   ESC close"
 
 func _update_terminal_prompt() -> void:
 	if not is_instance_valid(layout.pump_terminal):
@@ -249,8 +272,11 @@ func _update_terminal_prompt() -> void:
 		customer_receipt = request.active and not request.task_complete and request.request_kind == &"fuel_receipt"
 	# The terminal shares the counter with the register. Keep it secondary while
 	# idle so checkout owns focus; fuel authorization and receipt requests take priority.
-	layout.pump_terminal.selection_bias = -0.35 if request_pending or customer_receipt else 1.0
-	if fault_pending:
+	var needs_authorization := request_pending and not dispensing and not fault_pending
+	layout.pump_terminal.selection_bias = -0.35 if needs_authorization or customer_receipt else 1.0
+	if dispensing:
+		layout.pump_terminal.prompt = "Pump %02d dispensing fuel" % request_pump
+	elif fault_pending:
 		layout.pump_terminal.prompt = "Pump %02d fault · Reset outside" % fault_pump
 	elif request_pending:
 		layout.pump_terminal.prompt = "Pump %02d awaiting authorization" % request_pump
@@ -296,6 +322,14 @@ func _remove_vehicle() -> void:
 		vehicle_root.queue_free()
 	vehicle_root = null
 
+func _depart_vehicle() -> void:
+	if not is_instance_valid(vehicle_root): return
+	var vehicle := vehicle_root
+	vehicle_root = null
+	var departure := create_tween()
+	departure.tween_property(vehicle,"position",vehicle.position+Vector3(3.5,0,0),0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	departure.tween_callback(vehicle.queue_free)
+
 func _set_pump_status(pump: int, text_value: String, color: Color) -> void:
 	if not pump_labels.has(pump):
 		return
@@ -303,10 +337,12 @@ func _set_pump_status(pump: int, text_value: String, color: Color) -> void:
 	pump_labels[pump].modulate = color
 
 func _end_mode() -> void:
+	var owned_input := active
 	active = false
 	busy = false
 	panel.hide()
-	player.controls_locked = world.has_interaction_focus(self)
+	if owned_input:
+		player.controls_locked = world.has_interaction_focus(self)
 	world._update_objective()
 
 func _money(rappen: int) -> String:

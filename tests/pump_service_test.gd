@@ -42,7 +42,14 @@ func run() -> void:
 
 	service.selected_limit_index = [3000,5000,8000].find(requested_limit)
 	service._authorize()
+	check(service.dispensing and not service.active and not player.controls_locked,"Authorized dispensing happens in the world without a locked waiting timer")
+	check(world.layout.pump_terminal.selection_bias > 0,"A dispensing pump does not steal checkout targeting")
+	check(not world.cashier_should_yield(),"Dispensing alone does not evict an idle cashier")
+	check(not service.begin(),"A dispensing request cannot be authorized twice")
+	Input.action_press("move_forward")
 	await create_timer(0.9).timeout
+	check(Input.is_action_pressed("move_forward"),"Background completion does not cancel the player's held movement")
+	Input.action_release("move_forward")
 	check(not service.request_pending and service.requests_completed == 1,"Correct pump and limit complete exactly one forecourt request")
 	check(not service.active and not player.controls_locked,"Authorization returns control to normal play")
 	check(not is_instance_valid(service.vehicle_root),"Authorized forecourt vehicle leaves its pump")

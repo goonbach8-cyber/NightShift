@@ -39,5 +39,7 @@ func run() -> void:
 	game.printer_alignment = 0
 	game._feed_printer()
 	await create_timer(0.95).timeout
-	check(not game.active and not world.player.controls_locked and loop.revenue_rappen == 220,"Paper feed completes receipt without duplicate payment")
+	check(game.active and game.phase == &"waiting" and loop.revenue_rappen == 220,"Paper feed completes receipt without duplicate payment or leaving cashier mode")
+	game.cancel()
+	check(not world.player.controls_locked,"Leaving the ready workstation restores movement")
 	await finish()

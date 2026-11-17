@@ -109,6 +109,7 @@ func _return_item() -> void:
 		return
 	request_customer.state = &"queued"
 	request_customer.status_text = "Waiting at checkout"
+	request_customer.react(&"thanks")
 	item_found = false
 	request_active = false
 	completed = true

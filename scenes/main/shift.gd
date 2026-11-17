@@ -335,7 +335,7 @@ func _on_used(action: StringName) -> void:
 			return
 	# Rendererless automation keeps the direct checkout path. In the actual game,
 	# the same inventory/payment rules are driven by the physical checkout interaction.
-	if action == &"finish" and phase == Phase.ACTIVE and gameplay.checkout_ready() and layout.at_operator(player) and not gameplay.quick_checkout and DisplayServer.get_name() != "headless":
+	if action == &"finish" and phase == Phase.ACTIVE and layout.at_operator(player) and not gameplay.quick_checkout and DisplayServer.get_name() != "headless":
 		if checkout_minigame.begin():
 			_update_objective()
 			return
@@ -376,7 +376,10 @@ func has_interaction_focus(source: Node = null) -> bool:
 	return false
 
 func can_start_interrupt(source: Node = null) -> bool:
-	if phase != Phase.ACTIVE or not gameplay.active or has_interaction_focus(source) or story_time > 0:
+	var focus_source := source
+	if is_instance_valid(checkout_minigame) and checkout_minigame.active and checkout_minigame.phase == &"waiting":
+		focus_source = checkout_minigame
+	if phase != Phase.ACTIVE or not gameplay.active or has_interaction_focus(focus_source) or story_time > 0:
 		return false
 	if source != pump_service and is_instance_valid(pump_service) and (pump_service.request_pending or pump_service.fault_pending):
 		return false
@@ -397,6 +400,9 @@ func can_start_interrupt(source: Node = null) -> bool:
 	if is_instance_valid(customer_requests) and customer_requests.active:
 		return false
 	return true
+
+func cashier_should_yield() -> bool:
+	return not pending_events.is_empty() or gameplay.dialogue.active or phone_system.ringing or (pump_service.request_pending and not pump_service.dispensing) or cctv_system.motion_pending or power_service.fault_pending or spill_service.spill_pending or radio_tuner.drift_pending or device_service.fault_pending or phase != Phase.ACTIVE
 
 func _update_objective() -> void:
 	if is_instance_valid(hud) and is_instance_valid(story_world): hud.update()
